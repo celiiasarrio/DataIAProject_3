@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+pydantic-settings
+python-dotenv
+python-multipart
+psycopg2-binary
+gunicorn
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+google-cloud-firestore
