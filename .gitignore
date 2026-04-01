@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Build output
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.devcontainer/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# GCP credentials
+spa-datajuniorsprogram-sdb-001-899009cc32ac.json
+*.json.bak
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+.terraform.lock.hcl
+*.tfvars
+
+key.json
