@@ -3,10 +3,12 @@
 Quick Error Diagnostic - Identificar errores específicos rápidamente
 """
 
+import os
+
 import requests
 from datetime import datetime
 
-BASE_URL = "https://gft-hackaton-backend-297014562013.europe-west1.run.app"
+BASE_URL = os.getenv("BACKEND_BASE_URL", "http://localhost:8080")
 
 def quick_test_endpoint(endpoint: str, name: str) -> None:
     """Test rápido de endpoint con timeout corto"""

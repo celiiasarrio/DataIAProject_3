@@ -3,13 +3,17 @@
 Final Health Check - Diagnostic completo post corrección
 """
 
+import os
+
 import requests
 import json
 from datetime import datetime
 from typing import Dict, Any
 
 class FinalHealthChecker:
-    def __init__(self, base_url: str = "https://gft-hackaton-backend-297014562013.europe-west1.run.app"):
+    def __init__(self, base_url: str | None = None):
+        if base_url is None:
+            base_url = os.getenv("BACKEND_BASE_URL", "http://localhost:8080")
         self.base_url = base_url
         self.results = []
     

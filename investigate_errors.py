@@ -3,20 +3,21 @@
 Investigador de errores Root y Perfil Usuario
 """
 
+import os
+
 import psycopg2
 import requests
 from datetime import datetime
 
-# Credenciales Cloud SQL
 DB_CONFIG = {
-    'host': '34.175.214.149',
-    'port': 5432,
-    'database': 'edem_hub_db',
-    'user': 'edem_admin',
-    'password': '%JYSZw%4?zdNLL^HfkFvwE;+vPC_y*'
+    "host": os.getenv("DB_HOST", "localhost"),
+    "port": int(os.getenv("DB_PORT", "5432")),
+    "database": os.getenv("DB_NAME", "edem_hub_db"),
+    "user": os.getenv("DB_USER", "postgres"),
+    "password": os.getenv("DB_PASSWORD", ""),
 }
 
-BASE_URL = "https://gft-hackaton-backend-297014562013.europe-west1.run.app"
+BASE_URL = os.getenv("BACKEND_BASE_URL", "http://localhost:8080")
 
 def investigate_database():
     """Investigar qué usuarios existen en la base de datos"""
