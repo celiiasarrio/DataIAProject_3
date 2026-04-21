@@ -107,6 +107,11 @@ resource "google_cloud_run_v2_service" "backend" {
       }
 
       env {
+        name  = "JWT_SECRET"
+        value = var.jwt_secret
+      }
+
+      env {
         name  = "DB_NAME"
         value = google_sql_database.edem_database.name
       }

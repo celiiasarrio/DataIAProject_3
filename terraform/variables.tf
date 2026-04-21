@@ -21,6 +21,12 @@ variable "db_password" {
   sensitive   = true
 }
 
+variable "jwt_secret" {
+  description = "Secreto usado para firmar JWT del backend"
+  type        = string
+  sensitive   = true
+}
+
 variable "firestore_location" {
   description = "Firestore database location"
   type        = string
