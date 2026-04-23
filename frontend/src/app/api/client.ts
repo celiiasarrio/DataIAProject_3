@@ -60,7 +60,7 @@ export async function getMyProfile(): Promise<UserProfile> {
 export interface GradeOut {
   id_tarea: number;
   nombre_tarea: string;
-  id_asignatura: string;
+  id_sesion: string;
   nota: number;
 }
 
@@ -71,7 +71,7 @@ export async function getMyGrades(): Promise<GradeOut[]> {
 export interface AttendanceRecord {
   id_asistencia: number;
   id_alumno: string;
-  id_asignatura: string;
+  id_sesion: string;
   fecha: string;
   presente: boolean;
 }
@@ -84,7 +84,7 @@ export interface CalendarEvent {
   id: string;
   tipo: string;
   titulo: string;
-  id_asignatura: string;
+  id_sesion: string;
   aula: string | null;
   id_profesor: string | null;
   fecha_inicio: string;

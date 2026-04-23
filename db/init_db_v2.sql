@@ -1,7 +1,6 @@
 -- Esquema canónico del backend FastAPI.
--- Mantiene algunas tablas legacy (sesiones, ubicaciones) para compatibilidad
--- con los seeds existentes, pero añade todas las tablas y columnas que hoy
--- necesita la API.
+-- La entidad académica principal es "sesiones".
+-- Se mantiene "ubicaciones" por compatibilidad con los seeds existentes.
 
 -- Tablas Principales
 CREATE TABLE IF NOT EXISTS alumnos (
@@ -37,8 +36,8 @@ CREATE TABLE IF NOT EXISTS grupos (
     nombre VARCHAR
 );
 
-CREATE TABLE IF NOT EXISTS asignaturas (
-    id_asignatura VARCHAR PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS sesiones (
+    id_sesion VARCHAR PRIMARY KEY,
     nombre VARCHAR
 );
 
@@ -49,23 +48,11 @@ CREATE TABLE IF NOT EXISTS ubicaciones (
     aula VARCHAR
 );
 
--- El Motor del Calendario
-CREATE TABLE IF NOT EXISTS sesiones (
-    id_sesion SERIAL PRIMARY KEY,
-    fecha DATE,
-    hora_inicio TIME,
-    hora_fin TIME,
-    id_ubicacion VARCHAR REFERENCES ubicaciones(id_ubicacion),
-    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
-    id_profesor VARCHAR REFERENCES profesores(id_profesor),
-    descripcion TEXT
-);
-
 -- Tablas de Relaciones
-CREATE TABLE IF NOT EXISTS rel_profesores_asignaturas (
+CREATE TABLE IF NOT EXISTS rel_profesores_sesiones (
     id_profesor VARCHAR REFERENCES profesores(id_profesor),
-    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
-    PRIMARY KEY (id_profesor, id_asignatura)
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
+    PRIMARY KEY (id_profesor, id_sesion)
 );
 
 CREATE TABLE IF NOT EXISTS rel_alumnos_grupos (
@@ -74,10 +61,10 @@ CREATE TABLE IF NOT EXISTS rel_alumnos_grupos (
     PRIMARY KEY (id_alumno, id_grupo)
 );
 
-CREATE TABLE IF NOT EXISTS rel_asignaturas_grupos (
-    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
+CREATE TABLE IF NOT EXISTS rel_sesiones_grupos (
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
     id_grupo VARCHAR REFERENCES grupos(id_grupo),
-    PRIMARY KEY (id_asignatura, id_grupo)
+    PRIMARY KEY (id_sesion, id_grupo)
 );
 
 CREATE TABLE IF NOT EXISTS rel_personal_grupos (
@@ -89,7 +76,7 @@ CREATE TABLE IF NOT EXISTS rel_personal_grupos (
 -- Funcionalidades Extra
 CREATE TABLE IF NOT EXISTS tareas (
     id_tarea SERIAL PRIMARY KEY,
-    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
     nombre VARCHAR,
     descripcion TEXT
 );
@@ -104,17 +91,17 @@ CREATE TABLE IF NOT EXISTS rel_alumno_tarea (
 CREATE TABLE IF NOT EXISTS asistencia (
     id_asistencia SERIAL PRIMARY KEY,
     id_alumno VARCHAR REFERENCES alumnos(id_alumno),
-    id_sesion INT REFERENCES sesiones(id_sesion),
-    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
     fecha DATE,
-    presente BOOLEAN
+    presente BOOLEAN,
+    CONSTRAINT uq_asistencia_alumno_sesion_fecha UNIQUE (id_alumno, id_sesion, fecha)
 );
 
 CREATE TABLE IF NOT EXISTS eventos (
     id VARCHAR PRIMARY KEY,
     tipo VARCHAR,
     titulo VARCHAR,
-    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
     aula VARCHAR,
     id_profesor VARCHAR REFERENCES profesores(id_profesor),
     fecha_inicio TIMESTAMP,
@@ -125,7 +112,7 @@ CREATE TABLE IF NOT EXISTS eventos (
 CREATE TABLE IF NOT EXISTS franja_tutoria (
     id VARCHAR PRIMARY KEY,
     id_profesor VARCHAR REFERENCES profesores(id_profesor),
-    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
     dia_semana INT,
     hora_inicio VARCHAR,
     hora_fin VARCHAR,

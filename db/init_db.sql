@@ -16,6 +16,7 @@ Table profesores {
   nombre varchar
   apellido varchar
   correo varchar
+  contrasena varchar
   url_foto varchar
 }
 
@@ -24,6 +25,7 @@ Table personal_edem {
   nombre varchar
   apellido varchar
   correo varchar
+  contrasena varchar
   rol varchar
   url_foto varchar
 }
@@ -33,8 +35,8 @@ Table grupos {
   nombre varchar
 }
 
-Table asignaturas {
-  id_asignatura varchar [pk]
+Table sesiones {
+  id_sesion varchar [pk]
   nombre varchar
 }
 
@@ -45,27 +47,14 @@ Table ubicaciones {
   aula varchar
 }
 
-// --- El Motor del Calendario ---
-
-Table sesiones {
-  id_sesion int [pk, increment]
-  fecha date
-  hora_inicio time
-  hora_fin time
-  id_ubicacion varchar [ref: > ubicaciones.id_ubicacion]
-  id_asignatura varchar [ref: > asignaturas.id_asignatura]
-  id_profesor varchar [ref: > profesores.id_profesor]
-  descripcion varchar [null]
-}
-
 // --- Tablas de Relaciones (Cruces) ---
 
-Table rel_profesores_asignaturas {
+Table rel_profesores_sesiones {
   id_profesor varchar [ref: > profesores.id_profesor]
-  id_asignatura varchar [ref: > asignaturas.id_asignatura]
+  id_sesion varchar [ref: > sesiones.id_sesion]
   
   indexes {
-    (id_profesor, id_asignatura) [pk]
+    (id_profesor, id_sesion) [pk]
   }
 }
 
@@ -78,12 +67,12 @@ Table rel_alumnos_grupos {
   }
 }
 
-Table rel_asignaturas_grupos {
-  id_asignatura varchar [ref: > asignaturas.id_asignatura]
+Table rel_sesiones_grupos {
+  id_sesion varchar [ref: > sesiones.id_sesion]
   id_grupo varchar [ref: > grupos.id_grupo]
   
   indexes {
-    (id_asignatura, id_grupo) [pk]
+    (id_sesion, id_grupo) [pk]
   }
 }
 
@@ -111,13 +100,18 @@ Table rel_alumno_tarea {
 Table asistencia {
   id_asistencia int [pk, increment]
   id_alumno varchar [ref: > alumnos.id_alumno]
-  id_sesion int [ref: > sesiones.id_sesion]
+  id_sesion varchar [ref: > sesiones.id_sesion]
+  fecha date
   presente boolean
+
+  indexes {
+    (id_alumno, id_sesion, fecha) [unique]
+  }
 }
 
 Table tareas {
   id_tarea int [pk, increment]
-  id_asignatura varchar [ref: > asignaturas.id_asignatura]
+  id_sesion varchar [ref: > sesiones.id_sesion]
   nombre varchar
   descripcion varchar
 }
