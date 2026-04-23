@@ -41,17 +41,17 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
           DB_NAME: ${{ secrets.DB_NAME }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
         run: |
           gcloud run deploy gft-hackaton-backend \
             --image "$REGISTRY/backend:$IMAGE_TAG" \
             --region "$REGION" \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars "DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_HOST=$DB_HOST,DB_PORT=$DB_PORT,DB_NAME=$DB_NAME,JWT_SECRET=$JWT_SECRET"
+            --add-cloudsql-instances "$CLOUD_SQL_CONNECTION_NAME" \
+            --set-env-vars "DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_NAME=$DB_NAME,CLOUD_SQL_CONNECTION_NAME=$CLOUD_SQL_CONNECTION_NAME,JWT_SECRET=$JWT_SECRET,ENVIRONMENT=production"
 
   deploy-frontend:
     runs-on: ubuntu-latest
