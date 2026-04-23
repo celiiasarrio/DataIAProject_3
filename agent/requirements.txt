@@ -1,0 +1,22 @@
+# ── Core del agente ──────────────────────────────────────────────────────────
+# Framework Google ADK (incluye el runner, session service y tool context)
+google-adk>=1.0.0
+# SDK de Google Gen AI (importado directamente en run_local.py: google.genai.types)
+google-genai>=1.5.0
+
+# ── Google Cloud ──────────────────────────────────────────────────────────────
+# Vertex AI + Agent Engine (deploy en producción, fase siguiente)
+google-cloud-aiplatform[agent_engines,reasoningengine]>=1.88.0
+# Firestore (memoria conversacional, fase siguiente)
+google-cloud-firestore>=2.19.0
+# Auth GCP (application-default credentials para Vertex AI y Firestore)
+google-auth>=2.29.0
+
+# ── HTTP client ───────────────────────────────────────────────────────────────
+# Llamadas al backend FastAPI con JWT (usado en tools/http_client.py)
+httpx>=0.27.0
+
+# ── Config y entorno ─────────────────────────────────────────────────────────
+pydantic>=2.7
+pydantic-settings>=2.4
+python-dotenv>=1.0.1
