@@ -1,3 +1,5 @@
+// LEGACY DBML.
+// El esquema SQL canónico del backend vive en db/init_db_v2.sql.
 // --- Tablas Principales (Entidades) ---
 
 Table alumnos {

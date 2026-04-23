@@ -1,3 +1,5 @@
+-- Legacy seed snapshot. Usar init_db_v4.sql para seeds compatibles con el esquema actual.
+
 TRUNCATE TABLE "alumnos" CASCADE;
 TRUNCATE TABLE "asignaturas" CASCADE;
 TRUNCATE TABLE "asistencia" CASCADE;

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, Date, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Boolean, Date, DateTime, ForeignKey, Time
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 
@@ -12,6 +12,7 @@ class PersonalEdem(Base):
     nombre = Column(String)
     apellido = Column(String)
     correo = Column(String)
+    contrasena = Column(String)
     rol = Column(String)
     url_foto = Column(String)
 
@@ -34,12 +35,20 @@ class Asignatura(Base):
     id_asignatura = Column(String, primary_key=True, index=True)
     nombre = Column(String)
 
+class Ubicacion(Base):
+    __tablename__ = 'ubicaciones'
+    id_ubicacion = Column(String, primary_key=True, index=True)
+    descripcion = Column(String)
+    planta = Column(Integer)
+    aula = Column(String)
+
 class Profesor(Base):
     __tablename__ = 'profesores'
     id_profesor = Column(String, primary_key=True, index=True)
     nombre = Column(String)
     apellido = Column(String)
     correo = Column(String)
+    contrasena = Column(String)
     url_foto = Column(String)
 
 class Tarea(Base):
@@ -49,10 +58,22 @@ class Tarea(Base):
     nombre = Column(String)
     descripcion = Column(String)
 
+class Sesion(Base):
+    __tablename__ = 'sesiones'
+    id_sesion = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    fecha = Column(Date)
+    hora_inicio = Column(Time)
+    hora_fin = Column(Time)
+    id_ubicacion = Column(String, ForeignKey('ubicaciones.id_ubicacion'))
+    id_asignatura = Column(String, ForeignKey('asignaturas.id_asignatura'))
+    id_profesor = Column(String, ForeignKey('profesores.id_profesor'))
+    descripcion = Column(String)
+
 class Asistencia(Base):
     __tablename__ = 'asistencia'
     id_asistencia = Column(Integer, primary_key=True, autoincrement=True, index=True)
     id_alumno = Column(String, ForeignKey('alumnos.id_alumno'))
+    id_sesion = Column(Integer, ForeignKey('sesiones.id_sesion'), nullable=True)
     id_asignatura = Column(String, ForeignKey('asignaturas.id_asignatura'))
     fecha = Column(Date)
     presente = Column(Boolean)

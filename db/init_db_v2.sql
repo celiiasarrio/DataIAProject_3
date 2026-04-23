@@ -1,4 +1,7 @@
--- la v2 modifica la tabla sesiones para insertar hora_inicio y hora_fin.
+-- Esquema canónico del backend FastAPI.
+-- Mantiene algunas tablas legacy (sesiones, ubicaciones) para compatibilidad
+-- con los seeds existentes, pero añade todas las tablas y columnas que hoy
+-- necesita la API.
 
 -- Tablas Principales
 CREATE TABLE IF NOT EXISTS alumnos (
@@ -15,6 +18,7 @@ CREATE TABLE IF NOT EXISTS profesores (
     nombre VARCHAR,
     apellido VARCHAR,
     correo VARCHAR,
+    contrasena VARCHAR,
     url_foto VARCHAR
 );
 
@@ -23,6 +27,7 @@ CREATE TABLE IF NOT EXISTS personal_edem (
     nombre VARCHAR,
     apellido VARCHAR,
     correo VARCHAR,
+    contrasena VARCHAR,
     rol VARCHAR,
     url_foto VARCHAR
 );
@@ -100,5 +105,68 @@ CREATE TABLE IF NOT EXISTS asistencia (
     id_asistencia SERIAL PRIMARY KEY,
     id_alumno VARCHAR REFERENCES alumnos(id_alumno),
     id_sesion INT REFERENCES sesiones(id_sesion),
+    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
+    fecha DATE,
     presente BOOLEAN
+);
+
+CREATE TABLE IF NOT EXISTS eventos (
+    id VARCHAR PRIMARY KEY,
+    tipo VARCHAR,
+    titulo VARCHAR,
+    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
+    aula VARCHAR,
+    id_profesor VARCHAR REFERENCES profesores(id_profesor),
+    fecha_inicio TIMESTAMP,
+    fecha_fin TIMESTAMP,
+    descripcion TEXT
+);
+
+CREATE TABLE IF NOT EXISTS franja_tutoria (
+    id VARCHAR PRIMARY KEY,
+    id_profesor VARCHAR REFERENCES profesores(id_profesor),
+    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
+    dia_semana INT,
+    hora_inicio VARCHAR,
+    hora_fin VARCHAR,
+    ubicacion VARCHAR,
+    disponible BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS reservas (
+    id VARCHAR PRIMARY KEY,
+    id_alumno VARCHAR REFERENCES alumnos(id_alumno),
+    id_profesor VARCHAR REFERENCES profesores(id_profesor),
+    id_franja VARCHAR REFERENCES franja_tutoria(id),
+    fecha DATE,
+    notas TEXT,
+    estado VARCHAR DEFAULT 'pending',
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS notificaciones (
+    id VARCHAR PRIMARY KEY,
+    id_usuario VARCHAR,
+    tipo VARCHAR,
+    titulo VARCHAR,
+    mensaje TEXT,
+    leida BOOLEAN DEFAULT FALSE,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS configuracion_notificaciones (
+    id_usuario VARCHAR PRIMARY KEY,
+    avisos_calendario BOOLEAN DEFAULT TRUE,
+    avisos_notas BOOLEAN DEFAULT TRUE,
+    avisos_asistencia BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS correos (
+    id VARCHAR PRIMARY KEY,
+    id_remitente VARCHAR,
+    id_destinatario VARCHAR,
+    asunto VARCHAR,
+    cuerpo TEXT,
+    leido BOOLEAN DEFAULT FALSE,
+    fecha_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

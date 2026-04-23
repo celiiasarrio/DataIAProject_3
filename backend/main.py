@@ -1,19 +1,16 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import NullPool
 from pydantic import BaseModel
 from typing import Optional
-from sqlalchemy import Column, String, DateTime
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 import bcrypt as bcrypt_lib
 import uuid
 from datetime import datetime, date, timedelta
 from typing import List
-from dotenv import load_dotenv
 
 # Importamos todos los modelos de la BBDD desde models.py
 from models import (
@@ -23,9 +20,6 @@ from models import (
     Reserva, Notificacion, ConfiguracionNotificacion, Correo
 )
 from config import settings
-
-# Cargamos las variables de entorno desde el archivo .env
-load_dotenv()
 
 # ==========================================
 # 1. CONEXIÓN A LA BASE DE DATOS
@@ -87,13 +81,26 @@ class TokenData(BaseModel):
 # 3. UTILIDADES / MOCK AUTH
 # ==========================================
 
-# --- Configuración de Seguridad (OAuth2 + JWT) ---
-SECRET_KEY = "tu-clave-secreta-deberia-ser-muy-larga-y-aleatoria-y-estar-en-un-secret-manager"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 8 # 8 horas
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
+
+SCHEMA_PATCHES = (
+    "ALTER TABLE profesores ADD COLUMN IF NOT EXISTS contrasena VARCHAR",
+    "ALTER TABLE personal_edem ADD COLUMN IF NOT EXISTS contrasena VARCHAR",
+    "ALTER TABLE asistencia ADD COLUMN IF NOT EXISTS id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura)",
+    "ALTER TABLE asistencia ADD COLUMN IF NOT EXISTS fecha DATE",
+)
+
+
+def ensure_runtime_schema():
+    """
+    Sincronización mínima para evitar que entornos viejos rompan al arrancar.
+    No sustituye a migraciones formales, pero asegura tablas faltantes y columnas
+    aditivas que la API necesita para funcionar.
+    """
+    Base.metadata.create_all(bind=engine)
+    with engine.begin() as connection:
+        for statement in SCHEMA_PATCHES:
+            connection.execute(text(statement))
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -102,7 +109,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, settings.jwt_secret, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
 
 # Función vital: Como tienes 3 tablas separadas, buscamos al usuario en todas
@@ -128,7 +135,7 @@ def buscar_usuario(db: Session, user_id: str):
 async def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(status_code=401, detail="Could not validate credentials", headers={"WWW-Authenticate": "Bearer"})
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.JWT_ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None: raise credentials_exception
     except JWTError:
@@ -136,6 +143,22 @@ async def get_current_user(db: Session = Depends(get_db), token: str = Depends(o
     user = buscar_usuario(db, user_id)
     if user is None: raise credentials_exception
     return user
+
+
+@app.on_event("startup")
+def startup():
+    ensure_runtime_schema()
+
+
+
+@app.get("/")
+def root():
+    return {"message": "EDEM Student Hub API", "docs": "/docs", "health": "/health"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "environment": settings.ENVIRONMENT}
 
 # ==========================================
 # 4. ENDPOINTS: PERFIL Y ROLES
@@ -175,7 +198,7 @@ async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth
 
     access_token = create_access_token(
         data={"sub": user_id},
-        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
