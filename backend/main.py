@@ -150,6 +150,7 @@ def startup():
     ensure_runtime_schema()
 
 
+
 @app.get("/")
 def root():
     return {"message": "EDEM Student Hub API", "docs": "/docs", "health": "/health"}
