@@ -168,3 +168,14 @@ class Correo(Base):
     cuerpo = Column(String)
     leido = Column(Boolean, default=False)
     fecha_envio = Column(DateTime, default=datetime.utcnow)
+
+class Contenido(Base):
+    __tablename__ = 'contenidos'
+    id = Column(String, primary_key=True, index=True)
+    id_asignatura = Column(String, ForeignKey('asignaturas.id_asignatura'))
+    id_profesor = Column(String, ForeignKey('profesores.id_profesor'))
+    titulo = Column(String)
+    descripcion = Column(String, nullable=True)
+    tipo = Column(String)  # 'pdf', 'video', 'enlace', 'otro'
+    url = Column(String)
+    fecha_subida = Column(DateTime, default=datetime.utcnow)
