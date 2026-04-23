@@ -5,22 +5,24 @@ from google.adk.tools import ToolContext
 from agent.tools.http_client import api_get, api_post, api_put
 
 
-def list_subjects(tool_context: ToolContext) -> list:
-    """Lista todas las asignaturas del sistema (id_asignatura, nombre)."""
-    return api_get("/api/v1/subjects", tool_context)
+# ---------- Sesiones (antes "asignaturas") ----------
+
+def list_sessions(tool_context: ToolContext) -> list:
+    """Lista todas las sesiones/asignaturas del sistema (id_sesion, nombre)."""
+    return api_get("/api/v1/sessions", tool_context)
 
 
-def get_subject_detail(tool_context: ToolContext, subject_id: str) -> dict:
-    """Obtiene el detalle de una asignatura concreta por su id_asignatura."""
-    return api_get(f"/api/v1/subjects/{subject_id}", tool_context)
+def get_session_detail(tool_context: ToolContext, session_id: str) -> dict:
+    """Obtiene el detalle de una sesión concreta por su id_sesion."""
+    return api_get(f"/api/v1/sessions/{session_id}", tool_context)
 
 
-def list_students_in_subject(tool_context: ToolContext, subject_id: str) -> list:
-    """Lista los alumnos matriculados en una asignatura.
+def list_students_in_session(tool_context: ToolContext, session_id: str) -> list:
+    """Lista los alumnos matriculados en una sesión/asignatura.
 
     Solo útil para profesores o coordinadores que necesiten ver la clase.
     """
-    return api_get(f"/api/v1/subjects/{subject_id}/students", tool_context)
+    return api_get(f"/api/v1/sessions/{session_id}/students", tool_context)
 
 
 # ---------- Notas ----------
@@ -29,17 +31,17 @@ def get_my_grades(tool_context: ToolContext) -> list:
     """Devuelve todas las notas del alumno autenticado.
 
     Solo funciona si el rol del usuario es 'alumno'. Cada nota incluye
-    id_tarea, nombre_tarea, id_asignatura y nota (0-10).
+    id_tarea, nombre_tarea, id_sesion y nota (0-10).
     """
     return api_get("/api/v1/grades/me", tool_context)
 
 
-def get_my_grades_for_subject(tool_context: ToolContext, subject_id: str) -> list:
-    """Devuelve las notas del alumno autenticado filtradas por asignatura.
+def get_my_grades_for_session(tool_context: ToolContext, session_id: str) -> list:
+    """Devuelve las notas del alumno autenticado filtradas por sesión/asignatura.
 
     Solo funciona si el rol del usuario es 'alumno'.
     """
-    return api_get(f"/api/v1/grades/me/subjects/{subject_id}", tool_context)
+    return api_get(f"/api/v1/grades/me/sessions/{session_id}", tool_context)
 
 
 def register_grade(
@@ -84,7 +86,7 @@ def get_my_attendance(tool_context: ToolContext) -> list:
     """Devuelve el historial completo de asistencia del alumno autenticado.
 
     Solo funciona si el rol es 'alumno'. Cada registro incluye fecha, presente (bool)
-    y la asignatura.
+    y la sesión/asignatura.
     """
     return api_get("/api/v1/attendance/me", tool_context)
 
@@ -101,30 +103,30 @@ def get_my_attendance_metrics(tool_context: ToolContext) -> dict:
 def mark_attendance(
     tool_context: ToolContext,
     id_alumno: str,
-    id_asignatura: str,
+    id_sesion: str,
     fecha: str,
     presente: bool,
 ) -> dict:
-    """Registra o actualiza la asistencia de un alumno en una asignatura para una fecha.
+    """Registra o actualiza la asistencia de un alumno en una sesión para una fecha.
 
     El campo fecha debe ser ISO-8601 (YYYY-MM-DD). Solo usar si el rol es 'profesor'.
-    Si ya existe un registro para (alumno, asignatura, fecha) se actualizará.
+    Si ya existe un registro para (alumno, sesión, fecha) se actualizará.
     """
     return api_post(
         "/api/v1/attendance",
         tool_context,
         json={
             "id_alumno": id_alumno,
-            "id_asignatura": id_asignatura,
+            "id_sesion": id_sesion,
             "fecha": fecha,
             "presente": presente,
         },
     )
 
 
-def get_subject_attendance(tool_context: ToolContext, subject_id: str) -> list:
-    """Devuelve todos los registros de asistencia de una asignatura concreta.
+def get_session_attendance(tool_context: ToolContext, session_id: str) -> list:
+    """Devuelve todos los registros de asistencia de una sesión/asignatura concreta.
 
     Pensado para profesores o coordinadores que quieren revisar la clase entera.
     """
-    return api_get(f"/api/v1/attendance/subjects/{subject_id}", tool_context)
+    return api_get(f"/api/v1/attendance/sessions/{session_id}", tool_context)

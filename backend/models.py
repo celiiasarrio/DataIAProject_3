@@ -157,7 +157,7 @@ class Correo(Base):
 class Contenido(Base):
     __tablename__ = 'contenidos'
     id = Column(String, primary_key=True, index=True)
-    id_asignatura = Column(String, ForeignKey('asignaturas.id_asignatura'))
+    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'))
     id_profesor = Column(String, ForeignKey('profesores.id_profesor'))
     titulo = Column(String)
     descripcion = Column(String, nullable=True)
