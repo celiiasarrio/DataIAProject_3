@@ -1,5 +1,6 @@
 -- Esquema canónico del backend FastAPI.
--- La entidad académica principal es "sesiones".
+-- Bloque = concepto amplio (módulo/materia que agrupa sesiones, contenido, tareas y profesores).
+-- Sesion = encuentro específico (clase concreta con fecha, hora y aula).
 -- Se mantiene "ubicaciones" por compatibilidad con los seeds existentes.
 
 -- Tablas Principales
@@ -36,9 +37,19 @@ CREATE TABLE IF NOT EXISTS grupos (
     nombre VARCHAR
 );
 
+CREATE TABLE IF NOT EXISTS bloques (
+    id_bloque VARCHAR PRIMARY KEY,
+    nombre VARCHAR
+);
+
 CREATE TABLE IF NOT EXISTS sesiones (
     id_sesion VARCHAR PRIMARY KEY,
-    nombre VARCHAR
+    id_bloque VARCHAR REFERENCES bloques(id_bloque),
+    nombre VARCHAR,
+    fecha DATE,
+    hora_inicio VARCHAR,
+    hora_fin VARCHAR,
+    aula VARCHAR
 );
 
 CREATE TABLE IF NOT EXISTS ubicaciones (
@@ -49,10 +60,10 @@ CREATE TABLE IF NOT EXISTS ubicaciones (
 );
 
 -- Tablas de Relaciones
-CREATE TABLE IF NOT EXISTS rel_profesores_sesiones (
+CREATE TABLE IF NOT EXISTS rel_profesores_bloques (
     id_profesor VARCHAR REFERENCES profesores(id_profesor),
-    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
-    PRIMARY KEY (id_profesor, id_sesion)
+    id_bloque VARCHAR REFERENCES bloques(id_bloque),
+    PRIMARY KEY (id_profesor, id_bloque)
 );
 
 CREATE TABLE IF NOT EXISTS rel_alumnos_grupos (
@@ -61,10 +72,10 @@ CREATE TABLE IF NOT EXISTS rel_alumnos_grupos (
     PRIMARY KEY (id_alumno, id_grupo)
 );
 
-CREATE TABLE IF NOT EXISTS rel_sesiones_grupos (
-    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
+CREATE TABLE IF NOT EXISTS rel_bloques_grupos (
+    id_bloque VARCHAR REFERENCES bloques(id_bloque),
     id_grupo VARCHAR REFERENCES grupos(id_grupo),
-    PRIMARY KEY (id_sesion, id_grupo)
+    PRIMARY KEY (id_bloque, id_grupo)
 );
 
 CREATE TABLE IF NOT EXISTS rel_personal_grupos (
@@ -76,7 +87,7 @@ CREATE TABLE IF NOT EXISTS rel_personal_grupos (
 -- Funcionalidades Extra
 CREATE TABLE IF NOT EXISTS tareas (
     id_tarea SERIAL PRIMARY KEY,
-    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
+    id_bloque VARCHAR REFERENCES bloques(id_bloque),
     nombre VARCHAR,
     descripcion TEXT
 );
@@ -101,7 +112,7 @@ CREATE TABLE IF NOT EXISTS eventos (
     id VARCHAR PRIMARY KEY,
     tipo VARCHAR,
     titulo VARCHAR,
-    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
+    id_bloque VARCHAR REFERENCES bloques(id_bloque),
     aula VARCHAR,
     id_profesor VARCHAR REFERENCES profesores(id_profesor),
     fecha_inicio TIMESTAMP,
@@ -112,7 +123,7 @@ CREATE TABLE IF NOT EXISTS eventos (
 CREATE TABLE IF NOT EXISTS franja_tutoria (
     id VARCHAR PRIMARY KEY,
     id_profesor VARCHAR REFERENCES profesores(id_profesor),
-    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
+    id_bloque VARCHAR REFERENCES bloques(id_bloque),
     dia_semana INT,
     hora_inicio VARCHAR,
     hora_fin VARCHAR,
@@ -160,7 +171,7 @@ CREATE TABLE IF NOT EXISTS correos (
 
 CREATE TABLE IF NOT EXISTS contenidos (
     id VARCHAR PRIMARY KEY,
-    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
+    id_bloque VARCHAR REFERENCES bloques(id_bloque),
     id_profesor VARCHAR REFERENCES profesores(id_profesor),
     titulo VARCHAR,
     descripcion TEXT,

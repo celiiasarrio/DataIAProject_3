@@ -14,10 +14,10 @@ from typing import List
 
 # Importamos todos los modelos de la BBDD desde models.py
 from models import (
-    Alumno, Profesor, PersonalEdem, Base, Grupo, Sesion, Tarea,
-    Asistencia, RelPersonalGrupos, RelAlumnosGrupos, RelSesionesGrupos,
-    RelProfesoresSesiones, RelAlumnoTarea, Evento, FranjaTutoria,
-    Reserva, Notificacion, ConfiguracionNotificacion, Correo
+    Alumno, Profesor, PersonalEdem, Base, Grupo, Bloque, Sesion, Tarea,
+    Asistencia, RelPersonalGrupos, RelAlumnosGrupos, RelBloquesGrupos,
+    RelProfesoresBloques, RelAlumnoTarea, Evento, FranjaTutoria,
+    Reserva, Notificacion, ConfiguracionNotificacion, Correo, Contenido
 )
 from config import settings
 
@@ -86,11 +86,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
 SCHEMA_PATCHES = (
     "ALTER TABLE profesores ADD COLUMN IF NOT EXISTS contrasena VARCHAR",
     "ALTER TABLE personal_edem ADD COLUMN IF NOT EXISTS contrasena VARCHAR",
-    "ALTER TABLE tareas ADD COLUMN IF NOT EXISTS id_sesion VARCHAR REFERENCES sesiones(id_sesion)",
+    "ALTER TABLE tareas ADD COLUMN IF NOT EXISTS id_bloque VARCHAR REFERENCES bloques(id_bloque)",
     "ALTER TABLE asistencia ADD COLUMN IF NOT EXISTS id_sesion VARCHAR REFERENCES sesiones(id_sesion)",
     "ALTER TABLE asistencia ADD COLUMN IF NOT EXISTS fecha DATE",
-    "ALTER TABLE eventos ADD COLUMN IF NOT EXISTS id_sesion VARCHAR REFERENCES sesiones(id_sesion)",
-    "ALTER TABLE franja_tutoria ADD COLUMN IF NOT EXISTS id_sesion VARCHAR REFERENCES sesiones(id_sesion)",
+    "ALTER TABLE eventos ADD COLUMN IF NOT EXISTS id_bloque VARCHAR REFERENCES bloques(id_bloque)",
+    "ALTER TABLE franja_tutoria ADD COLUMN IF NOT EXISTS id_bloque VARCHAR REFERENCES bloques(id_bloque)",
 )
 
 
@@ -279,7 +279,7 @@ def get_user_profile(user_id: str, db: Session = Depends(get_db)):
 class EventBase(BaseModel):
     tipo: str # 'class', 'exam', 'delivery'
     titulo: str
-    id_sesion: str
+    id_bloque: str
     aula: Optional[str] = None
     id_profesor: Optional[str] = None
     fecha_inicio: datetime
@@ -292,7 +292,7 @@ class EventCreate(EventBase):
 class EventUpdate(BaseModel):
     tipo: Optional[str] = None
     titulo: Optional[str] = None
-    id_sesion: Optional[str] = None
+    id_bloque: Optional[str] = None
     aula: Optional[str] = None
     id_profesor: Optional[str] = None
     fecha_inicio: Optional[datetime] = None
@@ -327,10 +327,10 @@ def create_event(
 ):
     """Crea un nuevo evento en el calendario."""
     nuevo_evento = Evento(
-        id=str(uuid.uuid4()), # Generamos un ID único automáticamente
+        id=str(uuid.uuid4()),
         tipo=event_in.tipo,
         titulo=event_in.titulo,
-        id_sesion=event_in.id_sesion,
+        id_bloque=event_in.id_bloque,
         aula=event_in.aula,
         id_profesor=event_in.id_profesor,
         fecha_inicio=event_in.fecha_inicio,
@@ -388,26 +388,15 @@ def delete_event(
     return
 
 # ==========================================
-# 3. SESIONES
+# 3. ESQUEMAS COMPARTIDOS
 # ==========================================
-
-class SessionBase(BaseModel):
-    id_sesion: str
-    nombre: str
-
-class SessionCreate(SessionBase):
-    pass
-
-class SessionOut(SessionBase):
-    class Config:
-        orm_mode = True
 
 class AlumnoOut(BaseModel):
     id_alumno: str
     nombre: str
     apellido: str
     correo: str
-    
+
     class Config:
         orm_mode = True
 
@@ -418,70 +407,14 @@ class GradeCreate(BaseModel):
     nota: float
 
 class GradeUpdate(BaseModel):
-    id_alumno: str # Necesitamos saber de qué alumno es la nota
+    id_alumno: str
     nota: float
 
 class GradeOut(BaseModel):
     id_tarea: int
     nombre_tarea: str
-    id_sesion: str
+    id_bloque: str
     nota: float
-
-
-@app.get("/api/v1/sessions", response_model=List[SessionOut], tags=["Sesiones"])
-def list_sessions(db: Session = Depends(get_db)):
-    """Lista todas las sesiones."""
-    return db.query(Sesion).all()
-
-@app.post("/api/v1/sessions", response_model=SessionOut, tags=["Sesiones"], status_code=201)
-def create_session(session_in: SessionCreate, db: Session = Depends(get_db)):
-    """Crea una nueva sesión."""
-    db_session = db.query(Sesion).filter(Sesion.id_sesion == session_in.id_sesion).first()
-    if db_session:
-        raise HTTPException(status_code=400, detail="El ID de la sesión ya existe")
-
-    nueva_sesion = Sesion(
-        id_sesion=session_in.id_sesion,
-        nombre=session_in.nombre
-    )
-    db.add(nueva_sesion)
-    db.commit()
-    db.refresh(nueva_sesion)
-    return nueva_sesion
-
-@app.get("/api/v1/sessions/{session_id}", response_model=SessionOut, tags=["Sesiones"])
-def get_session_detail(session_id: str, db: Session = Depends(get_db)):
-    """Obtiene el detalle de una sesión."""
-    sesion = db.query(Sesion).filter(Sesion.id_sesion == session_id).first()
-    if not sesion:
-        raise HTTPException(status_code=404, detail="Sesión no encontrada")
-    return sesion
-
-@app.delete("/api/v1/sessions/{session_id}", status_code=204, tags=["Sesiones"])
-def delete_session(session_id: str, db: Session = Depends(get_db)):
-    """Elimina una sesión."""
-    sesion = db.query(Sesion).filter(Sesion.id_sesion == session_id).first()
-    if not sesion:
-        raise HTTPException(status_code=404, detail="Sesión no encontrada")
-
-    db.delete(sesion)
-    db.commit()
-    return
-
-@app.get("/api/v1/sessions/{session_id}/students", response_model=List[AlumnoOut], tags=["Sesiones"])
-def get_session_students(session_id: str, db: Session = Depends(get_db)):
-    """Obtiene los alumnos matriculados cruzando con los grupos."""
-    alumnos = db.query(Alumno).join(
-        RelAlumnosGrupos, Alumno.id_alumno == RelAlumnosGrupos.id_alumno
-    ).join(
-        Grupo, RelAlumnosGrupos.id_grupo == Grupo.id_grupo
-    ).join(
-        RelSesionesGrupos, Grupo.id_grupo == RelSesionesGrupos.id_grupo
-    ).filter(
-        RelSesionesGrupos.id_sesion == session_id
-    ).all()
-    
-    return alumnos
 
 # ==========================================
 # 4. NOTAS
@@ -508,32 +441,32 @@ def get_my_grades(
         {
             "id_tarea": tarea.id_tarea,
             "nombre_tarea": tarea.nombre,
-            "id_sesion": tarea.id_sesion,
+            "id_bloque": tarea.id_bloque,
             "nota": rel.nota
         }
         for rel, tarea in resultados
     ]
 
-@app.get("/api/v1/grades/me/sessions/{session_id}", response_model=List[GradeOut], tags=["Notas"])
-def get_my_grades_by_session(
-    session_id: str,
-    db: Session = Depends(get_db), 
+@app.get("/api/v1/grades/me/blocks/{block_id}", response_model=List[GradeOut], tags=["Notas"])
+def get_my_grades_by_block(
+    block_id: str,
+    db: Session = Depends(get_db),
     current_user: Alumno = Depends(get_current_user)
 ):
-    """Obtiene las notas del alumno filtradas por sesión."""
+    """Obtiene las notas del alumno filtradas por bloque."""
     if current_user.rol != 'alumno': raise HTTPException(status_code=403, detail="Solo los alumnos tienen notas.")
     resultados = db.query(RelAlumnoTarea, Tarea).join(
         Tarea, RelAlumnoTarea.id_tarea == Tarea.id_tarea
     ).filter(
         RelAlumnoTarea.id_alumno == current_user.id_alumno,
-        Tarea.id_sesion == session_id
+        Tarea.id_bloque == block_id
     ).all()
-    
+
     return [
         {
             "id_tarea": tarea.id_tarea,
             "nombre_tarea": tarea.nombre,
-            "id_sesion": tarea.id_sesion,
+            "id_bloque": tarea.id_bloque,
             "nota": rel.nota
         }
         for rel, tarea in resultados
@@ -595,7 +528,7 @@ class AttendanceBase(BaseModel):
     presente: bool
 
 class AttendanceCreate(AttendanceBase):
-    id_sesion: Optional[int] = None
+    pass
 
 class AttendanceOut(AttendanceBase):
     id_asistencia: int
@@ -693,7 +626,7 @@ def get_session_attendance(
 # ==========================================
 class TutoringSlotBase(BaseModel):
     id_profesor: str
-    id_sesion: Optional[str] = None
+    id_bloque: Optional[str] = None
     dia_semana: int
     hora_inicio: str
     hora_fin: str
@@ -815,7 +748,7 @@ def create_tutoring_slot(
     nueva_franja = FranjaTutoria(
         id=str(uuid.uuid4()),
         id_profesor=slot_in.id_profesor,
-        id_sesion=slot_in.id_sesion,
+        id_bloque=slot_in.id_bloque,
         dia_semana=slot_in.dia_semana,
         hora_inicio=slot_in.hora_inicio,
         hora_fin=slot_in.hora_fin,
@@ -1009,11 +942,113 @@ def read_email(
     return correo
 
 # ==========================================
-# 9. SESIONES (módulos/asignaturas del programa)
+# 9. BLOQUES (concepto amplio: módulo/materia)
+# ==========================================
+
+class BloqueBase(BaseModel):
+    nombre: str
+
+class BloqueCreate(BloqueBase):
+    pass
+
+class BloqueOut(BloqueBase):
+    id_bloque: str
+
+    class Config:
+        orm_mode = True
+
+@app.get("/api/v1/blocks", response_model=List[BloqueOut], tags=["Bloques"])
+def list_blocks(db: Session = Depends(get_db)):
+    """Lista todos los bloques/módulos."""
+    return db.query(Bloque).all()
+
+@app.get("/api/v1/blocks/me", response_model=List[BloqueOut], tags=["Bloques"])
+def get_my_blocks(
+    db: Session = Depends(get_db),
+    current_user: Alumno = Depends(get_current_user)
+):
+    """
+    Bloques del usuario autenticado.
+    - Alumno: bloques de su grupo.
+    - Profesor: bloques que imparte.
+    """
+    if current_user.rol == "profesor":
+        return db.query(Bloque).join(
+            RelProfesoresBloques, Bloque.id_bloque == RelProfesoresBloques.id_bloque
+        ).filter(RelProfesoresBloques.id_profesor == current_user.id_profesor).all()
+
+    if current_user.rol == "alumno":
+        return db.query(Bloque).join(
+            RelBloquesGrupos, Bloque.id_bloque == RelBloquesGrupos.id_bloque
+        ).join(
+            RelAlumnosGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo
+        ).filter(RelAlumnosGrupos.id_alumno == current_user.id_alumno).all()
+
+    raise HTTPException(status_code=403, detail="Solo alumnos y profesores tienen bloques.")
+
+@app.get("/api/v1/blocks/{block_id}", response_model=BloqueOut, tags=["Bloques"])
+def get_block(block_id: str, db: Session = Depends(get_db)):
+    """Obtiene el detalle de un bloque."""
+    bloque = db.query(Bloque).filter(Bloque.id_bloque == block_id).first()
+    if not bloque:
+        raise HTTPException(status_code=404, detail="Bloque no encontrado")
+    return bloque
+
+@app.post("/api/v1/blocks", response_model=BloqueOut, tags=["Bloques"], status_code=201)
+def create_block(block_in: BloqueCreate, db: Session = Depends(get_db)):
+    """Crea un nuevo bloque/módulo."""
+    nuevo = Bloque(id_bloque=str(uuid.uuid4()), nombre=block_in.nombre)
+    db.add(nuevo)
+    db.commit()
+    db.refresh(nuevo)
+    return nuevo
+
+@app.put("/api/v1/blocks/{block_id}", response_model=BloqueOut, tags=["Bloques"])
+def update_block(block_id: str, block_in: BloqueCreate, db: Session = Depends(get_db)):
+    """Actualiza el nombre de un bloque."""
+    bloque = db.query(Bloque).filter(Bloque.id_bloque == block_id).first()
+    if not bloque:
+        raise HTTPException(status_code=404, detail="Bloque no encontrado")
+    bloque.nombre = block_in.nombre
+    db.commit()
+    db.refresh(bloque)
+    return bloque
+
+@app.delete("/api/v1/blocks/{block_id}", status_code=204, tags=["Bloques"])
+def delete_block(block_id: str, db: Session = Depends(get_db)):
+    """Elimina un bloque."""
+    bloque = db.query(Bloque).filter(Bloque.id_bloque == block_id).first()
+    if not bloque:
+        raise HTTPException(status_code=404, detail="Bloque no encontrado")
+    db.delete(bloque)
+    db.commit()
+    return
+
+@app.get("/api/v1/blocks/{block_id}/students", response_model=List[AlumnoOut], tags=["Bloques"])
+def get_block_students(block_id: str, db: Session = Depends(get_db)):
+    """Obtiene los alumnos matriculados en un bloque cruzando con los grupos."""
+    alumnos = db.query(Alumno).join(
+        RelAlumnosGrupos, Alumno.id_alumno == RelAlumnosGrupos.id_alumno
+    ).join(
+        Grupo, RelAlumnosGrupos.id_grupo == Grupo.id_grupo
+    ).join(
+        RelBloquesGrupos, Grupo.id_grupo == RelBloquesGrupos.id_grupo
+    ).filter(
+        RelBloquesGrupos.id_bloque == block_id
+    ).all()
+    return alumnos
+
+# ==========================================
+# 12. SESIONES (encuentro específico con fecha y hora)
 # ==========================================
 
 class SesionBase(BaseModel):
+    id_bloque: str
     nombre: str
+    fecha: Optional[date] = None
+    hora_inicio: Optional[str] = None
+    hora_fin: Optional[str] = None
+    aula: Optional[str] = None
 
 class SesionCreate(SesionBase):
     pass
@@ -1024,66 +1059,54 @@ class SesionOut(SesionBase):
     class Config:
         orm_mode = True
 
-@app.get("/api/v1/sessions", response_model=List[SesionOut], tags=["Sesiones"])
-def list_sessions(db: Session = Depends(get_db)):
-    """Lista todas las sesiones/módulos."""
-    return db.query(Sesion).all()
+@app.get("/api/v1/blocks/{block_id}/sessions", response_model=List[SesionOut], tags=["Sesiones"])
+def list_block_sessions(block_id: str, db: Session = Depends(get_db)):
+    """Lista todas las sesiones (clases específicas) de un bloque."""
+    return db.query(Sesion).filter(Sesion.id_bloque == block_id).order_by(Sesion.fecha).all()
 
-@app.get("/api/v1/sessions/me", response_model=List[SesionOut], tags=["Sesiones"])
-def get_my_sessions(
-    db: Session = Depends(get_db),
-    current_user: Alumno = Depends(get_current_user)
-):
-    """
-    Sesiones del usuario autenticado.
-    - Alumno: sesiones de su grupo.
-    - Profesor: sesiones que imparte.
-    """
-    if current_user.rol == "profesor":
-        return db.query(Sesion).join(
-            RelProfesoresSesiones, Sesion.id_sesion == RelProfesoresSesiones.id_sesion
-        ).filter(RelProfesoresSesiones.id_profesor == current_user.id_profesor).all()
-
-    if current_user.rol == "alumno":
-        return db.query(Sesion).join(
-            RelSesionesGrupos, Sesion.id_sesion == RelSesionesGrupos.id_sesion
-        ).join(
-            RelAlumnosGrupos, RelSesionesGrupos.id_grupo == RelAlumnosGrupos.id_grupo
-        ).filter(RelAlumnosGrupos.id_alumno == current_user.id_alumno).all()
-
-    raise HTTPException(status_code=403, detail="Solo alumnos y profesores tienen sesiones.")
-
-@app.get("/api/v1/sessions/{session_id}", response_model=SesionOut, tags=["Sesiones"])
-def get_session(session_id: str, db: Session = Depends(get_db)):
-    """Obtiene el detalle de una sesión."""
-    sesion = db.query(Sesion).filter(Sesion.id_sesion == session_id).first()
-    if not sesion:
-        raise HTTPException(status_code=404, detail="Sesión no encontrada")
-    return sesion
-
-@app.post("/api/v1/sessions", response_model=SesionOut, tags=["Sesiones"], status_code=201)
-def create_session(session_in: SesionCreate, db: Session = Depends(get_db)):
-    """Crea una nueva sesión/módulo."""
-    nueva = Sesion(id_sesion=str(uuid.uuid4()), nombre=session_in.nombre)
+@app.post("/api/v1/blocks/{block_id}/sessions", response_model=SesionOut, tags=["Sesiones"], status_code=201)
+def create_session(block_id: str, session_in: SesionCreate, db: Session = Depends(get_db)):
+    """Crea una nueva sesión (clase específica) dentro de un bloque."""
+    nueva = Sesion(
+        id_sesion=str(uuid.uuid4()),
+        id_bloque=block_id,
+        nombre=session_in.nombre,
+        fecha=session_in.fecha,
+        hora_inicio=session_in.hora_inicio,
+        hora_fin=session_in.hora_fin,
+        aula=session_in.aula
+    )
     db.add(nueva)
     db.commit()
     db.refresh(nueva)
     return nueva
 
+@app.get("/api/v1/sessions/{session_id}", response_model=SesionOut, tags=["Sesiones"])
+def get_session(session_id: str, db: Session = Depends(get_db)):
+    """Obtiene el detalle de una sesión específica."""
+    sesion = db.query(Sesion).filter(Sesion.id_sesion == session_id).first()
+    if not sesion:
+        raise HTTPException(status_code=404, detail="Sesión no encontrada")
+    return sesion
+
 @app.put("/api/v1/sessions/{session_id}", response_model=SesionOut, tags=["Sesiones"])
 def update_session(session_id: str, session_in: SesionCreate, db: Session = Depends(get_db)):
-    """Actualiza el nombre de una sesión."""
+    """Actualiza los datos de una sesión específica."""
     sesion = db.query(Sesion).filter(Sesion.id_sesion == session_id).first()
     if not sesion:
         raise HTTPException(status_code=404, detail="Sesión no encontrada")
     sesion.nombre = session_in.nombre
+    sesion.fecha = session_in.fecha
+    sesion.hora_inicio = session_in.hora_inicio
+    sesion.hora_fin = session_in.hora_fin
+    sesion.aula = session_in.aula
     db.commit()
     db.refresh(sesion)
     return sesion
 
 @app.delete("/api/v1/sessions/{session_id}", status_code=204, tags=["Sesiones"])
 def delete_session(session_id: str, db: Session = Depends(get_db)):
-    """Elimina una sesión."""
+    """Elimina una sesión específica."""
     sesion = db.query(Sesion).filter(Sesion.id_sesion == session_id).first()
     if not sesion:
         raise HTTPException(status_code=404, detail="Sesión no encontrada")
@@ -1139,23 +1162,23 @@ def get_group_students(group_id: str, db: Session = Depends(get_db)):
     ).filter(RelAlumnosGrupos.id_grupo == group_id).all()
     return alumnos
 
-@app.get("/api/v1/groups/{group_id}/sessions", response_model=List[SesionOut], tags=["Grupos"])
-def get_group_sessions(group_id: str, db: Session = Depends(get_db)):
-    """Lista las sesiones asignadas a un grupo."""
+@app.get("/api/v1/groups/{group_id}/blocks", response_model=List[BloqueOut], tags=["Grupos"])
+def get_group_blocks(group_id: str, db: Session = Depends(get_db)):
+    """Lista los bloques asignados a un grupo."""
     grupo = db.query(Grupo).filter(Grupo.id_grupo == group_id).first()
     if not grupo:
         raise HTTPException(status_code=404, detail="Grupo no encontrado")
 
-    return db.query(Sesion).join(
-        RelSesionesGrupos, Sesion.id_sesion == RelSesionesGrupos.id_sesion
-    ).filter(RelSesionesGrupos.id_grupo == group_id).all()
+    return db.query(Bloque).join(
+        RelBloquesGrupos, Bloque.id_bloque == RelBloquesGrupos.id_bloque
+    ).filter(RelBloquesGrupos.id_grupo == group_id).all()
 
 # ==========================================
 # 10. CONTENIDO
 # ==========================================
 
 class ContenidoBase(BaseModel):
-    id_sesion: str
+    id_bloque: str
     titulo: str
     descripcion: Optional[str] = None
     tipo: str  # 'pdf', 'video', 'enlace', 'otro'
@@ -1172,28 +1195,28 @@ class ContenidoOut(ContenidoBase):
     class Config:
         orm_mode = True
 
-@app.get("/api/v1/sessions/{session_id}/content", response_model=List[ContenidoOut], tags=["Contenido"])
-def get_session_content(session_id: str, db: Session = Depends(get_db)):
-    """Lista todos los materiales de una sesión."""
+@app.get("/api/v1/blocks/{block_id}/content", response_model=List[ContenidoOut], tags=["Contenido"])
+def get_block_content(block_id: str, db: Session = Depends(get_db)):
+    """Lista todos los materiales de un bloque."""
     return db.query(Contenido).filter(
-        Contenido.id_sesion == session_id
+        Contenido.id_bloque == block_id
     ).order_by(Contenido.fecha_subida.desc()).all()
 
-@app.post("/api/v1/sessions/{session_id}/content", response_model=ContenidoOut, tags=["Contenido"], status_code=201)
+@app.post("/api/v1/blocks/{block_id}/content", response_model=ContenidoOut, tags=["Contenido"], status_code=201)
 def upload_content(
-    session_id: str,
+    block_id: str,
     content_in: ContenidoCreate,
     db: Session = Depends(get_db),
     current_user: Alumno = Depends(get_current_user)
 ):
-    """Sube un nuevo material a una sesión (profesor o coordinador)."""
+    """Sube un nuevo material a un bloque (profesor o coordinador)."""
     if current_user.rol not in ("profesor", "coordinador", "personal"):
         raise HTTPException(status_code=403, detail="Solo profesores y coordinadores pueden subir contenido.")
 
     profesor_id = getattr(current_user, 'id_profesor', None) or getattr(current_user, 'id_personal', None)
     nuevo = Contenido(
         id=str(uuid.uuid4()),
-        id_sesion=session_id,
+        id_bloque=block_id,
         id_profesor=profesor_id,
         titulo=content_in.titulo,
         descripcion=content_in.descripcion,

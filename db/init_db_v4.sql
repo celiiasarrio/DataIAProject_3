@@ -1,6 +1,7 @@
 -- Seeds de ejemplo para el esquema canónico definido en init_db_v2.sql.
 
 TRUNCATE TABLE "alumnos" CASCADE;
+TRUNCATE TABLE "bloques" CASCADE;
 TRUNCATE TABLE "sesiones" CASCADE;
 TRUNCATE TABLE "asistencia" CASCADE;
 TRUNCATE TABLE "configuracion_notificaciones" CASCADE;
@@ -14,9 +15,9 @@ TRUNCATE TABLE "personal_edem" CASCADE;
 TRUNCATE TABLE "profesores" CASCADE;
 TRUNCATE TABLE "rel_alumno_tarea" CASCADE;
 TRUNCATE TABLE "rel_alumnos_grupos" CASCADE;
-TRUNCATE TABLE "rel_sesiones_grupos" CASCADE;
+TRUNCATE TABLE "rel_bloques_grupos" CASCADE;
 TRUNCATE TABLE "rel_personal_grupos" CASCADE;
-TRUNCATE TABLE "rel_profesores_sesiones" CASCADE;
+TRUNCATE TABLE "rel_profesores_bloques" CASCADE;
 TRUNCATE TABLE "reservas" CASCADE;
 TRUNCATE TABLE "tareas" CASCADE;
 TRUNCATE TABLE "ubicaciones" CASCADE;
@@ -147,36 +148,91 @@ INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido", "correo", "contrasena"
 -- fabricate-flush
 
 
-INSERT INTO "sesiones" ("id_sesion", "nombre") VALUES
-('SES-001', 'Análisis de Riesgos Financieros'),
-('SES-002', 'Arquitectura de Datos'),
-('SES-003', 'Big Data Analytics'),
-('SES-004', 'Blockchain y Criptomonedas'),
-('SES-005', 'Cloud Computing'),
-('SES-006', 'Contabilidad Financiera'),
-('SES-007', 'Data Science para Finanzas'),
-('SES-008', 'Deep Learning'),
-('SES-009', 'DevOps y CI/CD'),
-('SES-010', 'Dirección Estratégica'),
-('SES-011', 'Economía Digital'),
-('SES-012', 'Economía de la Empresa'),
-('SES-013', 'Gestión de Proyectos Tecnológicos'),
-('SES-014', 'Gestión de Recursos Humanos'),
-('SES-015', 'Ingeniería de Procesos'),
-('SES-016', 'Innovación y Emprendimiento'),
-('SES-017', 'Machine Learning'),
-('SES-018', 'Marketing Digital'),
-('SES-019', 'Pagos Digitales'),
-('SES-020', 'Procesamiento de Datos en Tiempo Real'),
-('SES-021', 'Procesamiento de Lenguaje Natural'),
-('SES-022', 'Regulación Financiera Digital'),
-('SES-023', 'Sistemas de Información Empresarial'),
-('SES-024', 'Visión por Computador'),
-('SES-025', 'Ética en Inteligencia Artificial');
+INSERT INTO "bloques" ("id_bloque", "nombre") VALUES
+('BLQ-001', 'Análisis de Riesgos Financieros'),
+('BLQ-002', 'Arquitectura de Datos'),
+('BLQ-003', 'Big Data Analytics'),
+('BLQ-004', 'Blockchain y Criptomonedas'),
+('BLQ-005', 'Cloud Computing'),
+('BLQ-006', 'Contabilidad Financiera'),
+('BLQ-007', 'Data Science para Finanzas'),
+('BLQ-008', 'Deep Learning'),
+('BLQ-009', 'DevOps y CI/CD'),
+('BLQ-010', 'Dirección Estratégica'),
+('BLQ-011', 'Economía Digital'),
+('BLQ-012', 'Economía de la Empresa'),
+('BLQ-013', 'Gestión de Proyectos Tecnológicos'),
+('BLQ-014', 'Gestión de Recursos Humanos'),
+('BLQ-015', 'Ingeniería de Procesos'),
+('BLQ-016', 'Innovación y Emprendimiento'),
+('BLQ-017', 'Machine Learning'),
+('BLQ-018', 'Marketing Digital'),
+('BLQ-019', 'Pagos Digitales'),
+('BLQ-020', 'Procesamiento de Datos en Tiempo Real'),
+('BLQ-021', 'Procesamiento de Lenguaje Natural'),
+('BLQ-022', 'Regulación Financiera Digital'),
+('BLQ-023', 'Sistemas de Información Empresarial'),
+('BLQ-024', 'Visión por Computador'),
+('BLQ-025', 'Ética en Inteligencia Artificial');
 
 
 -- fabricate-flush
 
+
+INSERT INTO "sesiones" ("id_sesion", "id_bloque", "nombre", "fecha", "hora_inicio", "hora_fin", "aula") VALUES
+('SES-0001', 'BLQ-001', 'Clase 1', '2026-04-28', '09:00', '11:00', '201'),
+('SES-0002', 'BLQ-001', 'Clase 2', '2026-05-05', '09:00', '11:00', '201'),
+('SES-0003', 'BLQ-002', 'Clase 1', '2026-04-22', '09:00', '11:00', '102'),
+('SES-0004', 'BLQ-002', 'Clase 2', '2026-04-29', '09:00', '11:00', '102'),
+('SES-0005', 'BLQ-003', 'Clase 1', '2026-04-22', '11:00', '13:00', '102'),
+('SES-0006', 'BLQ-003', 'Clase 2', '2026-04-29', '11:00', '13:00', '102'),
+('SES-0007', 'BLQ-004', 'Clase 1', '2026-04-23', '09:00', '11:00', '203'),
+('SES-0008', 'BLQ-004', 'Clase 2', '2026-04-30', '09:00', '11:00', '203'),
+('SES-0009', 'BLQ-005', 'Clase 1', '2026-04-23', '11:00', '13:00', '103'),
+('SES-0010', 'BLQ-005', 'Clase 2', '2026-04-30', '11:00', '13:00', '103'),
+('SES-0011', 'BLQ-006', 'Clase 1', '2026-04-24', '09:00', '11:00', '101'),
+('SES-0012', 'BLQ-006', 'Clase 2', '2026-05-08', '09:00', '11:00', '101'),
+('SES-0013', 'BLQ-007', 'Clase 1', '2026-04-24', '11:00', '13:00', '201'),
+('SES-0014', 'BLQ-007', 'Clase 2', '2026-05-08', '11:00', '13:00', '201'),
+('SES-0015', 'BLQ-008', 'Clase 1', '2026-04-21', '09:00', '11:00', '202'),
+('SES-0016', 'BLQ-008', 'Clase 2', '2026-04-28', '09:00', '11:00', '202'),
+('SES-0017', 'BLQ-009', 'Clase 1', '2026-04-21', '11:00', '13:00', '103'),
+('SES-0018', 'BLQ-009', 'Clase 2', '2026-04-28', '11:00', '13:00', '103'),
+('SES-0019', 'BLQ-010', 'Clase 1', '2026-04-22', '15:00', '17:00', '101'),
+('SES-0020', 'BLQ-010', 'Clase 2', '2026-04-29', '15:00', '17:00', '101'),
+('SES-0021', 'BLQ-011', 'Clase 1', '2026-04-23', '15:00', '17:00', '202'),
+('SES-0022', 'BLQ-011', 'Clase 2', '2026-04-30', '15:00', '17:00', '202'),
+('SES-0023', 'BLQ-012', 'Clase 1', '2026-04-24', '15:00', '17:00', '101'),
+('SES-0024', 'BLQ-012', 'Clase 2', '2026-05-08', '15:00', '17:00', '101'),
+('SES-0025', 'BLQ-013', 'Clase 1', '2026-04-21', '15:00', '17:00', '203'),
+('SES-0026', 'BLQ-013', 'Clase 2', '2026-04-28', '15:00', '17:00', '203'),
+('SES-0027', 'BLQ-014', 'Clase 1', '2026-04-22', '09:00', '11:00', '103'),
+('SES-0028', 'BLQ-014', 'Clase 2', '2026-04-29', '09:00', '11:00', '103'),
+('SES-0029', 'BLQ-015', 'Clase 1', '2026-04-23', '09:00', '11:00', '201'),
+('SES-0030', 'BLQ-015', 'Clase 2', '2026-04-30', '09:00', '11:00', '201'),
+('SES-0031', 'BLQ-016', 'Clase 1', '2026-04-24', '09:00', '11:00', '102'),
+('SES-0032', 'BLQ-016', 'Clase 2', '2026-05-08', '09:00', '11:00', '102'),
+('SES-0033', 'BLQ-017', 'Clase 1', '2026-04-21', '09:00', '11:00', '202'),
+('SES-0034', 'BLQ-017', 'Clase 2', '2026-04-28', '09:00', '11:00', '202'),
+('SES-0035', 'BLQ-018', 'Clase 1', '2026-04-22', '11:00', '13:00', '101'),
+('SES-0036', 'BLQ-018', 'Clase 2', '2026-04-29', '11:00', '13:00', '101'),
+('SES-0037', 'BLQ-019', 'Clase 1', '2026-04-23', '11:00', '13:00', '203'),
+('SES-0038', 'BLQ-019', 'Clase 2', '2026-04-30', '11:00', '13:00', '203'),
+('SES-0039', 'BLQ-020', 'Clase 1', '2026-04-24', '11:00', '13:00', '102'),
+('SES-0040', 'BLQ-020', 'Clase 2', '2026-05-08', '11:00', '13:00', '102'),
+('SES-0041', 'BLQ-021', 'Clase 1', '2026-04-21', '11:00', '13:00', '201'),
+('SES-0042', 'BLQ-021', 'Clase 2', '2026-04-28', '11:00', '13:00', '201'),
+('SES-0043', 'BLQ-022', 'Clase 1', '2026-04-22', '15:00', '17:00', '203'),
+('SES-0044', 'BLQ-022', 'Clase 2', '2026-04-29', '15:00', '17:00', '203'),
+('SES-0045', 'BLQ-023', 'Clase 1', '2026-04-23', '15:00', '17:00', '103'),
+('SES-0046', 'BLQ-023', 'Clase 2', '2026-04-30', '15:00', '17:00', '103'),
+('SES-0047', 'BLQ-024', 'Clase 1', '2026-04-24', '15:00', '17:00', '202'),
+('SES-0048', 'BLQ-024', 'Clase 2', '2026-05-08', '15:00', '17:00', '202'),
+('SES-0049', 'BLQ-025', 'Clase 1', '2026-04-21', '15:00', '17:00', '101'),
+('SES-0050', 'BLQ-025', 'Clase 2', '2026-04-28', '15:00', '17:00', '101');
+
+
+-- fabricate-flush
 
 
 INSERT INTO "grupos" ("id_grupo", "nombre") VALUES
@@ -230,7 +286,6 @@ INSERT INTO "profesores" ("id_profesor", "nombre", "apellido", "correo", "url_fo
 
 
 -- fabricate-flush
-
 
 
 INSERT INTO "rel_alumnos_grupos" ("id_alumno", "id_grupo") VALUES
@@ -359,37 +414,37 @@ INSERT INTO "rel_alumnos_grupos" ("id_alumno", "id_grupo") VALUES
 -- fabricate-flush
 
 
-INSERT INTO "rel_sesiones_grupos" ("id_sesion", "id_grupo") VALUES
-('SES-005', 'GRP-003'),
-('SES-005', 'GRP-004'),
-('SES-003', 'GRP-003'),
-('SES-003', 'GRP-004'),
-('SES-002', 'GRP-003'),
-('SES-002', 'GRP-004'),
-('SES-009', 'GRP-003'),
-('SES-009', 'GRP-004'),
-('SES-020', 'GRP-003'),
-('SES-020', 'GRP-004'),
-('SES-017', 'GRP-006'),
-('SES-008', 'GRP-006'),
-('SES-021', 'GRP-006'),
-('SES-024', 'GRP-006'),
-('SES-025', 'GRP-006'),
-('SES-004', 'GRP-005'),
-('SES-022', 'GRP-005'),
-('SES-001', 'GRP-005'),
-('SES-019', 'GRP-005'),
-('SES-007', 'GRP-005'),
-('SES-006', 'GRP-001'),
-('SES-018', 'GRP-001'),
-('SES-010', 'GRP-001'),
-('SES-014', 'GRP-001'),
-('SES-012', 'GRP-001'),
-('SES-013', 'GRP-002'),
-('SES-015', 'GRP-002'),
-('SES-023', 'GRP-002'),
-('SES-016', 'GRP-002'),
-('SES-011', 'GRP-002');
+INSERT INTO "rel_bloques_grupos" ("id_bloque", "id_grupo") VALUES
+('BLQ-005', 'GRP-003'),
+('BLQ-005', 'GRP-004'),
+('BLQ-003', 'GRP-003'),
+('BLQ-003', 'GRP-004'),
+('BLQ-002', 'GRP-003'),
+('BLQ-002', 'GRP-004'),
+('BLQ-009', 'GRP-003'),
+('BLQ-009', 'GRP-004'),
+('BLQ-020', 'GRP-003'),
+('BLQ-020', 'GRP-004'),
+('BLQ-017', 'GRP-006'),
+('BLQ-008', 'GRP-006'),
+('BLQ-021', 'GRP-006'),
+('BLQ-024', 'GRP-006'),
+('BLQ-025', 'GRP-006'),
+('BLQ-004', 'GRP-005'),
+('BLQ-022', 'GRP-005'),
+('BLQ-001', 'GRP-005'),
+('BLQ-019', 'GRP-005'),
+('BLQ-007', 'GRP-005'),
+('BLQ-006', 'GRP-001'),
+('BLQ-018', 'GRP-001'),
+('BLQ-010', 'GRP-001'),
+('BLQ-014', 'GRP-001'),
+('BLQ-012', 'GRP-001'),
+('BLQ-013', 'GRP-002'),
+('BLQ-015', 'GRP-002'),
+('BLQ-023', 'GRP-002'),
+('BLQ-016', 'GRP-002'),
+('BLQ-011', 'GRP-002');
 
 
 -- fabricate-flush
@@ -407,37 +462,35 @@ INSERT INTO "rel_personal_grupos" ("id_personal", "id_grupo") VALUES
 -- fabricate-flush
 
 
-INSERT INTO "rel_profesores_sesiones" ("id_profesor", "id_sesion") VALUES
-('PROF-004', 'SES-005'),
-('PROF-018', 'SES-003'),
-('PROF-013', 'SES-002'),
-('PROF-002', 'SES-009'),
-('PROF-021', 'SES-020'),
-('PROF-014', 'SES-017'),
-('PROF-008', 'SES-008'),
-('PROF-009', 'SES-021'),
-('PROF-023', 'SES-024'),
-('PROF-005', 'SES-025'),
-('PROF-011', 'SES-004'),
-('PROF-012', 'SES-022'),
-('PROF-001', 'SES-001'),
-('PROF-024', 'SES-019'),
-('PROF-022', 'SES-007'),
-('PROF-020', 'SES-006'),
-('PROF-016', 'SES-018'),
-('PROF-015', 'SES-010'),
-('PROF-003', 'SES-014'),
-('PROF-025', 'SES-012'),
-('PROF-019', 'SES-013'),
-('PROF-017', 'SES-015'),
-('PROF-010', 'SES-023'),
-('PROF-006', 'SES-016'),
-('PROF-007', 'SES-011');
+INSERT INTO "rel_profesores_bloques" ("id_profesor", "id_bloque") VALUES
+('PROF-004', 'BLQ-005'),
+('PROF-018', 'BLQ-003'),
+('PROF-013', 'BLQ-002'),
+('PROF-002', 'BLQ-009'),
+('PROF-021', 'BLQ-020'),
+('PROF-014', 'BLQ-017'),
+('PROF-008', 'BLQ-008'),
+('PROF-009', 'BLQ-021'),
+('PROF-023', 'BLQ-024'),
+('PROF-005', 'BLQ-025'),
+('PROF-011', 'BLQ-004'),
+('PROF-012', 'BLQ-022'),
+('PROF-001', 'BLQ-001'),
+('PROF-024', 'BLQ-019'),
+('PROF-022', 'BLQ-007'),
+('PROF-020', 'BLQ-006'),
+('PROF-016', 'BLQ-018'),
+('PROF-015', 'BLQ-010'),
+('PROF-003', 'BLQ-014'),
+('PROF-025', 'BLQ-012'),
+('PROF-019', 'BLQ-013'),
+('PROF-017', 'BLQ-015'),
+('PROF-010', 'BLQ-023'),
+('PROF-006', 'BLQ-016'),
+('PROF-007', 'BLQ-011');
 
 
 -- fabricate-flush
-
-
 
 
 INSERT INTO "ubicaciones" ("id_ubicacion", "descripcion", "planta", "aula") VALUES

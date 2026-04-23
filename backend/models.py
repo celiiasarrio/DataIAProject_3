@@ -30,10 +30,22 @@ class Alumno(Base):
     contrasena = Column(String)
     url_foto = Column(String)
 
+class Bloque(Base):
+    """Concepto amplio: módulo/materia que agrupa sesiones, contenido, tareas y profesores."""
+    __tablename__ = 'bloques'
+    id_bloque = Column(String, primary_key=True, index=True)
+    nombre = Column(String)
+
 class Sesion(Base):
+    """Encuentro específico: clase concreta con fecha, hora y aula."""
     __tablename__ = 'sesiones'
     id_sesion = Column(String, primary_key=True, index=True)
+    id_bloque = Column(String, ForeignKey('bloques.id_bloque'))
     nombre = Column(String)
+    fecha = Column(Date, nullable=True)
+    hora_inicio = Column(String, nullable=True)
+    hora_fin = Column(String, nullable=True)
+    aula = Column(String, nullable=True)
 
 class Profesor(Base):
     __tablename__ = 'profesores'
@@ -47,7 +59,7 @@ class Profesor(Base):
 class Tarea(Base):
     __tablename__ = 'tareas'
     id_tarea = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'))
+    id_bloque = Column(String, ForeignKey('bloques.id_bloque'))
     nombre = Column(String)
     descripcion = Column(String)
 
@@ -56,7 +68,6 @@ class Asistencia(Base):
     __table_args__ = (
         UniqueConstraint('id_alumno', 'id_sesion', 'fecha', name='uq_asistencia_alumno_sesion_fecha'),
     )
-
     id_asistencia = Column(Integer, primary_key=True, autoincrement=True, index=True)
     id_alumno = Column(String, ForeignKey('alumnos.id_alumno'))
     id_sesion = Column(String, ForeignKey('sesiones.id_sesion'))
@@ -75,21 +86,21 @@ class RelAlumnosGrupos(Base):
     id_alumno = Column(String, ForeignKey('alumnos.id_alumno'), primary_key=True)
     id_grupo = Column(String, ForeignKey('grupos.id_grupo'), primary_key=True)
 
-class RelSesionesGrupos(Base):
-    __tablename__ = 'rel_sesiones_grupos'
-    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'), primary_key=True)
+class RelBloquesGrupos(Base):
+    __tablename__ = 'rel_bloques_grupos'
+    id_bloque = Column(String, ForeignKey('bloques.id_bloque'), primary_key=True)
     id_grupo = Column(String, ForeignKey('grupos.id_grupo'), primary_key=True)
 
-class RelProfesoresSesiones(Base):
-    __tablename__ = 'rel_profesores_sesiones'
+class RelProfesoresBloques(Base):
+    __tablename__ = 'rel_profesores_bloques'
     id_profesor = Column(String, ForeignKey('profesores.id_profesor'), primary_key=True)
-    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'), primary_key=True)
+    id_bloque = Column(String, ForeignKey('bloques.id_bloque'), primary_key=True)
 
 class RelAlumnoTarea(Base):
     __tablename__ = 'rel_alumno_tarea'
     id_alumno = Column(String, ForeignKey('alumnos.id_alumno'), primary_key=True)
     id_tarea = Column(Integer, ForeignKey('tareas.id_tarea'), primary_key=True)
-    nota = Column(Float) # Nota añadida a la tabla intermedia como indica el diagrama
+    nota = Column(Float)
 
 # --- MODELOS ADICIONALES (Calendario, Tutorías, Notificaciones, Correos) ---
 
@@ -98,7 +109,7 @@ class Evento(Base):
     id = Column(String, primary_key=True, index=True)
     tipo = Column(String)  # 'class', 'exam', 'delivery'
     titulo = Column(String)
-    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'))
+    id_bloque = Column(String, ForeignKey('bloques.id_bloque'))
     aula = Column(String)
     id_profesor = Column(String, ForeignKey('profesores.id_profesor'))
     fecha_inicio = Column(DateTime)
@@ -109,7 +120,7 @@ class FranjaTutoria(Base):
     __tablename__ = 'franja_tutoria'
     id = Column(String, primary_key=True, index=True)
     id_profesor = Column(String, ForeignKey('profesores.id_profesor'))
-    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'), nullable=True)
+    id_bloque = Column(String, ForeignKey('bloques.id_bloque'), nullable=True)
     dia_semana = Column(Integer)  # 0=Lunes, 1=Martes, etc.
     hora_inicio = Column(String)  # HH:MM
     hora_fin = Column(String)     # HH:MM
@@ -147,8 +158,8 @@ class ConfiguracionNotificacion(Base):
 class Correo(Base):
     __tablename__ = 'correos'
     id = Column(String, primary_key=True, index=True)
-    id_remitente = Column(String)  # Puede ser cualquier usuario
-    id_destinatario = Column(String)  # Puede ser cualquier usuario
+    id_remitente = Column(String)
+    id_destinatario = Column(String)
     asunto = Column(String)
     cuerpo = Column(String)
     leido = Column(Boolean, default=False)
@@ -157,7 +168,7 @@ class Correo(Base):
 class Contenido(Base):
     __tablename__ = 'contenidos'
     id = Column(String, primary_key=True, index=True)
-    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'))
+    id_bloque = Column(String, ForeignKey('bloques.id_bloque'))
     id_profesor = Column(String, ForeignKey('profesores.id_profesor'))
     titulo = Column(String)
     descripcion = Column(String, nullable=True)
