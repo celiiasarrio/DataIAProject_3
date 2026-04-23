@@ -1,7 +1,14 @@
+-- Seeds de ejemplo para el esquema canónico definido en init_db_v2.sql.
+
 TRUNCATE TABLE "alumnos" CASCADE;
 TRUNCATE TABLE "asignaturas" CASCADE;
 TRUNCATE TABLE "asistencia" CASCADE;
+TRUNCATE TABLE "configuracion_notificaciones" CASCADE;
+TRUNCATE TABLE "correos" CASCADE;
+TRUNCATE TABLE "eventos" CASCADE;
+TRUNCATE TABLE "franja_tutoria" CASCADE;
 TRUNCATE TABLE "grupos" CASCADE;
+TRUNCATE TABLE "notificaciones" CASCADE;
 TRUNCATE TABLE "personal_edem" CASCADE;
 TRUNCATE TABLE "profesores" CASCADE;
 TRUNCATE TABLE "rel_alumno_tarea" CASCADE;
@@ -9,6 +16,7 @@ TRUNCATE TABLE "rel_alumnos_grupos" CASCADE;
 TRUNCATE TABLE "rel_asignaturas_grupos" CASCADE;
 TRUNCATE TABLE "rel_personal_grupos" CASCADE;
 TRUNCATE TABLE "rel_profesores_asignaturas" CASCADE;
+TRUNCATE TABLE "reservas" CASCADE;
 TRUNCATE TABLE "sesiones" CASCADE;
 TRUNCATE TABLE "tareas" CASCADE;
 TRUNCATE TABLE "ubicaciones" CASCADE;
