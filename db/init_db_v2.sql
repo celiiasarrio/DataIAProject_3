@@ -157,3 +157,14 @@ CREATE TABLE IF NOT EXISTS correos (
     leido BOOLEAN DEFAULT FALSE,
     fecha_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS contenidos (
+    id VARCHAR PRIMARY KEY,
+    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
+    id_profesor VARCHAR REFERENCES profesores(id_profesor),
+    titulo VARCHAR,
+    descripcion TEXT,
+    tipo VARCHAR,
+    url TEXT,
+    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

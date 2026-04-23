@@ -5,6 +5,7 @@ TRUNCATE TABLE "sesiones" CASCADE;
 TRUNCATE TABLE "asistencia" CASCADE;
 TRUNCATE TABLE "configuracion_notificaciones" CASCADE;
 TRUNCATE TABLE "correos" CASCADE;
+TRUNCATE TABLE "contenidos" CASCADE;
 TRUNCATE TABLE "eventos" CASCADE;
 TRUNCATE TABLE "franja_tutoria" CASCADE;
 TRUNCATE TABLE "grupos" CASCADE;
