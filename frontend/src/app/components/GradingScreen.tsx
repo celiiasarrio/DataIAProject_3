@@ -11,7 +11,7 @@ const mockStudents = [
   { id: '106', name: 'Paco Pérez' },
 ];
 
-const subjectNames: Record<string, string> = {
+const sessionNames: Record<string, string> = {
   'bda-301': 'Big Data & Analytics',
   'mkt-201': 'Marketing Digital',
   'fin-302': 'Finanzas Corporativas',
@@ -24,10 +24,10 @@ const subjectNames: Record<string, string> = {
 
 export function GradingScreen() {
   const navigate = useNavigate();
-  const { subjectId } = useParams<{ subjectId: string }>();
+  const { sessionId } = useParams<{ sessionId: string }>();
   const [grades, setGrades] = useState<Record<string, string>>({});
 
-  const subjectName = subjectId ? subjectNames[subjectId] || 'Asignatura' : 'Asignatura';
+  const sessionName = sessionId ? sessionNames[sessionId] || 'Sesión' : 'Sesión';
 
   const handleGradeChange = (studentId: string, value: string) => {
     setGrades(prev => ({ ...prev, [studentId]: value }));
@@ -43,7 +43,7 @@ export function GradingScreen() {
           </button>
           <div>
             <h1 className="text-white text-xl" style={{ fontWeight: 600 }}>Calificar</h1>
-            <p className="text-white text-xs opacity-80">{subjectName}</p>
+            <p className="text-white text-xs opacity-80">{sessionName}</p>
           </div>
         </div>
       </div>

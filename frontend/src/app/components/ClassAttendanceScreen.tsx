@@ -12,8 +12,8 @@ const mockStudents = [
   { id: '106', name: 'Paco Pérez' },
 ];
 
-// Re-using subject names from other screens
-const subjectNames: Record<string, string> = {
+// Re-using session names from other screens
+const sessionNames: Record<string, string> = {
   'bda-301': 'Big Data & Analytics',
   'mkt-201': 'Marketing Digital',
   'fin-302': 'Finanzas Corporativas',
@@ -22,11 +22,11 @@ const subjectNames: Record<string, string> = {
 
 export function ClassAttendanceScreen() {
   const navigate = useNavigate();
-  const { classId } = useParams<{ classId: string }>();
+  const { sessionId } = useParams<{ sessionId: string }>();
   // State to hold attendance. Key is studentId, value is boolean (present or not)
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
 
-  const subjectName = classId ? subjectNames[classId] || 'Asignatura' : 'Asignatura';
+  const sessionName = sessionId ? sessionNames[sessionId] || 'Sesión' : 'Sesión';
 
   const handleAttendanceChange = (studentId: string) => {
     setAttendance(prev => ({ ...prev, [studentId]: !prev[studentId] }));
@@ -52,7 +52,7 @@ export function ClassAttendanceScreen() {
           </button>
           <div>
             <h1 className="text-white text-xl" style={{ fontWeight: 600 }}>Pasar Asistencia</h1>
-            <p className="text-white text-xs opacity-80">{subjectName}</p>
+            <p className="text-white text-xs opacity-80">{sessionName}</p>
           </div>
         </div>
       </div>

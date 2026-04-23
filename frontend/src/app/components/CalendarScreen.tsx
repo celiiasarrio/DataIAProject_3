@@ -7,9 +7,9 @@ type EventType = 'clase' | 'entrega' | 'examen';
 
 interface CalEvent {
   id: number;
-  subjectCode: string;
+  sessionCode: string;
   type: EventType;
-  subject: string;
+  sessionTitle: string;
   day: number; // 0=LUN, 1=MAR, 2=MIÉ, 3=JUE, 4=VIE, 5=SÁB
   startHour: number;
   endHour: number;
@@ -35,23 +35,23 @@ const weekDays = [
 
 const allEvents: CalEvent[] = [
   // Lunes 23
-  { id: 1,  type: 'clase',   subject: 'Big Data & Analytics', subjectCode: 'bda-301', day: 0, startHour: 10,   endHour: 12   },
-  { id: 2,  type: 'clase',   subject: 'Análisis de Datos',    subjectCode: 'ada-303', day: 0, startHour: 16,   endHour: 18   },
+  { id: 1,  type: 'clase',   sessionTitle: 'Big Data & Analytics', sessionCode: 'bda-301', day: 0, startHour: 10,   endHour: 12   },
+  { id: 2,  type: 'clase',   sessionTitle: 'Análisis de Datos',    sessionCode: 'ada-303', day: 0, startHour: 16,   endHour: 18   },
   // Martes 24
-  { id: 3,  type: 'clase',   subject: 'Marketing Digital',    subjectCode: 'mkt-201', day: 1, startHour: 9,    endHour: 11   },
-  { id: 4,  type: 'clase',   subject: 'Finanzas Corporativas',subjectCode: 'fin-302', day: 1, startHour: 14,   endHour: 16   },
+  { id: 3,  type: 'clase',   sessionTitle: 'Marketing Digital',    sessionCode: 'mkt-201', day: 1, startHour: 9,    endHour: 11   },
+  { id: 4,  type: 'clase',   sessionTitle: 'Finanzas Corporativas',sessionCode: 'fin-302', day: 1, startHour: 14,   endHour: 16   },
   // Miércoles 25 (hoy)
-  { id: 5,  type: 'clase',   subject: 'Estrategia Empresarial',subjectCode: 'est-401', day: 2, startHour: 10,   endHour: 12   },
-  { id: 6,  type: 'entrega', subject: 'Entrega: Proy. Big Data', subjectCode: 'bda-301', day: 2, startHour: 13, endHour: 13.5 },
+  { id: 5,  type: 'clase',   sessionTitle: 'Estrategia Empresarial',sessionCode: 'est-401', day: 2, startHour: 10,   endHour: 12   },
+  { id: 6,  type: 'entrega', sessionTitle: 'Entrega: Proy. Big Data', sessionCode: 'bda-301', day: 2, startHour: 13, endHour: 13.5 },
   // Jueves 26
-  { id: 7,  type: 'clase',   subject: 'Big Data & Analytics', subjectCode: 'bda-301', day: 3, startHour: 9,    endHour: 11   },
-  { id: 8,  type: 'examen',  subject: 'Examen Finanzas',      subjectCode: 'fin-302', day: 3, startHour: 12,   endHour: 14   },
-  { id: 9,  type: 'clase',   subject: 'Coaching & Liderazgo', subjectCode: 'coa-201', day: 3, startHour: 16,   endHour: 18   },
+  { id: 7,  type: 'clase',   sessionTitle: 'Big Data & Analytics', sessionCode: 'bda-301', day: 3, startHour: 9,    endHour: 11   },
+  { id: 8,  type: 'examen',  sessionTitle: 'Examen Finanzas',      sessionCode: 'fin-302', day: 3, startHour: 12,   endHour: 14   },
+  { id: 9,  type: 'clase',   sessionTitle: 'Coaching & Liderazgo', sessionCode: 'coa-201', day: 3, startHour: 16,   endHour: 18   },
   // Viernes 27
-  { id: 10, type: 'clase',   subject: 'Marketing Digital',    subjectCode: 'mkt-201', day: 4, startHour: 10,   endHour: 12   },
-  { id: 11, type: 'entrega', subject: 'Entrega: Informe Mkt', subjectCode: 'mkt-201', day: 4, startHour: 13,   endHour: 13.5 },
+  { id: 10, type: 'clase',   sessionTitle: 'Marketing Digital',    sessionCode: 'mkt-201', day: 4, startHour: 10,   endHour: 12   },
+  { id: 11, type: 'entrega', sessionTitle: 'Entrega: Informe Mkt', sessionCode: 'mkt-201', day: 4, startHour: 13,   endHour: 13.5 },
   // Sábado 28
-  { id: 12, type: 'clase',   subject: 'Finanzas Corporativas',subjectCode: 'fin-302', day: 5, startHour: 10,   endHour: 12   },
+  { id: 12, type: 'clase',   sessionTitle: 'Finanzas Corporativas',sessionCode: 'fin-302', day: 5, startHour: 10,   endHour: 12   },
 ];
 
 // March 2026: March 1 = Sunday → Monday-first grid: 6 leading nulls
@@ -120,7 +120,7 @@ export function CalendarScreen() {
 
   const [events, setEvents] = useState<CalEvent[]>(allEvents);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newEvent, setNewEvent] = useState<Partial<CalEvent>>({ type: 'examen', subject: '', day: 2, startHour: 10, endHour: 12 });
+  const [newEvent, setNewEvent] = useState<Partial<CalEvent>>({ type: 'examen', sessionTitle: '', day: 2, startHour: 10, endHour: 12 });
   const [selectedEvent, setSelectedEvent] = useState<CalEvent | null>(null);
 
   useEffect(() => {
@@ -274,7 +274,7 @@ export function CalendarScreen() {
                 return (
                   <div
                     key={i}
-                    onClick={() => isStudent && setSelectedEvent({ id: 999+i, subjectCode: '', type: item.type, subject: item.text, day: -1, startHour: 0, endHour: 0 })}
+                    onClick={() => isStudent && setSelectedEvent({ id: 999+i, sessionCode: '', type: item.type, sessionTitle: item.text, day: -1, startHour: 0, endHour: 0 })}
                     className={`flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2 ${isStudent ? 'cursor-pointer hover:bg-gray-100 transition-colors' : ''}`}
                   >
                     <div className={`p-1.5 rounded-lg ${EVENT_STYLES[item.type].bg}`}>
@@ -398,7 +398,7 @@ export function CalendarScreen() {
                         key={event.id}
                         onClick={() => {
                           if (isClickableForCoordinator) {
-                            navigate(`/class/${event.subjectCode}/attendance`);
+                            navigate(`/sessions/${event.sessionCode}/attendance`);
                           } else if (isStudent) {
                             setSelectedEvent(event);
                           }
@@ -421,7 +421,7 @@ export function CalendarScreen() {
                               className="text-xs truncate leading-tight"
                               style={{ fontWeight: 700 }}
                             >
-                              {event.subject}
+                              {event.sessionTitle}
                             </p>
                             {height > 32 && (
                               <p className="text-xs opacity-80 leading-tight">
@@ -471,11 +471,11 @@ export function CalendarScreen() {
               </div>
 
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Asignatura / Título</label>
+                <label className="block text-xs text-gray-500 mb-1">Sesión / Título</label>
                 <input
                   type="text"
-                  value={newEvent.subject}
-                  onChange={e => setNewEvent({...newEvent, subject: e.target.value})}
+                  value={newEvent.sessionTitle}
+                  onChange={e => setNewEvent({...newEvent, sessionTitle: e.target.value})}
                   placeholder="Ej. Examen de Finanzas"
                   className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:border-[#008899]"
                 />
@@ -531,10 +531,10 @@ export function CalendarScreen() {
               </button>
               <button
                 onClick={() => {
-                  if (!newEvent.subject) return;
+                  if (!newEvent.sessionTitle) return;
                   setEvents([...events, { id: Date.now(), ...newEvent } as CalEvent]);
                   setIsAddModalOpen(false);
-                  setNewEvent({ type: 'examen', subject: '', day: 2, startHour: 10, endHour: 12 });
+                  setNewEvent({ type: 'examen', sessionTitle: '', day: 2, startHour: 10, endHour: 12 });
                 }}
                 className="flex-1 py-2 rounded-lg bg-[#008899] text-white text-sm font-semibold hover:bg-[#007788]"
               >
@@ -568,7 +568,7 @@ export function CalendarScreen() {
               </span>
             </div>
             
-            <h3 className="text-xl font-bold text-[#008899] mb-4 leading-tight">{selectedEvent.subject}</h3>
+            <h3 className="text-xl font-bold text-[#008899] mb-4 leading-tight">{selectedEvent.sessionTitle}</h3>
             
             <div className="bg-gray-50 rounded-xl p-4 space-y-3 mb-6">
               <div className="flex justify-between items-center border-b border-gray-100 pb-2">

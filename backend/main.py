@@ -14,9 +14,9 @@ from typing import List
 
 # Importamos todos los modelos de la BBDD desde models.py
 from models import (
-    Alumno, Profesor, PersonalEdem, Base, Grupo, Asignatura, Tarea, 
-    Asistencia, RelPersonalGrupos, RelAlumnosGrupos, RelAsignaturasGrupos,
-    RelProfesoresAsignaturas, RelAlumnoTarea, Evento, FranjaTutoria, 
+    Alumno, Profesor, PersonalEdem, Base, Grupo, Sesion, Tarea,
+    Asistencia, RelPersonalGrupos, RelAlumnosGrupos, RelSesionesGrupos,
+    RelProfesoresSesiones, RelAlumnoTarea, Evento, FranjaTutoria,
     Reserva, Notificacion, ConfiguracionNotificacion, Correo
 )
 from config import settings
@@ -86,8 +86,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
 SCHEMA_PATCHES = (
     "ALTER TABLE profesores ADD COLUMN IF NOT EXISTS contrasena VARCHAR",
     "ALTER TABLE personal_edem ADD COLUMN IF NOT EXISTS contrasena VARCHAR",
-    "ALTER TABLE asistencia ADD COLUMN IF NOT EXISTS id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura)",
+    "ALTER TABLE tareas ADD COLUMN IF NOT EXISTS id_sesion VARCHAR REFERENCES sesiones(id_sesion)",
+    "ALTER TABLE asistencia ADD COLUMN IF NOT EXISTS id_sesion VARCHAR REFERENCES sesiones(id_sesion)",
     "ALTER TABLE asistencia ADD COLUMN IF NOT EXISTS fecha DATE",
+    "ALTER TABLE eventos ADD COLUMN IF NOT EXISTS id_sesion VARCHAR REFERENCES sesiones(id_sesion)",
+    "ALTER TABLE franja_tutoria ADD COLUMN IF NOT EXISTS id_sesion VARCHAR REFERENCES sesiones(id_sesion)",
 )
 
 
@@ -276,7 +279,7 @@ def get_user_profile(user_id: str, db: Session = Depends(get_db)):
 class EventBase(BaseModel):
     tipo: str # 'class', 'exam', 'delivery'
     titulo: str
-    id_asignatura: str
+    id_sesion: str
     aula: Optional[str] = None
     id_profesor: Optional[str] = None
     fecha_inicio: datetime
@@ -289,7 +292,7 @@ class EventCreate(EventBase):
 class EventUpdate(BaseModel):
     tipo: Optional[str] = None
     titulo: Optional[str] = None
-    id_asignatura: Optional[str] = None
+    id_sesion: Optional[str] = None
     aula: Optional[str] = None
     id_profesor: Optional[str] = None
     fecha_inicio: Optional[datetime] = None
@@ -327,7 +330,7 @@ def create_event(
         id=str(uuid.uuid4()), # Generamos un ID único automáticamente
         tipo=event_in.tipo,
         titulo=event_in.titulo,
-        id_asignatura=event_in.id_asignatura,
+        id_sesion=event_in.id_sesion,
         aula=event_in.aula,
         id_profesor=event_in.id_profesor,
         fecha_inicio=event_in.fecha_inicio,
@@ -385,17 +388,17 @@ def delete_event(
     return
 
 # ==========================================
-# 3. ASIGNATURAS
+# 3. SESIONES
 # ==========================================
 
-class SubjectBase(BaseModel):
-    id_asignatura: str
+class SessionBase(BaseModel):
+    id_sesion: str
     nombre: str
 
-class SubjectCreate(SubjectBase):
+class SessionCreate(SessionBase):
     pass
 
-class SubjectOut(SubjectBase):
+class SessionOut(SessionBase):
     class Config:
         orm_mode = True
 
@@ -421,61 +424,61 @@ class GradeUpdate(BaseModel):
 class GradeOut(BaseModel):
     id_tarea: int
     nombre_tarea: str
-    id_asignatura: str
+    id_sesion: str
     nota: float
 
 
-@app.get("/api/v1/subjects", response_model=List[SubjectOut], tags=["Asignaturas"])
-def list_subjects(db: Session = Depends(get_db)):
-    """Lista todas las asignaturas."""
-    return db.query(Asignatura).all()
+@app.get("/api/v1/sessions", response_model=List[SessionOut], tags=["Sesiones"])
+def list_sessions(db: Session = Depends(get_db)):
+    """Lista todas las sesiones."""
+    return db.query(Sesion).all()
 
-@app.post("/api/v1/subjects", response_model=SubjectOut, tags=["Asignaturas"], status_code=201)
-def create_subject(subject_in: SubjectCreate, db: Session = Depends(get_db)):
-    """Crea una nueva asignatura (Endpoint añadido a petición)."""
-    db_subject = db.query(Asignatura).filter(Asignatura.id_asignatura == subject_in.id_asignatura).first()
-    if db_subject:
-        raise HTTPException(status_code=400, detail="El ID de la asignatura ya existe")
-        
-    nueva_asignatura = Asignatura(
-        id_asignatura=subject_in.id_asignatura,
-        nombre=subject_in.nombre
+@app.post("/api/v1/sessions", response_model=SessionOut, tags=["Sesiones"], status_code=201)
+def create_session(session_in: SessionCreate, db: Session = Depends(get_db)):
+    """Crea una nueva sesión."""
+    db_session = db.query(Sesion).filter(Sesion.id_sesion == session_in.id_sesion).first()
+    if db_session:
+        raise HTTPException(status_code=400, detail="El ID de la sesión ya existe")
+
+    nueva_sesion = Sesion(
+        id_sesion=session_in.id_sesion,
+        nombre=session_in.nombre
     )
-    db.add(nueva_asignatura)
+    db.add(nueva_sesion)
     db.commit()
-    db.refresh(nueva_asignatura)
-    return nueva_asignatura
+    db.refresh(nueva_sesion)
+    return nueva_sesion
 
-@app.get("/api/v1/subjects/{subject_id}", response_model=SubjectOut, tags=["Asignaturas"])
-def get_subject_detail(subject_id: str, db: Session = Depends(get_db)):
-    """Obtiene el detalle de una asignatura."""
-    asignatura = db.query(Asignatura).filter(Asignatura.id_asignatura == subject_id).first()
-    if not asignatura:
-        raise HTTPException(status_code=404, detail="Asignatura no encontrada")
-    return asignatura
+@app.get("/api/v1/sessions/{session_id}", response_model=SessionOut, tags=["Sesiones"])
+def get_session_detail(session_id: str, db: Session = Depends(get_db)):
+    """Obtiene el detalle de una sesión."""
+    sesion = db.query(Sesion).filter(Sesion.id_sesion == session_id).first()
+    if not sesion:
+        raise HTTPException(status_code=404, detail="Sesión no encontrada")
+    return sesion
 
-@app.delete("/api/v1/subjects/{subject_id}", status_code=204, tags=["Asignaturas"])
-def delete_subject(subject_id: str, db: Session = Depends(get_db)):
-    """Elimina una asignatura (Endpoint añadido a petición)."""
-    asignatura = db.query(Asignatura).filter(Asignatura.id_asignatura == subject_id).first()
-    if not asignatura:
-        raise HTTPException(status_code=404, detail="Asignatura no encontrada")
-    
-    db.delete(asignatura)
+@app.delete("/api/v1/sessions/{session_id}", status_code=204, tags=["Sesiones"])
+def delete_session(session_id: str, db: Session = Depends(get_db)):
+    """Elimina una sesión."""
+    sesion = db.query(Sesion).filter(Sesion.id_sesion == session_id).first()
+    if not sesion:
+        raise HTTPException(status_code=404, detail="Sesión no encontrada")
+
+    db.delete(sesion)
     db.commit()
     return
 
-@app.get("/api/v1/subjects/{subject_id}/students", response_model=List[AlumnoOut], tags=["Asignaturas"])
-def get_enrolled_students(subject_id: str, db: Session = Depends(get_db)):
+@app.get("/api/v1/sessions/{session_id}/students", response_model=List[AlumnoOut], tags=["Sesiones"])
+def get_session_students(session_id: str, db: Session = Depends(get_db)):
     """Obtiene los alumnos matriculados cruzando con los grupos."""
     alumnos = db.query(Alumno).join(
         RelAlumnosGrupos, Alumno.id_alumno == RelAlumnosGrupos.id_alumno
     ).join(
         Grupo, RelAlumnosGrupos.id_grupo == Grupo.id_grupo
     ).join(
-        RelAsignaturasGrupos, Grupo.id_grupo == RelAsignaturasGrupos.id_grupo
+        RelSesionesGrupos, Grupo.id_grupo == RelSesionesGrupos.id_grupo
     ).filter(
-        RelAsignaturasGrupos.id_asignatura == subject_id
+        RelSesionesGrupos.id_sesion == session_id
     ).all()
     
     return alumnos
@@ -505,32 +508,32 @@ def get_my_grades(
         {
             "id_tarea": tarea.id_tarea,
             "nombre_tarea": tarea.nombre,
-            "id_asignatura": tarea.id_asignatura,
+            "id_sesion": tarea.id_sesion,
             "nota": rel.nota
         }
         for rel, tarea in resultados
     ]
 
-@app.get("/api/v1/grades/me/subjects/{subject_id}", response_model=List[GradeOut], tags=["Notas"])
-def get_my_grades_by_subject(
-    subject_id: str, 
+@app.get("/api/v1/grades/me/sessions/{session_id}", response_model=List[GradeOut], tags=["Notas"])
+def get_my_grades_by_session(
+    session_id: str,
     db: Session = Depends(get_db), 
     current_user: Alumno = Depends(get_current_user)
 ):
-    """Obtiene las notas del alumno filtradas por asignatura."""
+    """Obtiene las notas del alumno filtradas por sesión."""
     if current_user.rol != 'alumno': raise HTTPException(status_code=403, detail="Solo los alumnos tienen notas.")
     resultados = db.query(RelAlumnoTarea, Tarea).join(
         Tarea, RelAlumnoTarea.id_tarea == Tarea.id_tarea
     ).filter(
         RelAlumnoTarea.id_alumno == current_user.id_alumno,
-        Tarea.id_asignatura == subject_id
+        Tarea.id_sesion == session_id
     ).all()
     
     return [
         {
             "id_tarea": tarea.id_tarea,
             "nombre_tarea": tarea.nombre,
-            "id_asignatura": tarea.id_asignatura,
+            "id_sesion": tarea.id_sesion,
             "nota": rel.nota
         }
         for rel, tarea in resultados
@@ -587,7 +590,7 @@ def update_grade(
 # ==========================================
 class AttendanceBase(BaseModel):
     id_alumno: str
-    id_asignatura: str
+    id_sesion: str
     fecha: date
     presente: bool
 
@@ -647,10 +650,10 @@ def mark_attendance(
     db: Session = Depends(get_db)
 ):
     """Registra la asistencia de un alumno a una clase específica."""
-    # Verificamos si ya se pasó lista para ese alumno, en esa asignatura, ese día
+    # Verificamos si ya se pasó lista para ese alumno, en esa sesión, ese día
     registro_existente = db.query(Asistencia).filter(
         Asistencia.id_alumno == attendance_in.id_alumno,
-        Asistencia.id_asignatura == attendance_in.id_asignatura,
+        Asistencia.id_sesion == attendance_in.id_sesion,
         Asistencia.fecha == attendance_in.fecha
     ).first()
     
@@ -664,7 +667,7 @@ def mark_attendance(
     # Si no existe, creamos un registro nuevo
     nuevo_registro = Asistencia(
         id_alumno=attendance_in.id_alumno,
-        id_asignatura=attendance_in.id_asignatura,
+        id_sesion=attendance_in.id_sesion,
         fecha=attendance_in.fecha,
         presente=attendance_in.presente
     )
@@ -673,13 +676,13 @@ def mark_attendance(
     db.refresh(nuevo_registro)
     return nuevo_registro
 
-@app.get("/api/v1/attendance/subjects/{subject_id}", response_model=List[AttendanceOut], tags=["Asistencia"])
-def get_class_attendance(
-    subject_id: str, 
+@app.get("/api/v1/attendance/sessions/{session_id}", response_model=List[AttendanceOut], tags=["Asistencia"])
+def get_session_attendance(
+    session_id: str,
     db: Session = Depends(get_db)
 ):
-    """Obtiene los registros de asistencia de todos los alumnos de una asignatura."""
-    registros = db.query(Asistencia).filter(Asistencia.id_asignatura == subject_id).all()
+    """Obtiene los registros de asistencia de todos los alumnos de una sesión."""
+    registros = db.query(Asistencia).filter(Asistencia.id_sesion == session_id).all()
     return registros
 
 # ==========================================
@@ -690,7 +693,7 @@ def get_class_attendance(
 # ==========================================
 class TutoringSlotBase(BaseModel):
     id_profesor: str
-    id_asignatura: Optional[str] = None
+    id_sesion: Optional[str] = None
     dia_semana: int
     hora_inicio: str
     hora_fin: str
@@ -812,7 +815,7 @@ def create_tutoring_slot(
     nueva_franja = FranjaTutoria(
         id=str(uuid.uuid4()),
         id_profesor=slot_in.id_profesor,
-        id_asignatura=slot_in.id_asignatura,
+        id_sesion=slot_in.id_sesion,
         dia_semana=slot_in.dia_semana,
         hora_inicio=slot_in.hora_inicio,
         hora_fin=slot_in.hora_fin,

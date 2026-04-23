@@ -3,8 +3,8 @@ import { ChevronLeft, CheckCircle, XCircle, Clock, Users } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { getMyAttendance, type AttendanceRecord } from '../api/client';
 
-interface SubjectAttendance {
-  id_asignatura: string;
+interface SessionAttendance {
+  id_sesion: string;
   attended: number;
   total: number;
 }
@@ -40,7 +40,7 @@ function RingChart({ pct, size = 56 }: { pct: number; size?: number }) {
 
 export function AttendanceScreen() {
   const navigate = useNavigate();
-  const [records, setRecords] = useState<SubjectAttendance[]>([]);
+  const [records, setRecords] = useState<SessionAttendance[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,13 +48,13 @@ export function AttendanceScreen() {
       .then((data: AttendanceRecord[]) => {
         const map = new Map<string, { attended: number; total: number }>();
         for (const r of data) {
-          const entry = map.get(r.id_asignatura) || { attended: 0, total: 0 };
+          const entry = map.get(r.id_sesion) || { attended: 0, total: 0 };
           entry.total += 1;
           if (r.presente) entry.attended += 1;
-          map.set(r.id_asignatura, entry);
+          map.set(r.id_sesion, entry);
         }
-        const grouped: SubjectAttendance[] = Array.from(map.entries()).map(([id_asignatura, v]) => ({
-          id_asignatura,
+        const grouped: SessionAttendance[] = Array.from(map.entries()).map(([id_sesion, v]) => ({
+          id_sesion,
           ...v,
         }));
         setRecords(grouped);
@@ -103,7 +103,7 @@ export function AttendanceScreen() {
           {[
             { icon: CheckCircle, label: 'Asistidas',  value: overallAttended, color: 'text-green-300' },
             { icon: XCircle,     label: 'Faltas',     value: overallTotal - overallAttended, color: 'text-red-300' },
-            { icon: Clock,       label: 'Asignaturas', value: records.length, color: 'text-amber-300' },
+            { icon: Clock,       label: 'Sesiones', value: records.length, color: 'text-amber-300' },
           ].map(({ icon: Icon, label, value, color }, i) => (
             <div key={i} className="bg-white/10 rounded-xl py-2 px-3 text-center">
               <Icon size={16} className={`mx-auto mb-0.5 ${color}`} />
@@ -118,7 +118,7 @@ export function AttendanceScreen() {
       <div className="bg-white rounded-t-3xl px-5 pt-5 pb-6 min-h-[60vh]">
         <div className="flex items-center gap-2 mb-5">
           <Users size={18} className="text-[#008899]" />
-          <h2 className="text-[#008899]" style={{ fontWeight: 700 }}>ASISTENCIA POR ASIGNATURA</h2>
+          <h2 className="text-[#008899]" style={{ fontWeight: 700 }}>ASISTENCIA POR SESIÓN</h2>
         </div>
 
         {loading ? (
@@ -133,7 +133,7 @@ export function AttendanceScreen() {
               const absences = r.total - r.attended;
 
               return (
-                <div key={r.id_asignatura} className="bg-gray-50 rounded-2xl p-4">
+                <div key={r.id_sesion} className="bg-gray-50 rounded-2xl p-4">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="relative flex-shrink-0">
                       <RingChart pct={pct} size={44} />
@@ -144,7 +144,7 @@ export function AttendanceScreen() {
 
                     <div className="flex-1 min-w-0">
                       <p className="text-gray-800 text-sm truncate" style={{ fontWeight: 600 }}>
-                        {r.id_asignatura}
+                        {r.id_sesion}
                       </p>
                     </div>
 
@@ -177,7 +177,7 @@ export function AttendanceScreen() {
             <div>
               <p className="text-amber-700 text-sm" style={{ fontWeight: 600 }}>Atención</p>
               <p className="text-amber-600 text-xs mt-0.5">
-                Tienes asignaturas por debajo del 80% mínimo requerido. Contacta con tu tutor.
+                Tienes sesiones por debajo del 80% mínimo requerido. Contacta con tu tutor.
               </p>
             </div>
           </div>
