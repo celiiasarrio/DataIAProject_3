@@ -60,7 +60,7 @@ export async function getMyProfile(): Promise<UserProfile> {
 export interface GradeOut {
   id_tarea: number;
   nombre_tarea: string;
-  id_sesion: string;
+  id_bloque: string;
   nota: number;
 }
 

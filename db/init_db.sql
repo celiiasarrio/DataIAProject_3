@@ -1,11 +1,11 @@
 // LEGACY DBML.
 // El esquema SQL canónico del backend vive en db/init_db_v2.sql.
-// --- Tablas Principales (Entidades) ---
 
 Table alumnos {
-  id_alumno varchar [pk] 
+  id_alumno varchar [pk]
   nombre varchar
-  apellido varchar
+  apellido1 varchar
+  apellido2 varchar [null]
   correo varchar
   contrasena varchar
   url_foto varchar
@@ -35,9 +35,19 @@ Table grupos {
   nombre varchar
 }
 
+Table bloques {
+  id_bloque varchar [pk]
+  nombre varchar
+}
+
 Table sesiones {
   id_sesion varchar [pk]
+  id_bloque varchar [ref: > bloques.id_bloque]
   nombre varchar
+  fecha date
+  hora_inicio time
+  hora_fin time
+  aula varchar
 }
 
 Table ubicaciones {
@@ -47,55 +57,58 @@ Table ubicaciones {
   aula varchar
 }
 
-// --- Tablas de Relaciones (Cruces) ---
-
-Table rel_profesores_sesiones {
+Table rel_profesores_bloques {
   id_profesor varchar [ref: > profesores.id_profesor]
-  id_sesion varchar [ref: > sesiones.id_sesion]
-  
+  id_bloque varchar [ref: > bloques.id_bloque]
+
   indexes {
-    (id_profesor, id_sesion) [pk]
+    (id_profesor, id_bloque) [pk]
   }
 }
 
 Table rel_alumnos_grupos {
   id_alumno varchar [ref: > alumnos.id_alumno]
   id_grupo varchar [ref: > grupos.id_grupo]
-  
+
   indexes {
     (id_alumno, id_grupo) [pk]
   }
 }
 
-Table rel_sesiones_grupos {
-  id_sesion varchar [ref: > sesiones.id_sesion]
+Table rel_bloques_grupos {
+  id_bloque varchar [ref: > bloques.id_bloque]
   id_grupo varchar [ref: > grupos.id_grupo]
-  
+
   indexes {
-    (id_sesion, id_grupo) [pk]
+    (id_bloque, id_grupo) [pk]
   }
 }
 
 Table rel_personal_grupos {
   id_personal varchar [ref: > personal_edem.id_personal]
   id_grupo varchar [ref: > grupos.id_grupo]
-  
+
   indexes {
     (id_personal, id_grupo) [pk]
   }
+}
+
+Table tareas {
+  id_tarea int [pk, increment]
+  id_bloque varchar [ref: > bloques.id_bloque]
+  nombre varchar
+  descripcion varchar
 }
 
 Table rel_alumno_tarea {
   id_alumno varchar [ref: > alumnos.id_alumno]
   id_tarea int [ref: > tareas.id_tarea]
   nota float [null]
-  
+
   indexes {
     (id_alumno, id_tarea) [pk]
   }
 }
-
-// --- Tablas de Funcionalidades Extra de la App ---
 
 Table asistencia {
   id_asistencia int [pk, increment]
@@ -105,13 +118,17 @@ Table asistencia {
   presente boolean
 
   indexes {
-    (id_alumno, id_sesion, fecha) [unique]
+    (id_alumno, id_sesion) [unique]
   }
 }
 
-Table tareas {
-  id_tarea int [pk, increment]
-  id_sesion varchar [ref: > sesiones.id_sesion]
-  nombre varchar
-  descripcion varchar
+Table contenidos {
+  id varchar [pk]
+  id_bloque varchar [ref: > bloques.id_bloque]
+  id_profesor varchar [ref: > profesores.id_profesor]
+  titulo varchar
+  descripcion varchar [null]
+  tipo varchar
+  url varchar
+  fecha_subida timestamp
 }

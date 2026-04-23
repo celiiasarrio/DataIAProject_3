@@ -1,6 +1,7 @@
 -- Legacy seed snapshot. Usar init_db_v4.sql para seeds compatibles con el esquema actual.
 
 TRUNCATE TABLE "alumnos" CASCADE;
+TRUNCATE TABLE "bloques" CASCADE;
 TRUNCATE TABLE "sesiones" CASCADE;
 TRUNCATE TABLE "asistencia" CASCADE;
 TRUNCATE TABLE "grupos" CASCADE;
@@ -8,9 +9,9 @@ TRUNCATE TABLE "personal_edem" CASCADE;
 TRUNCATE TABLE "profesores" CASCADE;
 TRUNCATE TABLE "rel_alumno_tarea" CASCADE;
 TRUNCATE TABLE "rel_alumnos_grupos" CASCADE;
-TRUNCATE TABLE "rel_sesiones_grupos" CASCADE;
+TRUNCATE TABLE "rel_bloques_grupos" CASCADE;
 TRUNCATE TABLE "rel_personal_grupos" CASCADE;
-TRUNCATE TABLE "rel_profesores_sesiones" CASCADE;
+TRUNCATE TABLE "rel_profesores_bloques" CASCADE;
 TRUNCATE TABLE "tareas" CASCADE;
 TRUNCATE TABLE "ubicaciones" CASCADE;
 
@@ -30,11 +31,13 @@ INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido1", "apellido2", "correo"
 ('jaloru', 'Javier', 'Lopez', 'Ruiz', 'jaloru@edem.es', 'Ja9!rMx31F', ''),
 ('feorma', 'Felix', 'Ortuño', 'Martinez', 'feorma@edem.es', 'Fe2#vNd84S', '');
 
-
 -- fabricate-flush
+-- Placeholder para sesiones reales de cada bloque.
+-- INSERT INTO "sesiones" ("id_sesion", "id_bloque", "nombre", "fecha", "hora_inicio", "hora_fin", "aula") VALUES
+-- ('SES-001', 'SES-001', 'Sesión 1', '2026-03-01', '09:00', '11:00', 'AULA 101');
 
 
-INSERT INTO "sesiones" ("id_sesion", "nombre") VALUES
+INSERT INTO "bloques" ("id_bloque", "nombre") VALUES
 ('SES-001', 'Análisis de Riesgos Financieros'),
 ('SES-002', 'Arquitectura de Datos'),
 ('SES-003', 'Big Data Analytics'),
@@ -246,7 +249,7 @@ INSERT INTO "rel_alumnos_grupos" ("id_alumno", "id_grupo") VALUES
 -- fabricate-flush
 
 
-INSERT INTO "rel_sesiones_grupos" ("id_sesion", "id_grupo") VALUES
+INSERT INTO "rel_bloques_grupos" ("id_bloque", "id_grupo") VALUES
 ('SES-005', 'GRP-003'),
 ('SES-005', 'GRP-004'),
 ('SES-003', 'GRP-003'),
@@ -294,7 +297,7 @@ INSERT INTO "rel_personal_grupos" ("id_personal", "id_grupo") VALUES
 -- fabricate-flush
 
 
-INSERT INTO "rel_profesores_sesiones" ("id_profesor", "id_sesion") VALUES
+INSERT INTO "rel_profesores_bloques" ("id_profesor", "id_bloque") VALUES
 ('PROF-004', 'SES-005'),
 ('PROF-018', 'SES-003'),
 ('PROF-013', 'SES-002'),
