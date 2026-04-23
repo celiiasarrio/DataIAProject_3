@@ -7,9 +7,9 @@ WORKDIR /app
 ARG VITE_BACKEND_URL
 ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
 
-# Copiar solo los archivos de dependencias primero (aprovecha la caché de Docker)
-COPY package.json ./
-RUN npm install
+# Copiar los archivos de dependencias primero (aprovecha la caché de Docker)
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # Copiar el resto del código y construir la aplicación
 COPY . .

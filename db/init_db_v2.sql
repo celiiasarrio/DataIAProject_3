@@ -1,4 +1,6 @@
--- la v2 modifica la tabla sesiones para insertar hora_inicio y hora_fin.
+-- Esquema canónico del backend FastAPI.
+-- La entidad académica principal es "sesiones".
+-- Se mantiene "ubicaciones" por compatibilidad con los seeds existentes.
 
 -- Tablas Principales
 CREATE TABLE IF NOT EXISTS alumnos (
@@ -15,6 +17,7 @@ CREATE TABLE IF NOT EXISTS profesores (
     nombre VARCHAR,
     apellido VARCHAR,
     correo VARCHAR,
+    contrasena VARCHAR,
     url_foto VARCHAR
 );
 
@@ -23,6 +26,7 @@ CREATE TABLE IF NOT EXISTS personal_edem (
     nombre VARCHAR,
     apellido VARCHAR,
     correo VARCHAR,
+    contrasena VARCHAR,
     rol VARCHAR,
     url_foto VARCHAR
 );
@@ -32,8 +36,8 @@ CREATE TABLE IF NOT EXISTS grupos (
     nombre VARCHAR
 );
 
-CREATE TABLE IF NOT EXISTS asignaturas (
-    id_asignatura VARCHAR PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS sesiones (
+    id_sesion VARCHAR PRIMARY KEY,
     nombre VARCHAR
 );
 
@@ -44,23 +48,11 @@ CREATE TABLE IF NOT EXISTS ubicaciones (
     aula VARCHAR
 );
 
--- El Motor del Calendario
-CREATE TABLE IF NOT EXISTS sesiones (
-    id_sesion SERIAL PRIMARY KEY,
-    fecha DATE,
-    hora_inicio TIME,
-    hora_fin TIME,
-    id_ubicacion VARCHAR REFERENCES ubicaciones(id_ubicacion),
-    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
-    id_profesor VARCHAR REFERENCES profesores(id_profesor),
-    descripcion TEXT
-);
-
 -- Tablas de Relaciones
-CREATE TABLE IF NOT EXISTS rel_profesores_asignaturas (
+CREATE TABLE IF NOT EXISTS rel_profesores_sesiones (
     id_profesor VARCHAR REFERENCES profesores(id_profesor),
-    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
-    PRIMARY KEY (id_profesor, id_asignatura)
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
+    PRIMARY KEY (id_profesor, id_sesion)
 );
 
 CREATE TABLE IF NOT EXISTS rel_alumnos_grupos (
@@ -69,10 +61,10 @@ CREATE TABLE IF NOT EXISTS rel_alumnos_grupos (
     PRIMARY KEY (id_alumno, id_grupo)
 );
 
-CREATE TABLE IF NOT EXISTS rel_asignaturas_grupos (
-    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
+CREATE TABLE IF NOT EXISTS rel_sesiones_grupos (
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
     id_grupo VARCHAR REFERENCES grupos(id_grupo),
-    PRIMARY KEY (id_asignatura, id_grupo)
+    PRIMARY KEY (id_sesion, id_grupo)
 );
 
 CREATE TABLE IF NOT EXISTS rel_personal_grupos (
@@ -84,7 +76,7 @@ CREATE TABLE IF NOT EXISTS rel_personal_grupos (
 -- Funcionalidades Extra
 CREATE TABLE IF NOT EXISTS tareas (
     id_tarea SERIAL PRIMARY KEY,
-    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
     nombre VARCHAR,
     descripcion TEXT
 );
@@ -99,6 +91,80 @@ CREATE TABLE IF NOT EXISTS rel_alumno_tarea (
 CREATE TABLE IF NOT EXISTS asistencia (
     id_asistencia SERIAL PRIMARY KEY,
     id_alumno VARCHAR REFERENCES alumnos(id_alumno),
-    id_sesion INT REFERENCES sesiones(id_sesion),
-    presente BOOLEAN
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
+    fecha DATE,
+    presente BOOLEAN,
+    CONSTRAINT uq_asistencia_alumno_sesion_fecha UNIQUE (id_alumno, id_sesion, fecha)
+);
+
+CREATE TABLE IF NOT EXISTS eventos (
+    id VARCHAR PRIMARY KEY,
+    tipo VARCHAR,
+    titulo VARCHAR,
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
+    aula VARCHAR,
+    id_profesor VARCHAR REFERENCES profesores(id_profesor),
+    fecha_inicio TIMESTAMP,
+    fecha_fin TIMESTAMP,
+    descripcion TEXT
+);
+
+CREATE TABLE IF NOT EXISTS franja_tutoria (
+    id VARCHAR PRIMARY KEY,
+    id_profesor VARCHAR REFERENCES profesores(id_profesor),
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
+    dia_semana INT,
+    hora_inicio VARCHAR,
+    hora_fin VARCHAR,
+    ubicacion VARCHAR,
+    disponible BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS reservas (
+    id VARCHAR PRIMARY KEY,
+    id_alumno VARCHAR REFERENCES alumnos(id_alumno),
+    id_profesor VARCHAR REFERENCES profesores(id_profesor),
+    id_franja VARCHAR REFERENCES franja_tutoria(id),
+    fecha DATE,
+    notas TEXT,
+    estado VARCHAR DEFAULT 'pending',
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS notificaciones (
+    id VARCHAR PRIMARY KEY,
+    id_usuario VARCHAR,
+    tipo VARCHAR,
+    titulo VARCHAR,
+    mensaje TEXT,
+    leida BOOLEAN DEFAULT FALSE,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS configuracion_notificaciones (
+    id_usuario VARCHAR PRIMARY KEY,
+    avisos_calendario BOOLEAN DEFAULT TRUE,
+    avisos_notas BOOLEAN DEFAULT TRUE,
+    avisos_asistencia BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS correos (
+    id VARCHAR PRIMARY KEY,
+    id_remitente VARCHAR,
+    id_destinatario VARCHAR,
+    asunto VARCHAR,
+    cuerpo TEXT,
+    leido BOOLEAN DEFAULT FALSE,
+    fecha_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS contenidos (
+    id VARCHAR PRIMARY KEY,
+    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
+    id_profesor VARCHAR REFERENCES profesores(id_profesor),
+    titulo VARCHAR,
+    descripcion TEXT,
+    tipo VARCHAR,
+    url TEXT,
+    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

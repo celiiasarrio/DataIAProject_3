@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, Date, DateTime, ForeignKey
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy import Column, Integer, String, Float, Boolean, Date, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy.orm import declarative_base
 from datetime import datetime
 
 Base = declarative_base()
@@ -12,6 +12,7 @@ class PersonalEdem(Base):
     nombre = Column(String)
     apellido = Column(String)
     correo = Column(String)
+    contrasena = Column(String)
     rol = Column(String)
     url_foto = Column(String)
 
@@ -29,9 +30,9 @@ class Alumno(Base):
     contrasena = Column(String)
     url_foto = Column(String)
 
-class Asignatura(Base):
-    __tablename__ = 'asignaturas'
-    id_asignatura = Column(String, primary_key=True, index=True)
+class Sesion(Base):
+    __tablename__ = 'sesiones'
+    id_sesion = Column(String, primary_key=True, index=True)
     nombre = Column(String)
 
 class Profesor(Base):
@@ -40,20 +41,25 @@ class Profesor(Base):
     nombre = Column(String)
     apellido = Column(String)
     correo = Column(String)
+    contrasena = Column(String)
     url_foto = Column(String)
 
 class Tarea(Base):
     __tablename__ = 'tareas'
     id_tarea = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    id_asignatura = Column(String, ForeignKey('asignaturas.id_asignatura'))
+    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'))
     nombre = Column(String)
     descripcion = Column(String)
 
 class Asistencia(Base):
     __tablename__ = 'asistencia'
+    __table_args__ = (
+        UniqueConstraint('id_alumno', 'id_sesion', 'fecha', name='uq_asistencia_alumno_sesion_fecha'),
+    )
+
     id_asistencia = Column(Integer, primary_key=True, autoincrement=True, index=True)
     id_alumno = Column(String, ForeignKey('alumnos.id_alumno'))
-    id_asignatura = Column(String, ForeignKey('asignaturas.id_asignatura'))
+    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'))
     fecha = Column(Date)
     presente = Column(Boolean)
 
@@ -69,15 +75,15 @@ class RelAlumnosGrupos(Base):
     id_alumno = Column(String, ForeignKey('alumnos.id_alumno'), primary_key=True)
     id_grupo = Column(String, ForeignKey('grupos.id_grupo'), primary_key=True)
 
-class RelAsignaturasGrupos(Base):
-    __tablename__ = 'rel_asignaturas_grupos'
-    id_asignatura = Column(String, ForeignKey('asignaturas.id_asignatura'), primary_key=True)
+class RelSesionesGrupos(Base):
+    __tablename__ = 'rel_sesiones_grupos'
+    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'), primary_key=True)
     id_grupo = Column(String, ForeignKey('grupos.id_grupo'), primary_key=True)
 
-class RelProfesoresAsignaturas(Base):
-    __tablename__ = 'rel_profesores_asignaturas'
+class RelProfesoresSesiones(Base):
+    __tablename__ = 'rel_profesores_sesiones'
     id_profesor = Column(String, ForeignKey('profesores.id_profesor'), primary_key=True)
-    id_asignatura = Column(String, ForeignKey('asignaturas.id_asignatura'), primary_key=True)
+    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'), primary_key=True)
 
 class RelAlumnoTarea(Base):
     __tablename__ = 'rel_alumno_tarea'
@@ -92,7 +98,7 @@ class Evento(Base):
     id = Column(String, primary_key=True, index=True)
     tipo = Column(String)  # 'class', 'exam', 'delivery'
     titulo = Column(String)
-    id_asignatura = Column(String, ForeignKey('asignaturas.id_asignatura'))
+    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'))
     aula = Column(String)
     id_profesor = Column(String, ForeignKey('profesores.id_profesor'))
     fecha_inicio = Column(DateTime)
@@ -103,7 +109,7 @@ class FranjaTutoria(Base):
     __tablename__ = 'franja_tutoria'
     id = Column(String, primary_key=True, index=True)
     id_profesor = Column(String, ForeignKey('profesores.id_profesor'))
-    id_asignatura = Column(String, ForeignKey('asignaturas.id_asignatura'), nullable=True)
+    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'), nullable=True)
     dia_semana = Column(Integer)  # 0=Lunes, 1=Martes, etc.
     hora_inicio = Column(String)  # HH:MM
     hora_fin = Column(String)     # HH:MM
@@ -147,3 +153,14 @@ class Correo(Base):
     cuerpo = Column(String)
     leido = Column(Boolean, default=False)
     fecha_envio = Column(DateTime, default=datetime.utcnow)
+
+class Contenido(Base):
+    __tablename__ = 'contenidos'
+    id = Column(String, primary_key=True, index=True)
+    id_asignatura = Column(String, ForeignKey('asignaturas.id_asignatura'))
+    id_profesor = Column(String, ForeignKey('profesores.id_profesor'))
+    titulo = Column(String)
+    descripcion = Column(String, nullable=True)
+    tipo = Column(String)  # 'pdf', 'video', 'enlace', 'otro'
+    url = Column(String)
+    fecha_subida = Column(DateTime, default=datetime.utcnow)

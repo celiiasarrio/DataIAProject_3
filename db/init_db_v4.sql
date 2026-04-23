@@ -1,15 +1,23 @@
+-- Seeds de ejemplo para el esquema canónico definido en init_db_v2.sql.
+
 TRUNCATE TABLE "alumnos" CASCADE;
-TRUNCATE TABLE "asignaturas" CASCADE;
+TRUNCATE TABLE "sesiones" CASCADE;
 TRUNCATE TABLE "asistencia" CASCADE;
+TRUNCATE TABLE "configuracion_notificaciones" CASCADE;
+TRUNCATE TABLE "correos" CASCADE;
+TRUNCATE TABLE "contenidos" CASCADE;
+TRUNCATE TABLE "eventos" CASCADE;
+TRUNCATE TABLE "franja_tutoria" CASCADE;
 TRUNCATE TABLE "grupos" CASCADE;
+TRUNCATE TABLE "notificaciones" CASCADE;
 TRUNCATE TABLE "personal_edem" CASCADE;
 TRUNCATE TABLE "profesores" CASCADE;
 TRUNCATE TABLE "rel_alumno_tarea" CASCADE;
 TRUNCATE TABLE "rel_alumnos_grupos" CASCADE;
-TRUNCATE TABLE "rel_asignaturas_grupos" CASCADE;
+TRUNCATE TABLE "rel_sesiones_grupos" CASCADE;
 TRUNCATE TABLE "rel_personal_grupos" CASCADE;
-TRUNCATE TABLE "rel_profesores_asignaturas" CASCADE;
-TRUNCATE TABLE "sesiones" CASCADE;
+TRUNCATE TABLE "rel_profesores_sesiones" CASCADE;
+TRUNCATE TABLE "reservas" CASCADE;
 TRUNCATE TABLE "tareas" CASCADE;
 TRUNCATE TABLE "ubicaciones" CASCADE;
 
@@ -139,32 +147,32 @@ INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido", "correo", "contrasena"
 -- fabricate-flush
 
 
-INSERT INTO "asignaturas" ("id_asignatura", "nombre") VALUES
-('ASIG-001', 'Análisis de Riesgos Financieros'),
-('ASIG-002', 'Arquitectura de Datos'),
-('ASIG-003', 'Big Data Analytics'),
-('ASIG-004', 'Blockchain y Criptomonedas'),
-('ASIG-005', 'Cloud Computing'),
-('ASIG-006', 'Contabilidad Financiera'),
-('ASIG-007', 'Data Science para Finanzas'),
-('ASIG-008', 'Deep Learning'),
-('ASIG-009', 'DevOps y CI/CD'),
-('ASIG-010', 'Dirección Estratégica'),
-('ASIG-011', 'Economía Digital'),
-('ASIG-012', 'Economía de la Empresa'),
-('ASIG-013', 'Gestión de Proyectos Tecnológicos'),
-('ASIG-014', 'Gestión de Recursos Humanos'),
-('ASIG-015', 'Ingeniería de Procesos'),
-('ASIG-016', 'Innovación y Emprendimiento'),
-('ASIG-017', 'Machine Learning'),
-('ASIG-018', 'Marketing Digital'),
-('ASIG-019', 'Pagos Digitales'),
-('ASIG-020', 'Procesamiento de Datos en Tiempo Real'),
-('ASIG-021', 'Procesamiento de Lenguaje Natural'),
-('ASIG-022', 'Regulación Financiera Digital'),
-('ASIG-023', 'Sistemas de Información Empresarial'),
-('ASIG-024', 'Visión por Computador'),
-('ASIG-025', 'Ética en Inteligencia Artificial');
+INSERT INTO "sesiones" ("id_sesion", "nombre") VALUES
+('SES-001', 'Análisis de Riesgos Financieros'),
+('SES-002', 'Arquitectura de Datos'),
+('SES-003', 'Big Data Analytics'),
+('SES-004', 'Blockchain y Criptomonedas'),
+('SES-005', 'Cloud Computing'),
+('SES-006', 'Contabilidad Financiera'),
+('SES-007', 'Data Science para Finanzas'),
+('SES-008', 'Deep Learning'),
+('SES-009', 'DevOps y CI/CD'),
+('SES-010', 'Dirección Estratégica'),
+('SES-011', 'Economía Digital'),
+('SES-012', 'Economía de la Empresa'),
+('SES-013', 'Gestión de Proyectos Tecnológicos'),
+('SES-014', 'Gestión de Recursos Humanos'),
+('SES-015', 'Ingeniería de Procesos'),
+('SES-016', 'Innovación y Emprendimiento'),
+('SES-017', 'Machine Learning'),
+('SES-018', 'Marketing Digital'),
+('SES-019', 'Pagos Digitales'),
+('SES-020', 'Procesamiento de Datos en Tiempo Real'),
+('SES-021', 'Procesamiento de Lenguaje Natural'),
+('SES-022', 'Regulación Financiera Digital'),
+('SES-023', 'Sistemas de Información Empresarial'),
+('SES-024', 'Visión por Computador'),
+('SES-025', 'Ética en Inteligencia Artificial');
 
 
 -- fabricate-flush
@@ -351,37 +359,37 @@ INSERT INTO "rel_alumnos_grupos" ("id_alumno", "id_grupo") VALUES
 -- fabricate-flush
 
 
-INSERT INTO "rel_asignaturas_grupos" ("id_asignatura", "id_grupo") VALUES
-('ASIG-005', 'GRP-003'),
-('ASIG-005', 'GRP-004'),
-('ASIG-003', 'GRP-003'),
-('ASIG-003', 'GRP-004'),
-('ASIG-002', 'GRP-003'),
-('ASIG-002', 'GRP-004'),
-('ASIG-009', 'GRP-003'),
-('ASIG-009', 'GRP-004'),
-('ASIG-020', 'GRP-003'),
-('ASIG-020', 'GRP-004'),
-('ASIG-017', 'GRP-006'),
-('ASIG-008', 'GRP-006'),
-('ASIG-021', 'GRP-006'),
-('ASIG-024', 'GRP-006'),
-('ASIG-025', 'GRP-006'),
-('ASIG-004', 'GRP-005'),
-('ASIG-022', 'GRP-005'),
-('ASIG-001', 'GRP-005'),
-('ASIG-019', 'GRP-005'),
-('ASIG-007', 'GRP-005'),
-('ASIG-006', 'GRP-001'),
-('ASIG-018', 'GRP-001'),
-('ASIG-010', 'GRP-001'),
-('ASIG-014', 'GRP-001'),
-('ASIG-012', 'GRP-001'),
-('ASIG-013', 'GRP-002'),
-('ASIG-015', 'GRP-002'),
-('ASIG-023', 'GRP-002'),
-('ASIG-016', 'GRP-002'),
-('ASIG-011', 'GRP-002');
+INSERT INTO "rel_sesiones_grupos" ("id_sesion", "id_grupo") VALUES
+('SES-005', 'GRP-003'),
+('SES-005', 'GRP-004'),
+('SES-003', 'GRP-003'),
+('SES-003', 'GRP-004'),
+('SES-002', 'GRP-003'),
+('SES-002', 'GRP-004'),
+('SES-009', 'GRP-003'),
+('SES-009', 'GRP-004'),
+('SES-020', 'GRP-003'),
+('SES-020', 'GRP-004'),
+('SES-017', 'GRP-006'),
+('SES-008', 'GRP-006'),
+('SES-021', 'GRP-006'),
+('SES-024', 'GRP-006'),
+('SES-025', 'GRP-006'),
+('SES-004', 'GRP-005'),
+('SES-022', 'GRP-005'),
+('SES-001', 'GRP-005'),
+('SES-019', 'GRP-005'),
+('SES-007', 'GRP-005'),
+('SES-006', 'GRP-001'),
+('SES-018', 'GRP-001'),
+('SES-010', 'GRP-001'),
+('SES-014', 'GRP-001'),
+('SES-012', 'GRP-001'),
+('SES-013', 'GRP-002'),
+('SES-015', 'GRP-002'),
+('SES-023', 'GRP-002'),
+('SES-016', 'GRP-002'),
+('SES-011', 'GRP-002');
 
 
 -- fabricate-flush
@@ -399,32 +407,32 @@ INSERT INTO "rel_personal_grupos" ("id_personal", "id_grupo") VALUES
 -- fabricate-flush
 
 
-INSERT INTO "rel_profesores_asignaturas" ("id_profesor", "id_asignatura") VALUES
-('PROF-004', 'ASIG-005'),
-('PROF-018', 'ASIG-003'),
-('PROF-013', 'ASIG-002'),
-('PROF-002', 'ASIG-009'),
-('PROF-021', 'ASIG-020'),
-('PROF-014', 'ASIG-017'),
-('PROF-008', 'ASIG-008'),
-('PROF-009', 'ASIG-021'),
-('PROF-023', 'ASIG-024'),
-('PROF-005', 'ASIG-025'),
-('PROF-011', 'ASIG-004'),
-('PROF-012', 'ASIG-022'),
-('PROF-001', 'ASIG-001'),
-('PROF-024', 'ASIG-019'),
-('PROF-022', 'ASIG-007'),
-('PROF-020', 'ASIG-006'),
-('PROF-016', 'ASIG-018'),
-('PROF-015', 'ASIG-010'),
-('PROF-003', 'ASIG-014'),
-('PROF-025', 'ASIG-012'),
-('PROF-019', 'ASIG-013'),
-('PROF-017', 'ASIG-015'),
-('PROF-010', 'ASIG-023'),
-('PROF-006', 'ASIG-016'),
-('PROF-007', 'ASIG-011');
+INSERT INTO "rel_profesores_sesiones" ("id_profesor", "id_sesion") VALUES
+('PROF-004', 'SES-005'),
+('PROF-018', 'SES-003'),
+('PROF-013', 'SES-002'),
+('PROF-002', 'SES-009'),
+('PROF-021', 'SES-020'),
+('PROF-014', 'SES-017'),
+('PROF-008', 'SES-008'),
+('PROF-009', 'SES-021'),
+('PROF-023', 'SES-024'),
+('PROF-005', 'SES-025'),
+('PROF-011', 'SES-004'),
+('PROF-012', 'SES-022'),
+('PROF-001', 'SES-001'),
+('PROF-024', 'SES-019'),
+('PROF-022', 'SES-007'),
+('PROF-020', 'SES-006'),
+('PROF-016', 'SES-018'),
+('PROF-015', 'SES-010'),
+('PROF-003', 'SES-014'),
+('PROF-025', 'SES-012'),
+('PROF-019', 'SES-013'),
+('PROF-017', 'SES-015'),
+('PROF-010', 'SES-023'),
+('PROF-006', 'SES-016'),
+('PROF-007', 'SES-011');
 
 
 -- fabricate-flush
