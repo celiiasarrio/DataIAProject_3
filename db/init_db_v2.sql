@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS correos (
 
 CREATE TABLE IF NOT EXISTS contenidos (
     id VARCHAR PRIMARY KEY,
-    id_asignatura VARCHAR REFERENCES asignaturas(id_asignatura),
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
     id_profesor VARCHAR REFERENCES profesores(id_profesor),
     titulo VARCHAR,
     descripcion TEXT,
