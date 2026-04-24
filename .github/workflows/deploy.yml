@@ -9,9 +9,9 @@ on:
       - 'frontend/**'
 
 env:
-  PROJECT_ID: edem-hackathon-2026
+  PROJECT_ID: project3grupo6
   REGION: europe-west1
-  REGISTRY: europe-west1-docker.pkg.dev/edem-hackathon-2026/gft-hackaton
+  REGISTRY: europe-west1-docker.pkg.dev/project3grupo6/project3grupo6
 
 jobs:
   deploy-backend:
@@ -45,7 +45,7 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
         run: |
-          gcloud run deploy gft-hackaton-backend \
+          gcloud run deploy project3grupo6-backend \
             --image "$REGISTRY/backend:$IMAGE_TAG" \
             --region "$REGION" \
             --platform managed \
@@ -71,7 +71,7 @@ jobs:
       - name: Get backend URL
         id: backend
         run: |
-          BACKEND_URL=$(gcloud run services describe gft-hackaton-backend \
+          BACKEND_URL=$(gcloud run services describe project3grupo6-backend \
             --region "$REGION" --format "value(status.url)")
           echo "url=$BACKEND_URL" >> "$GITHUB_OUTPUT"
 
@@ -92,7 +92,7 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          gcloud run deploy gft-hackaton-frontend \
+          gcloud run deploy project3grupo6-frontend \
             --image "$REGISTRY/frontend:$IMAGE_TAG" \
             --region "$REGION" \
             --platform managed \

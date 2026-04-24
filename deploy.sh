@@ -2,9 +2,9 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ID="edem-hackathon-2026"
+PROJECT_ID="project3grupo6"
 REGION="europe-west1"
-REGISTRY="${REGION}-docker.pkg.dev/${PROJECT_ID}/gft-hackaton"
+REGISTRY="${REGION}-docker.pkg.dev/${PROJECT_ID}/${PROJECT_ID}"
 
 echo "==> Configuring Docker for Artifact Registry..."
 gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet

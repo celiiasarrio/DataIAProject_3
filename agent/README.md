@@ -55,13 +55,13 @@ Tienes dos opciones para llamar a `gemini-2.5-flash`:
 
 ```bash
 gcloud auth application-default login
-gcloud config set project edem-hackathon-2026
+gcloud config set project project3grupo6
 ```
 
 Y en el `.env` del agente:
 ```
 GOOGLE_GENAI_USE_VERTEXAI=TRUE
-GOOGLE_CLOUD_PROJECT=edem-hackathon-2026
+GOOGLE_CLOUD_PROJECT=project3grupo6
 GOOGLE_CLOUD_LOCATION=europe-west1
 ```
 
