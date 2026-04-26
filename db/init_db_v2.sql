@@ -3,11 +3,12 @@
 -- Sesion = encuentro específico (clase concreta con fecha, hora y aula).
 -- Se mantiene "ubicaciones" por compatibilidad con los seeds existentes.
 
--- Tablas Principales
+-- Tablas principales
 CREATE TABLE IF NOT EXISTS alumnos (
     id_alumno VARCHAR PRIMARY KEY,
     nombre VARCHAR,
-    apellido VARCHAR,
+    apellido1 VARCHAR,
+    apellido2 VARCHAR,
     correo VARCHAR,
     contrasena VARCHAR,
     url_foto VARCHAR
@@ -84,7 +85,7 @@ CREATE TABLE IF NOT EXISTS rel_personal_grupos (
     PRIMARY KEY (id_personal, id_grupo)
 );
 
--- Funcionalidades Extra
+-- Funcionalidades extra
 CREATE TABLE IF NOT EXISTS tareas (
     id_tarea SERIAL PRIMARY KEY,
     id_bloque VARCHAR REFERENCES bloques(id_bloque),
@@ -105,7 +106,7 @@ CREATE TABLE IF NOT EXISTS asistencia (
     id_sesion VARCHAR REFERENCES sesiones(id_sesion),
     fecha DATE,
     presente BOOLEAN,
-    CONSTRAINT uq_asistencia_alumno_sesion_fecha UNIQUE (id_alumno, id_sesion, fecha)
+    CONSTRAINT uq_asistencia_alumno_sesion UNIQUE (id_alumno, id_sesion)
 );
 
 CREATE TABLE IF NOT EXISTS eventos (

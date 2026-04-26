@@ -35,7 +35,7 @@ export const router = createBrowserRouter([
       { path: 'notifications',                                Component: NotificationsScreen  },
       { path: 'courses',                                      Component: CoursesScreen        },
       { path: 'courses/:courseId',                            Component: CourseDetailScreen   },
-      { path: 'courses/:courseId/sessions/:sessionId/grade',  Component: GradingScreen        },
+      { path: 'courses/:courseId/blocks/:blockId/grade',      Component: GradingScreen        },
       { path: 'teacher/grades',                               Component: TeacherGradesScreen  },
       { path: 'sessions/:sessionId/attendance',               Component: ClassAttendanceScreen},
     ],
