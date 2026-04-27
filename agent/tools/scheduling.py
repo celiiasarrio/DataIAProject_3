@@ -100,7 +100,7 @@ def delete_calendar_event(tool_context: ToolContext, event_id: str) -> dict:
 
 def list_tutoring_slots(tool_context: ToolContext, teacher_id: Optional[str] = None) -> list:
     """Lista las franjas de tutoría disponibles, opcionalmente filtradas por profesor."""
-    return api_get("/api/v1/tutorings/slots", tool_context, params={"teacher_id": teacher_id})
+    return api_get("/api/v1/tutorings/slots", tool_context, params={"id_profesor": teacher_id})
 
 
 def create_tutoring_slot(
@@ -110,21 +110,21 @@ def create_tutoring_slot(
     hora_inicio: str,
     hora_fin: str,
     ubicacion: str,
-    id_sesion: Optional[str] = None,
+    id_bloque: Optional[str] = None,
     disponible: bool = True,
 ) -> dict:
     """Crea una nueva franja semanal de tutoría para un profesor.
 
     dia_semana es 0 (lunes) a 6 (domingo). hora_inicio y hora_fin en formato HH:MM.
-    id_sesion es la sesión/asignatura asociada (opcional). Solo usar si el usuario
-    es 'profesor' y está creando sus propias franjas.
+    id_bloque es el bloque asociado (opcional). Solo usar si el usuario es
+    'profesor' y está creando sus propias franjas.
     """
     return api_post(
         "/api/v1/tutorings/slots",
         tool_context,
         json={
             "id_profesor": id_profesor,
-            "id_sesion": id_sesion,
+            "id_bloque": id_bloque,
             "dia_semana": dia_semana,
             "hora_inicio": hora_inicio,
             "hora_fin": hora_fin,

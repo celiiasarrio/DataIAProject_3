@@ -1,3 +1,3 @@
-from agent.agent import root_agent
+from agent.agent import create_root_agent
 
-__all__ = ["root_agent"]
+__all__ = ["create_root_agent"]
