@@ -1,13 +1,37 @@
 variable "project_id" {
   description = "GCP project ID"
   type        = string
-  default     = "edem-hackathon-2026"
+  default     = "project3grupo6"
+}
+
+variable "app_name" {
+  description = "Nombre de la aplicación usado como prefijo en los recursos GCP"
+  type        = string
+  default     = "project3grupo6"
 }
 
 variable "region" {
-  description = "GCP region"
+  description = "GCP region principal"
   type        = string
   default     = "europe-west1"
+}
+
+variable "db_region" {
+  description = "Región de Cloud SQL (Madrid)"
+  type        = string
+  default     = "europe-southwest1"
+}
+
+variable "db_instance_name" {
+  description = "Nombre de la instancia de Cloud SQL"
+  type        = string
+  default     = "project3grupo6-postgres"
+}
+
+variable "db_name" {
+  description = "Nombre de la base de datos PostgreSQL"
+  type        = string
+  default     = "edem_hub_db"
 }
 
 variable "db_user" {

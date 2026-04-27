@@ -1,23 +1,21 @@
 # CloudSQL
 resource "google_sql_database_instance" "edem_db_instance" {
-  name             = "edem-hub-postgres-instance"
+  name             = var.db_instance_name
   database_version = "POSTGRES_15"
-  region           = "europe-southwest1" # Madrid, latencia mínima
-  
-  settings {
+  region           = var.db_region
 
-    tier = "db-f1-micro"     
+  settings {
+    tier = "db-f1-micro"
     ip_configuration {
-      # IP pública temporalmente 
-      ipv4_enabled = true 
+      ipv4_enabled = true
     }
   }
-  deletion_protection = false 
+  deletion_protection = false
 }
 
 # Base de datos
 resource "google_sql_database" "edem_database" {
-  name     = "edem_hub_db"
+  name     = var.db_name
   instance = google_sql_database_instance.edem_db_instance.name
 }
 

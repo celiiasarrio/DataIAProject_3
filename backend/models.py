@@ -1,166 +1,255 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, Date, DateTime, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import declarative_base
 from datetime import datetime
+from typing import Optional
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    Time,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
-# --- ENTIDADES PRINCIPALES ---
 
 class PersonalEdem(Base):
-    __tablename__ = 'personal_edem'
+    __tablename__ = "personal_edem"
+
     id_personal = Column(String, primary_key=True, index=True)
-    nombre = Column(String)
-    apellido = Column(String)
-    correo = Column(String)
-    contrasena = Column(String)
-    rol = Column(String)
-    url_foto = Column(String)
+    nombre = Column(String, nullable=False)
+    apellido = Column(String, nullable=False)
+    correo = Column(String, nullable=False, unique=True, index=True)
+    contrasena = Column(String, nullable=False)
+    rol = Column(String, nullable=False, default="Coordinador")
+    url_foto = Column(String, nullable=True)
+
 
 class Grupo(Base):
-    __tablename__ = 'grupos'
+    __tablename__ = "grupos"
+
     id_grupo = Column(String, primary_key=True, index=True)
-    nombre = Column(String)
+    nombre = Column(String, nullable=False)
+
 
 class Alumno(Base):
-    __tablename__ = 'alumnos'
-    id_alumno = Column(String, primary_key=True, index=True)
-    nombre = Column(String)
-    apellido = Column(String)
-    correo = Column(String)
-    contrasena = Column(String)
-    url_foto = Column(String)
+    __tablename__ = "alumnos"
 
-class Sesion(Base):
-    __tablename__ = 'sesiones'
-    id_sesion = Column(String, primary_key=True, index=True)
-    nombre = Column(String)
+    id_alumno = Column(String, primary_key=True, index=True)
+    nombre = Column(String, nullable=False)
+    apellido1 = Column(String, nullable=False)
+    apellido2 = Column(String, nullable=True)
+    correo = Column(String, nullable=False, unique=True, index=True)
+    contrasena = Column(String, nullable=False)
+    url_foto = Column(String, nullable=True)
+
+    @property
+    def apellido(self) -> str:
+        return " ".join(part for part in [self.apellido1, self.apellido2] if part)
+
+    @apellido.setter
+    def apellido(self, value: Optional[str]) -> None:
+        if not value:
+            self.apellido1 = ""
+            self.apellido2 = None
+            return
+
+        normalized = " ".join(value.split())
+        if not normalized:
+            self.apellido1 = ""
+            self.apellido2 = None
+            return
+
+        parts = normalized.split(maxsplit=1)
+        self.apellido1 = parts[0]
+        self.apellido2 = parts[1] if len(parts) > 1 else None
+
 
 class Profesor(Base):
-    __tablename__ = 'profesores'
+    __tablename__ = "profesores"
+
     id_profesor = Column(String, primary_key=True, index=True)
-    nombre = Column(String)
-    apellido = Column(String)
-    correo = Column(String)
-    contrasena = Column(String)
-    url_foto = Column(String)
+    nombre = Column(String, nullable=False)
+    apellido = Column(String, nullable=False)
+    correo = Column(String, nullable=False, unique=True, index=True)
+    contrasena = Column(String, nullable=False)
+    url_foto = Column(String, nullable=True)
+
+
+class Bloque(Base):
+    __tablename__ = "bloques"
+
+    id_bloque = Column(String, primary_key=True, index=True)
+    nombre = Column(String, nullable=False)
+
+
+class Sesion(Base):
+    __tablename__ = "sesiones"
+
+    id_sesion = Column(String, primary_key=True, index=True)
+    id_bloque = Column(String, ForeignKey("bloques.id_bloque"), nullable=False, index=True)
+    nombre = Column(String, nullable=False)
+    fecha = Column(Date, nullable=True, index=True)
+    hora_inicio = Column(Time, nullable=True)
+    hora_fin = Column(Time, nullable=True)
+    aula = Column(String, nullable=True)
+
+
+class Ubicacion(Base):
+    __tablename__ = "ubicaciones"
+
+    id_ubicacion = Column(String, primary_key=True, index=True)
+    descripcion = Column(String, nullable=False)
+    planta = Column(Integer, nullable=True)
+    aula = Column(String, nullable=True)
+
 
 class Tarea(Base):
-    __tablename__ = 'tareas'
+    __tablename__ = "tareas"
+
     id_tarea = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'))
-    nombre = Column(String)
-    descripcion = Column(String)
+    id_bloque = Column(String, ForeignKey("bloques.id_bloque"), nullable=False, index=True)
+    nombre = Column(String, nullable=False)
+    descripcion = Column(Text, nullable=True)
+
 
 class Asistencia(Base):
-    __tablename__ = 'asistencia'
+    __tablename__ = "asistencia"
     __table_args__ = (
-        UniqueConstraint('id_alumno', 'id_sesion', 'fecha', name='uq_asistencia_alumno_sesion_fecha'),
+        UniqueConstraint("id_alumno", "id_sesion", name="uq_asistencia_alumno_sesion"),
     )
 
     id_asistencia = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    id_alumno = Column(String, ForeignKey('alumnos.id_alumno'))
-    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'))
-    fecha = Column(Date)
-    presente = Column(Boolean)
+    id_alumno = Column(String, ForeignKey("alumnos.id_alumno"), nullable=False, index=True)
+    id_sesion = Column(String, ForeignKey("sesiones.id_sesion"), nullable=False, index=True)
+    fecha = Column(Date, nullable=True)
+    presente = Column(Boolean, nullable=False, default=True)
 
-# --- TABLAS DE RELACIÓN (Muchos a Muchos) ---
 
 class RelPersonalGrupos(Base):
-    __tablename__ = 'rel_personal_grupos'
-    id_personal = Column(String, ForeignKey('personal_edem.id_personal'), primary_key=True)
-    id_grupo = Column(String, ForeignKey('grupos.id_grupo'), primary_key=True)
+    __tablename__ = "rel_personal_grupos"
+
+    id_personal = Column(String, ForeignKey("personal_edem.id_personal"), primary_key=True)
+    id_grupo = Column(String, ForeignKey("grupos.id_grupo"), primary_key=True)
+
 
 class RelAlumnosGrupos(Base):
-    __tablename__ = 'rel_alumnos_grupos'
-    id_alumno = Column(String, ForeignKey('alumnos.id_alumno'), primary_key=True)
-    id_grupo = Column(String, ForeignKey('grupos.id_grupo'), primary_key=True)
+    __tablename__ = "rel_alumnos_grupos"
 
-class RelSesionesGrupos(Base):
-    __tablename__ = 'rel_sesiones_grupos'
-    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'), primary_key=True)
-    id_grupo = Column(String, ForeignKey('grupos.id_grupo'), primary_key=True)
+    id_alumno = Column(String, ForeignKey("alumnos.id_alumno"), primary_key=True)
+    id_grupo = Column(String, ForeignKey("grupos.id_grupo"), primary_key=True)
 
-class RelProfesoresSesiones(Base):
-    __tablename__ = 'rel_profesores_sesiones'
-    id_profesor = Column(String, ForeignKey('profesores.id_profesor'), primary_key=True)
-    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'), primary_key=True)
+
+class RelBloquesGrupos(Base):
+    __tablename__ = "rel_bloques_grupos"
+
+    id_bloque = Column(String, ForeignKey("bloques.id_bloque"), primary_key=True)
+    id_grupo = Column(String, ForeignKey("grupos.id_grupo"), primary_key=True)
+
+
+class RelProfesoresBloques(Base):
+    __tablename__ = "rel_profesores_bloques"
+
+    id_profesor = Column(String, ForeignKey("profesores.id_profesor"), primary_key=True)
+    id_bloque = Column(String, ForeignKey("bloques.id_bloque"), primary_key=True)
+
 
 class RelAlumnoTarea(Base):
-    __tablename__ = 'rel_alumno_tarea'
-    id_alumno = Column(String, ForeignKey('alumnos.id_alumno'), primary_key=True)
-    id_tarea = Column(Integer, ForeignKey('tareas.id_tarea'), primary_key=True)
-    nota = Column(Float) # Nota añadida a la tabla intermedia como indica el diagrama
+    __tablename__ = "rel_alumno_tarea"
 
-# --- MODELOS ADICIONALES (Calendario, Tutorías, Notificaciones, Correos) ---
+    id_alumno = Column(String, ForeignKey("alumnos.id_alumno"), primary_key=True)
+    id_tarea = Column(Integer, ForeignKey("tareas.id_tarea"), primary_key=True)
+    nota = Column(Float, nullable=False)
+
 
 class Evento(Base):
-    __tablename__ = 'eventos'
+    __tablename__ = "eventos"
+
     id = Column(String, primary_key=True, index=True)
-    tipo = Column(String)  # 'class', 'exam', 'delivery'
-    titulo = Column(String)
-    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'))
-    aula = Column(String)
-    id_profesor = Column(String, ForeignKey('profesores.id_profesor'))
-    fecha_inicio = Column(DateTime)
-    fecha_fin = Column(DateTime)
-    descripcion = Column(String)
+    tipo = Column(String, nullable=False)
+    titulo = Column(String, nullable=False)
+    id_bloque = Column(String, ForeignKey("bloques.id_bloque"), nullable=True, index=True)
+    id_sesion = Column(String, ForeignKey("sesiones.id_sesion"), nullable=True, index=True)
+    aula = Column(String, nullable=True)
+    id_profesor = Column(String, ForeignKey("profesores.id_profesor"), nullable=True, index=True)
+    fecha_inicio = Column(DateTime, nullable=False)
+    fecha_fin = Column(DateTime, nullable=False)
+    descripcion = Column(Text, nullable=True)
+
 
 class FranjaTutoria(Base):
-    __tablename__ = 'franja_tutoria'
+    __tablename__ = "franja_tutoria"
+
     id = Column(String, primary_key=True, index=True)
-    id_profesor = Column(String, ForeignKey('profesores.id_profesor'))
-    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'), nullable=True)
-    dia_semana = Column(Integer)  # 0=Lunes, 1=Martes, etc.
-    hora_inicio = Column(String)  # HH:MM
-    hora_fin = Column(String)     # HH:MM
-    ubicacion = Column(String)
-    disponible = Column(Boolean, default=True)
+    id_profesor = Column(String, ForeignKey("profesores.id_profesor"), nullable=False, index=True)
+    id_bloque = Column(String, ForeignKey("bloques.id_bloque"), nullable=True, index=True)
+    dia_semana = Column(Integer, nullable=False)
+    hora_inicio = Column(Time, nullable=False)
+    hora_fin = Column(Time, nullable=False)
+    ubicacion = Column(String, nullable=False)
+    disponible = Column(Boolean, default=True, nullable=False)
+
 
 class Reserva(Base):
-    __tablename__ = 'reservas'
+    __tablename__ = "reservas"
+
     id = Column(String, primary_key=True, index=True)
-    id_alumno = Column(String, ForeignKey('alumnos.id_alumno'))
-    id_profesor = Column(String, ForeignKey('profesores.id_profesor'))
-    id_franja = Column(String, ForeignKey('franja_tutoria.id'))
-    fecha = Column(Date)
-    notas = Column(String, nullable=True)
-    estado = Column(String, default='pending')  # 'pending', 'confirmed', 'rejected', 'completed'
-    fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    id_alumno = Column(String, ForeignKey("alumnos.id_alumno"), nullable=False, index=True)
+    id_profesor = Column(String, ForeignKey("profesores.id_profesor"), nullable=False, index=True)
+    id_franja = Column(String, ForeignKey("franja_tutoria.id"), nullable=False, index=True)
+    fecha = Column(Date, nullable=False)
+    notas = Column(Text, nullable=True)
+    estado = Column(String, default="pending", nullable=False)
+    fecha_creacion = Column(DateTime, default=datetime.utcnow, nullable=False)
+
 
 class Notificacion(Base):
-    __tablename__ = 'notificaciones'
+    __tablename__ = "notificaciones"
+
     id = Column(String, primary_key=True, index=True)
-    id_usuario = Column(String)  # Puede ser alumno, profesor o personal
-    tipo = Column(String)
-    titulo = Column(String)
-    mensaje = Column(String)
-    leida = Column(Boolean, default=False)
-    fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    id_usuario = Column(String, nullable=False, index=True)
+    tipo = Column(String, nullable=False)
+    titulo = Column(String, nullable=False)
+    mensaje = Column(Text, nullable=False)
+    leida = Column(Boolean, default=False, nullable=False)
+    fecha_creacion = Column(DateTime, default=datetime.utcnow, nullable=False)
+
 
 class ConfiguracionNotificacion(Base):
-    __tablename__ = 'configuracion_notificaciones'
+    __tablename__ = "configuracion_notificaciones"
+
     id_usuario = Column(String, primary_key=True, index=True)
-    avisos_calendario = Column(Boolean, default=True)
-    avisos_notas = Column(Boolean, default=True)
-    avisos_asistencia = Column(Boolean, default=True)
+    avisos_calendario = Column(Boolean, default=True, nullable=False)
+    avisos_notas = Column(Boolean, default=True, nullable=False)
+    avisos_asistencia = Column(Boolean, default=True, nullable=False)
+
 
 class Correo(Base):
-    __tablename__ = 'correos'
+    __tablename__ = "correos"
+
     id = Column(String, primary_key=True, index=True)
-    id_remitente = Column(String)  # Puede ser cualquier usuario
-    id_destinatario = Column(String)  # Puede ser cualquier usuario
-    asunto = Column(String)
-    cuerpo = Column(String)
-    leido = Column(Boolean, default=False)
-    fecha_envio = Column(DateTime, default=datetime.utcnow)
+    id_remitente = Column(String, nullable=False, index=True)
+    id_destinatario = Column(String, nullable=False, index=True)
+    asunto = Column(String, nullable=False)
+    cuerpo = Column(Text, nullable=False)
+    leido = Column(Boolean, default=False, nullable=False)
+    fecha_envio = Column(DateTime, default=datetime.utcnow, nullable=False)
+
 
 class Contenido(Base):
-    __tablename__ = 'contenidos'
+    __tablename__ = "contenidos"
+
     id = Column(String, primary_key=True, index=True)
-    id_sesion = Column(String, ForeignKey('sesiones.id_sesion'))
-    id_profesor = Column(String, ForeignKey('profesores.id_profesor'))
-    titulo = Column(String)
-    descripcion = Column(String, nullable=True)
-    tipo = Column(String)  # 'pdf', 'video', 'enlace', 'otro'
-    url = Column(String)
-    fecha_subida = Column(DateTime, default=datetime.utcnow)
+    id_bloque = Column(String, ForeignKey("bloques.id_bloque"), nullable=False, index=True)
+    id_profesor = Column(String, ForeignKey("profesores.id_profesor"), nullable=False, index=True)
+    titulo = Column(String, nullable=False)
+    descripcion = Column(Text, nullable=True)
+    tipo = Column(String, nullable=False)
+    url = Column(String, nullable=False)
+    fecha_subida = Column(DateTime, default=datetime.utcnow, nullable=False)

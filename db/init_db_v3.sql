@@ -1,18 +1,28 @@
--- Legacy seed snapshot. Usar init_db_v4.sql para seeds compatibles con el esquema actual.
+-- Seed local/manual. Mantiene alumnos personalizados y reutiliza el catálogo canónico.
 
-TRUNCATE TABLE "alumnos" CASCADE;
-TRUNCATE TABLE "sesiones" CASCADE;
-TRUNCATE TABLE "asistencia" CASCADE;
-TRUNCATE TABLE "grupos" CASCADE;
-TRUNCATE TABLE "personal_edem" CASCADE;
-TRUNCATE TABLE "profesores" CASCADE;
-TRUNCATE TABLE "rel_alumno_tarea" CASCADE;
-TRUNCATE TABLE "rel_alumnos_grupos" CASCADE;
-TRUNCATE TABLE "rel_sesiones_grupos" CASCADE;
-TRUNCATE TABLE "rel_personal_grupos" CASCADE;
-TRUNCATE TABLE "rel_profesores_sesiones" CASCADE;
-TRUNCATE TABLE "tareas" CASCADE;
-TRUNCATE TABLE "ubicaciones" CASCADE;
+TRUNCATE TABLE
+    alumnos,
+    profesores,
+    personal_edem,
+    grupos,
+    bloques,
+    sesiones,
+    ubicaciones,
+    rel_profesores_bloques,
+    rel_alumnos_grupos,
+    rel_bloques_grupos,
+    rel_personal_grupos,
+    tareas,
+    rel_alumno_tarea,
+    asistencia,
+    eventos,
+    franja_tutoria,
+    reservas,
+    notificaciones,
+    configuracion_notificaciones,
+    correos,
+    contenidos
+RESTART IDENTITY CASCADE;
 
 INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido1", "apellido2", "correo", "contrasena", "url_foto") VALUES
 ('daadgi', 'Daniel', 'Adam', 'Giménez', 'daadgi@edem.es', 'Da7!kLm92Q', ''),
@@ -30,313 +40,146 @@ INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido1", "apellido2", "correo"
 ('jaloru', 'Javier', 'Lopez', 'Ruiz', 'jaloru@edem.es', 'Ja9!rMx31F', ''),
 ('feorma', 'Felix', 'Ortuño', 'Martinez', 'feorma@edem.es', 'Fe2#vNd84S', '');
 
-
--- fabricate-flush
-
-
-INSERT INTO "sesiones" ("id_sesion", "nombre") VALUES
-('SES-001', 'Análisis de Riesgos Financieros'),
-('SES-002', 'Arquitectura de Datos'),
-('SES-003', 'Big Data Analytics'),
-('SES-004', 'Blockchain y Criptomonedas'),
-('SES-005', 'Cloud Computing'),
-('SES-006', 'Contabilidad Financiera'),
-('SES-007', 'Data Science para Finanzas'),
-('SES-008', 'Deep Learning'),
-('SES-009', 'DevOps y CI/CD'),
-('SES-010', 'Dirección Estratégica'),
-('SES-011', 'Economía Digital'),
-('SES-012', 'Economía de la Empresa'),
-('SES-013', 'Gestión de Proyectos Tecnológicos'),
-('SES-014', 'Gestión de Recursos Humanos'),
-('SES-015', 'Ingeniería de Procesos'),
-('SES-016', 'Innovación y Emprendimiento'),
-('SES-017', 'Machine Learning'),
-('SES-018', 'Marketing Digital'),
-('SES-019', 'Pagos Digitales'),
-('SES-020', 'Procesamiento de Datos en Tiempo Real'),
-('SES-021', 'Procesamiento de Lenguaje Natural'),
-('SES-022', 'Regulación Financiera Digital'),
-('SES-023', 'Sistemas de Información Empresarial'),
-('SES-024', 'Visión por Computador'),
-('SES-025', 'Ética en Inteligencia Artificial');
-
-
--- fabricate-flush
-
-
-
-INSERT INTO "grupos" ("id_grupo", "nombre") VALUES
-('GRP-001', 'GADE'),
-('GRP-002', 'GIGE'),
-('GRP-003', 'MDA A'),
-('GRP-004', 'MDA B'),
-('GRP-005', 'MFT'),
-('GRP-006', 'MIA');
-
-
--- fabricate-flush
-
+INSERT INTO "profesores" ("id_profesor", "nombre", "apellido", "correo", "url_foto", "contrasena") VALUES
+('PROF-101', 'Adriana', 'Campos', 'adriana.campos@seed.local', 'https://ui-avatars.com/api/?name=Adriana%20Campos&size=200', 'prof123'),
+('PROF-102', 'Adrián', 'Colomer', 'adrian.colomer@seed.local', 'https://ui-avatars.com/api/?name=Adri%C3%A1n%20Colomer&size=200', 'prof123'),
+('PROF-103', 'Fabio', 'Castro', 'fabio.castro@seed.local', 'https://ui-avatars.com/api/?name=Fabio%20Castro&size=200', 'prof123'),
+('PROF-104', 'Nuria', 'Berzal', 'nuria.berzal@seed.local', 'https://ui-avatars.com/api/?name=Nuria%20Berzal&size=200', 'prof123'),
+('PROF-105', 'Pedro', 'Nieto', 'pedro.nieto@seed.local', 'https://ui-avatars.com/api/?name=Pedro%20Nieto&size=200', 'prof123'),
+('PROF-106', 'Ángel', 'Llosa', 'angel.llosa@seed.local', 'https://ui-avatars.com/api/?name=%C3%81ngel%20Llosa&size=200', 'prof123');
 
 INSERT INTO "personal_edem" ("id_personal", "nombre", "apellido", "correo", "rol", "url_foto", "contrasena") VALUES
-('PER-001', 'Andrea', 'Soler', 'andrea.soler@edem.es', 'Coordinador', 'https://ui-avatars.com/api/?name=Andrea%20Soler&size=200', 'Andrea16$2025'),
-('PER-002', 'Luis', 'Marín', 'luis.marin@edem.es', 'Coordinador', 'https://ui-avatars.com/api/?name=Luis%20Mar%C3%ADn&size=200', 'LuisMarín#79'),
-('PER-003', 'Miguel', 'Herrera', 'miguel.herrera@edem.es', 'Coordinador', 'https://ui-avatars.com/api/?name=Miguel%20Herrera&size=200', 'Miguel.2025%'),
-('PER-004', 'Sara', 'Reyes', 'sara.reyes@edem.es', 'Coordinador', 'https://ui-avatars.com/api/?name=Sara%20Reyes&size=200', 'Sara.2026$');
+('PER-001', 'Andrea', 'Soler', 'andrea.soler@edem.es', 'Coordinador', 'https://ui-avatars.com/api/?name=Andrea%20Soler&size=200', 'staff123'),
+('PER-002', 'Luis', 'Marín', 'luis.marin@edem.es', 'Coordinador', 'https://ui-avatars.com/api/?name=Luis%20Mar%C3%ADn&size=200', 'staff123');
 
+INSERT INTO "grupos" ("id_grupo", "nombre") VALUES
+('GRP-003', 'MDA A'),
+('GRP-006', 'MIA');
 
--- fabricate-flush
+INSERT INTO "bloques" ("id_bloque", "nombre") VALUES
+('BLQ-101', 'FUNDAMENTOS: Python'),
+('BLQ-102', 'ENTORNO CLOUD: GCP Cloud Run'),
+('BLQ-103', 'TRATAMIENTO DEL DATO: PySpark'),
+('BLQ-104', 'IA GENERATIVA: Agentes'),
+('BLQ-105', 'IA PREDICTIVA: ML 1: Regresión'),
+('BLQ-106', 'SKILLS: Comunicación');
 
-
-INSERT INTO "profesores" ("id_profesor", "nombre", "apellido", "correo", "url_foto", "contrasena") VALUES
-('PROF-001', 'Alberto', 'Gil', 'alberto.gil@edem.es', 'https://ui-avatars.com/api/?name=Alberto%20Gil&size=200', 'Alberto1#2025'),
-('PROF-002', 'Ana', 'Fernández', 'ana.fernandez@edem.es', 'https://ui-avatars.com/api/?name=Ana%20Fern%C3%A1ndez&size=200', 'FernándezAna#2024'),
-('PROF-003', 'Andrés', 'Herrero', 'andres.herrero@edem.es', 'https://ui-avatars.com/api/?name=Andr%C3%A9s%20Herrero&size=200', 'AndrésHerrero#82'),
-('PROF-004', 'Carlos', 'García', 'carlos.garcia@edem.es', 'https://ui-avatars.com/api/?name=Carlos%20Garc%C3%ADa&size=200', 'García2024*99'),
-('PROF-005', 'Carmen', 'Álvarez', 'carmen.alvarez@edem.es', 'https://ui-avatars.com/api/?name=Carmen%20%C3%81lvarez&size=200', 'Carmen39!2025'),
-('PROF-006', 'Cristina', 'Ortiz', 'cristina.ortiz@edem.es', 'https://ui-avatars.com/api/?name=Cristina%20Ortiz&size=200', 'Cristina.2025!'),
-('PROF-007', 'Daniel', 'Morales', 'daniel.morales@edem.es', 'https://ui-avatars.com/api/?name=Daniel%20Morales&size=200', 'MoralesDaniel%2025'),
-('PROF-008', 'Diego', 'Ruiz', 'diego.ruiz@edem.es', 'https://ui-avatars.com/api/?name=Diego%20Ruiz&size=200', 'DiegoRuiz#71'),
-('PROF-009', 'Elena', 'Moreno', 'elena.moreno@edem.es', 'https://ui-avatars.com/api/?name=Elena%20Moreno&size=200', 'Elena.2024@'),
-('PROF-010', 'Fernando', 'Castro', 'fernando.castro@edem.es', 'https://ui-avatars.com/api/?name=Fernando%20Castro&size=200', 'Fernando.2024*'),
-('PROF-011', 'Francisco', 'Romero', 'francisco.romero@edem.es', 'https://ui-avatars.com/api/?name=Francisco%20Romero&size=200', 'Francisco7!2024'),
-('PROF-012', 'Isabel', 'Navarro', 'isabel.navarro@edem.es', 'https://ui-avatars.com/api/?name=Isabel%20Navarro&size=200', 'Isabel91#2025'),
-('PROF-013', 'Javier', 'Martín', 'javier.martin@edem.es', 'https://ui-avatars.com/api/?name=Javier%20Mart%C3%ADn&size=200', 'Javier.2026&'),
-('PROF-014', 'Laura', 'Torres', 'laura.torres@edem.es', 'https://ui-avatars.com/api/?name=Laura%20Torres&size=200', 'TorresLaura%2025'),
-('PROF-015', 'Lucía', 'Blanco', 'lucia.blanco@edem.es', 'https://ui-avatars.com/api/?name=Luc%C3%ADa%20Blanco&size=200', 'Blanco2026#0'),
-('PROF-016', 'Manuel', 'Ramírez', 'manuel.ramirez@edem.es', 'https://ui-avatars.com/api/?name=Manuel%20Ram%C3%ADrez&size=200', 'Ramírez2024#84'),
-('PROF-017', 'Marta', 'Delgado', 'marta.delgado@edem.es', 'https://ui-avatars.com/api/?name=Marta%20Delgado&size=200', 'Marta.2026&'),
-('PROF-018', 'María', 'López', 'maria.lopez@edem.es', 'https://ui-avatars.com/api/?name=Mar%C3%ADa%20L%C3%B3pez&size=200', 'LópezMaría&2024'),
-('PROF-019', 'Pablo', 'Vega', 'pablo.vega@edem.es', 'https://ui-avatars.com/api/?name=Pablo%20Vega&size=200', 'Pablo38*2026'),
-('PROF-020', 'Patricia', 'Serrano', 'patricia.serrano@edem.es', 'https://ui-avatars.com/api/?name=Patricia%20Serrano&size=200', 'SerranoPatricia*2024'),
-('PROF-021', 'Pedro', 'Sánchez', 'pedro.sanchez@edem.es', 'https://ui-avatars.com/api/?name=Pedro%20S%C3%A1nchez&size=200', 'Pedro76$2024'),
-('PROF-022', 'Raúl', 'Jiménez', 'raul.jimenez@edem.es', 'https://ui-avatars.com/api/?name=Ra%C3%BAl%20Jim%C3%A9nez&size=200', 'RaúlJiménez#19'),
-('PROF-023', 'Roberto', 'Díaz', 'roberto.diaz@edem.es', 'https://ui-avatars.com/api/?name=Roberto%20D%C3%ADaz&size=200', 'Roberto57!2024'),
-('PROF-024', 'Sofía', 'Molina', 'sofia.molina@edem.es', 'https://ui-avatars.com/api/?name=Sof%C3%ADa%20Molina&size=200', 'Sofía31!2024'),
-('PROF-025', 'Teresa', 'Peña', 'teresa.pena@edem.es', 'https://ui-avatars.com/api/?name=Teresa%20Pe%C3%B1a&size=200', 'Teresa77$2024');
-
-
--- fabricate-flush
-
-
-
-INSERT INTO "rel_alumnos_grupos" ("id_alumno", "id_grupo") VALUES
-('ALU-052', 'GRP-003'),
-('ALU-054', 'GRP-003'),
-('ALU-097', 'GRP-003'),
-('ALU-035', 'GRP-003'),
-('ALU-069', 'GRP-003'),
-('ALU-081', 'GRP-003'),
-('ALU-049', 'GRP-003'),
-('ALU-043', 'GRP-003'),
-('ALU-047', 'GRP-003'),
-('ALU-025', 'GRP-003'),
-('ALU-028', 'GRP-003'),
-('ALU-104', 'GRP-003'),
-('ALU-032', 'GRP-003'),
-('ALU-086', 'GRP-003'),
-('ALU-088', 'GRP-003'),
-('ALU-064', 'GRP-003'),
-('ALU-085', 'GRP-003'),
-('ALU-061', 'GRP-003'),
-('ALU-004', 'GRP-003'),
-('ALU-065', 'GRP-003'),
-('ALU-044', 'GRP-004'),
-('ALU-101', 'GRP-004'),
-('ALU-006', 'GRP-004'),
-('ALU-066', 'GRP-004'),
-('ALU-048', 'GRP-004'),
-('ALU-016', 'GRP-004'),
-('ALU-041', 'GRP-004'),
-('ALU-039', 'GRP-004'),
-('ALU-038', 'GRP-004'),
-('ALU-074', 'GRP-004'),
-('ALU-090', 'GRP-004'),
-('ALU-009', 'GRP-004'),
-('ALU-045', 'GRP-004'),
-('ALU-036', 'GRP-004'),
-('ALU-015', 'GRP-004'),
-('ALU-109', 'GRP-004'),
-('ALU-050', 'GRP-004'),
-('ALU-098', 'GRP-004'),
-('ALU-108', 'GRP-004'),
-('ALU-026', 'GRP-004'),
-('ALU-068', 'GRP-006'),
-('ALU-067', 'GRP-006'),
-('ALU-051', 'GRP-006'),
-('ALU-003', 'GRP-006'),
-('ALU-087', 'GRP-006'),
-('ALU-083', 'GRP-006'),
-('ALU-120', 'GRP-006'),
-('ALU-070', 'GRP-006'),
-('ALU-001', 'GRP-006'),
-('ALU-096', 'GRP-006'),
-('ALU-042', 'GRP-006'),
-('ALU-093', 'GRP-006'),
-('ALU-034', 'GRP-006'),
-('ALU-063', 'GRP-006'),
-('ALU-059', 'GRP-006'),
-('ALU-024', 'GRP-006'),
-('ALU-053', 'GRP-006'),
-('ALU-040', 'GRP-006'),
-('ALU-062', 'GRP-006'),
-('ALU-099', 'GRP-006'),
-('ALU-113', 'GRP-005'),
-('ALU-107', 'GRP-005'),
-('ALU-080', 'GRP-005'),
-('ALU-019', 'GRP-005'),
-('ALU-111', 'GRP-005'),
-('ALU-089', 'GRP-005'),
-('ALU-117', 'GRP-005'),
-('ALU-103', 'GRP-005'),
-('ALU-106', 'GRP-005'),
-('ALU-023', 'GRP-005'),
-('ALU-020', 'GRP-005'),
-('ALU-029', 'GRP-005'),
-('ALU-033', 'GRP-005'),
-('ALU-013', 'GRP-005'),
-('ALU-008', 'GRP-005'),
-('ALU-105', 'GRP-005'),
-('ALU-012', 'GRP-005'),
-('ALU-084', 'GRP-005'),
-('ALU-060', 'GRP-005'),
-('ALU-116', 'GRP-005'),
-('ALU-037', 'GRP-001'),
-('ALU-005', 'GRP-001'),
-('ALU-094', 'GRP-001'),
-('ALU-078', 'GRP-001'),
-('ALU-079', 'GRP-001'),
-('ALU-073', 'GRP-001'),
-('ALU-112', 'GRP-001'),
-('ALU-007', 'GRP-001'),
-('ALU-056', 'GRP-001'),
-('ALU-002', 'GRP-001'),
-('ALU-118', 'GRP-001'),
-('ALU-022', 'GRP-001'),
-('ALU-075', 'GRP-001'),
-('ALU-076', 'GRP-001'),
-('ALU-095', 'GRP-001'),
-('ALU-021', 'GRP-001'),
-('ALU-072', 'GRP-001'),
-('ALU-091', 'GRP-001'),
-('ALU-014', 'GRP-001'),
-('ALU-011', 'GRP-001'),
-('ALU-057', 'GRP-002'),
-('ALU-030', 'GRP-002'),
-('ALU-010', 'GRP-002'),
-('ALU-102', 'GRP-002'),
-('ALU-115', 'GRP-002'),
-('ALU-027', 'GRP-002'),
-('ALU-055', 'GRP-002'),
-('ALU-017', 'GRP-002'),
-('ALU-110', 'GRP-002'),
-('ALU-018', 'GRP-002'),
-('ALU-100', 'GRP-002'),
-('ALU-058', 'GRP-002'),
-('ALU-077', 'GRP-002'),
-('ALU-114', 'GRP-002'),
-('ALU-031', 'GRP-002'),
-('ALU-071', 'GRP-002'),
-('ALU-082', 'GRP-002'),
-('ALU-119', 'GRP-002'),
-('ALU-046', 'GRP-002'),
-('ALU-092', 'GRP-002');
-
-
--- fabricate-flush
-
-
-INSERT INTO "rel_sesiones_grupos" ("id_sesion", "id_grupo") VALUES
-('SES-005', 'GRP-003'),
-('SES-005', 'GRP-004'),
-('SES-003', 'GRP-003'),
-('SES-003', 'GRP-004'),
-('SES-002', 'GRP-003'),
-('SES-002', 'GRP-004'),
-('SES-009', 'GRP-003'),
-('SES-009', 'GRP-004'),
-('SES-020', 'GRP-003'),
-('SES-020', 'GRP-004'),
-('SES-017', 'GRP-006'),
-('SES-008', 'GRP-006'),
-('SES-021', 'GRP-006'),
-('SES-024', 'GRP-006'),
-('SES-025', 'GRP-006'),
-('SES-004', 'GRP-005'),
-('SES-022', 'GRP-005'),
-('SES-001', 'GRP-005'),
-('SES-019', 'GRP-005'),
-('SES-007', 'GRP-005'),
-('SES-006', 'GRP-001'),
-('SES-018', 'GRP-001'),
-('SES-010', 'GRP-001'),
-('SES-014', 'GRP-001'),
-('SES-012', 'GRP-001'),
-('SES-013', 'GRP-002'),
-('SES-015', 'GRP-002'),
-('SES-023', 'GRP-002'),
-('SES-016', 'GRP-002'),
-('SES-011', 'GRP-002');
-
-
--- fabricate-flush
-
-
-INSERT INTO "rel_personal_grupos" ("id_personal", "id_grupo") VALUES
-('PER-003', 'GRP-003'),
-('PER-003', 'GRP-004'),
-('PER-003', 'GRP-006'),
-('PER-001', 'GRP-005'),
-('PER-002', 'GRP-001'),
-('PER-004', 'GRP-002');
-
-
--- fabricate-flush
-
-
-INSERT INTO "rel_profesores_sesiones" ("id_profesor", "id_sesion") VALUES
-('PROF-004', 'SES-005'),
-('PROF-018', 'SES-003'),
-('PROF-013', 'SES-002'),
-('PROF-002', 'SES-009'),
-('PROF-021', 'SES-020'),
-('PROF-014', 'SES-017'),
-('PROF-008', 'SES-008'),
-('PROF-009', 'SES-021'),
-('PROF-023', 'SES-024'),
-('PROF-005', 'SES-025'),
-('PROF-011', 'SES-004'),
-('PROF-012', 'SES-022'),
-('PROF-001', 'SES-001'),
-('PROF-024', 'SES-019'),
-('PROF-022', 'SES-007'),
-('PROF-020', 'SES-006'),
-('PROF-016', 'SES-018'),
-('PROF-015', 'SES-010'),
-('PROF-003', 'SES-014'),
-('PROF-025', 'SES-012'),
-('PROF-019', 'SES-013'),
-('PROF-017', 'SES-015'),
-('PROF-010', 'SES-023'),
-('PROF-006', 'SES-016'),
-('PROF-007', 'SES-011');
-
-
--- fabricate-flush
-
-
-
+INSERT INTO "sesiones" ("id_sesion", "id_bloque", "nombre", "fecha", "hora_inicio", "hora_fin", "aula") VALUES
+('SES-1011', 'BLQ-101', 'Python para análisis de datos', '2026-05-04', '09:00', '11:00', 'AULA 101'),
+('SES-1012', 'BLQ-101', 'Pandas y tratamiento tabular', '2026-05-11', '09:00', '11:00', 'AULA 101'),
+('SES-1021', 'BLQ-102', 'Introducción a Cloud Run', '2026-05-05', '11:00', '13:00', 'AULA 102'),
+('SES-1022', 'BLQ-102', 'Despliegue de APIs en GCP', '2026-05-12', '11:00', '13:00', 'AULA 102'),
+('SES-1031', 'BLQ-103', 'PySpark DataFrames', '2026-05-06', '09:00', '11:00', 'AULA 201'),
+('SES-1032', 'BLQ-103', 'ETL distribuido con PySpark', '2026-05-13', '09:00', '11:00', 'AULA 201'),
+('SES-1041', 'BLQ-104', 'Arquitecturas de agentes', '2026-05-06', '11:00', '13:00', 'AULA 202'),
+('SES-1042', 'BLQ-104', 'Workshop multiagente', '2026-05-13', '11:00', '13:00', 'AULA 202'),
+('SES-1051', 'BLQ-105', 'Regresión lineal aplicada', '2026-05-07', '09:00', '11:00', 'AULA 203'),
+('SES-1052', 'BLQ-105', 'Feature engineering', '2026-05-14', '09:00', '11:00', 'AULA 203'),
+('SES-1061', 'BLQ-106', 'Storytelling de datos', '2026-05-08', '09:00', '11:00', 'AUDITORIO 01'),
+('SES-1062', 'BLQ-106', 'Presentaciones efectivas', '2026-05-15', '09:00', '11:00', 'AUDITORIO 01');
 
 INSERT INTO "ubicaciones" ("id_ubicacion", "descripcion", "planta", "aula") VALUES
-('UBI-001', 'Aula 101 - Planta 1', 1, '101'),
-('UBI-002', 'Aula 102 - Planta 1', 1, '102'),
-('UBI-003', 'Aula 103 - Planta 1', 1, '103'),
-('UBI-004', 'Aula 201 - Planta 2', 2, '201'),
-('UBI-005', 'Aula 202 - Planta 2', 2, '202'),
-('UBI-006', 'Aula 203 - Planta 2', 2, '203');
+('UBI-101', 'EDEM, PLANTA 1, AULA 101', 1, 'AULA 101'),
+('UBI-102', 'EDEM, PLANTA 1, AULA 102', 1, 'AULA 102'),
+('UBI-201', 'EDEM, PLANTA 2, AULA 201', 2, 'AULA 201'),
+('UBI-A01', 'EDEM, PLANTA BAJA, AUDITORIO 01', 0, 'AUDITORIO 01');
 
+INSERT INTO "rel_alumnos_grupos" ("id_alumno", "id_grupo") VALUES
+('daadgi', 'GRP-003'),
+('joallu', 'GRP-003'),
+('gebaad', 'GRP-003'),
+('cabesa', 'GRP-003'),
+('inbupe', 'GRP-003'),
+('pagaes', 'GRP-003'),
+('maazlo', 'GRP-003'),
+('jomama', 'GRP-006'),
+('japlro', 'GRP-006'),
+('sareva', 'GRP-006'),
+('jogrhe', 'GRP-006'),
+('cesaco', 'GRP-006'),
+('jaloru', 'GRP-006'),
+('feorma', 'GRP-006');
 
--- fabricate-flush
+INSERT INTO "rel_bloques_grupos" ("id_bloque", "id_grupo") VALUES
+('BLQ-101', 'GRP-003'),
+('BLQ-101', 'GRP-006'),
+('BLQ-102', 'GRP-003'),
+('BLQ-102', 'GRP-006'),
+('BLQ-103', 'GRP-003'),
+('BLQ-104', 'GRP-006'),
+('BLQ-105', 'GRP-006'),
+('BLQ-106', 'GRP-003'),
+('BLQ-106', 'GRP-006');
 
+INSERT INTO "rel_profesores_bloques" ("id_profesor", "id_bloque") VALUES
+('PROF-101', 'BLQ-101'),
+('PROF-102', 'BLQ-102'),
+('PROF-103', 'BLQ-103'),
+('PROF-104', 'BLQ-104'),
+('PROF-105', 'BLQ-105'),
+('PROF-106', 'BLQ-106');
 
-SET session_replication_role = 'origin';
+INSERT INTO "rel_personal_grupos" ("id_personal", "id_grupo") VALUES
+('PER-001', 'GRP-003'),
+('PER-002', 'GRP-006');
+
+INSERT INTO "tareas" ("id_tarea", "id_bloque", "nombre", "descripcion") VALUES
+(1, 'BLQ-101', 'Notebook Python', 'Entrega individual de fundamentos de Python'),
+(2, 'BLQ-102', 'Deploy en Cloud Run', 'Despliegue de una API en GCP'),
+(3, 'BLQ-103', 'Pipeline PySpark', 'Transformación y limpieza de datos'),
+(4, 'BLQ-104', 'Prototype de agente', 'Prototipo multiagente'),
+(5, 'BLQ-105', 'Modelo de regresión', 'Entrega de regresión lineal'),
+(6, 'BLQ-106', 'Pitch de comunicación', 'Presentación oral de proyecto');
+
+INSERT INTO "rel_alumno_tarea" ("id_alumno", "id_tarea", "nota")
+SELECT
+    rag.id_alumno,
+    t.id_tarea,
+    ROUND((6 + ((ASCII(RIGHT(rag.id_alumno, 1)) % 4) * 0.7) + ((t.id_tarea % 3) * 0.4))::NUMERIC, 2)
+FROM rel_alumnos_grupos rag
+JOIN rel_bloques_grupos rbg ON rbg.id_grupo = rag.id_grupo
+JOIN tareas t ON t.id_bloque = rbg.id_bloque;
+
+INSERT INTO "asistencia" ("id_alumno", "id_sesion", "fecha", "presente")
+SELECT
+    rag.id_alumno,
+    s.id_sesion,
+    s.fecha,
+    ((ASCII(RIGHT(rag.id_alumno, 1)) + ASCII(RIGHT(s.id_sesion, 1))) % 5) <> 0
+FROM rel_alumnos_grupos rag
+JOIN rel_bloques_grupos rbg ON rbg.id_grupo = rag.id_grupo
+JOIN sesiones s ON s.id_bloque = rbg.id_bloque;
+
+INSERT INTO "eventos" ("id", "tipo", "titulo", "id_bloque", "id_sesion", "aula", "id_profesor", "fecha_inicio", "fecha_fin", "descripcion") VALUES
+('EVT-001', 'class', 'Clase Python 1', 'BLQ-101', 'SES-1011', 'AULA 101', 'PROF-101', '2026-05-04 09:00:00', '2026-05-04 11:00:00', 'Primera sesión de fundamentos'),
+('EVT-002', 'class', 'Clase Cloud Run 1', 'BLQ-102', 'SES-1021', 'AULA 102', 'PROF-102', '2026-05-05 11:00:00', '2026-05-05 13:00:00', 'Sesión introductoria de despliegue'),
+('EVT-003', 'delivery', 'Entrega deploy Cloud Run', 'BLQ-102', NULL, NULL, 'PROF-102', '2026-05-19 23:59:00', '2026-05-19 23:59:00', 'Fecha límite de entrega'),
+('EVT-004', 'exam', 'Evaluación ML 1', 'BLQ-105', NULL, 'AULA 203', 'PROF-105', '2026-05-21 10:00:00', '2026-05-21 12:00:00', 'Prueba práctica de regresión'),
+('EVT-005', 'class', 'Clase Agentes 1', 'BLQ-104', 'SES-1041', 'AULA 202', 'PROF-104', '2026-05-06 11:00:00', '2026-05-06 13:00:00', 'Arquitecturas de agentes'),
+('EVT-006', 'class', 'Clase Comunicación 1', 'BLQ-106', 'SES-1061', 'AUDITORIO 01', 'PROF-106', '2026-05-08 09:00:00', '2026-05-08 11:00:00', 'Storytelling y comunicación');
+
+INSERT INTO "franja_tutoria" ("id", "id_profesor", "id_bloque", "dia_semana", "hora_inicio", "hora_fin", "ubicacion", "disponible") VALUES
+('TUT-001', 'PROF-105', 'BLQ-105', 2, '16:00', '17:00', 'AULA 203', TRUE),
+('TUT-002', 'PROF-104', 'BLQ-104', 3, '17:00', '18:00', 'AULA 202', TRUE),
+('TUT-003', 'PROF-101', 'BLQ-101', 1, '15:00', '16:00', 'AULA 101', TRUE);
+
+INSERT INTO "reservas" ("id", "id_alumno", "id_profesor", "id_franja", "fecha", "notas", "estado", "fecha_creacion") VALUES
+('RES-001', 'jogrhe', 'PROF-105', 'TUT-001', '2026-05-20', 'Revisar el modelo final', 'confirmed', '2026-05-18 10:00:00');
+
+INSERT INTO "notificaciones" ("id", "id_usuario", "tipo", "titulo", "mensaje", "leida", "fecha_creacion") VALUES
+('NOT-001', 'jogrhe', 'grades', 'Nueva nota publicada', 'Ya tienes disponible la nota del notebook de Python.', FALSE, '2026-05-12 09:00:00'),
+('NOT-002', 'daadgi', 'attendance', 'Asistencia actualizada', 'Se ha actualizado tu asistencia de PySpark.', FALSE, '2026-05-13 12:00:00'),
+('NOT-003', 'jomama', 'calendar', 'Nueva entrega', 'Recuerda la entrega de Cloud Run el 19 de mayo.', TRUE, '2026-05-14 08:30:00');
+
+INSERT INTO "configuracion_notificaciones" ("id_usuario", "avisos_calendario", "avisos_notas", "avisos_asistencia")
+SELECT id_alumno, TRUE, TRUE, TRUE
+FROM alumnos;
+
+INSERT INTO "correos" ("id", "id_remitente", "id_destinatario", "asunto", "cuerpo", "leido", "fecha_envio") VALUES
+('MAIL-001', 'PER-001', 'jogrhe', 'Bienvenida al hub', 'Ya puedes acceder al portal y revisar tus bloques.', TRUE, '2026-05-01 09:00:00'),
+('MAIL-002', 'jogrhe', 'PROF-105', 'Duda sobre la práctica', 'Quería revisar la última entrega antes de la tutoría.', FALSE, '2026-05-18 16:30:00');
+
+INSERT INTO "contenidos" ("id", "id_bloque", "id_profesor", "titulo", "descripcion", "tipo", "url", "fecha_subida") VALUES
+('CNT-001', 'BLQ-101', 'PROF-101', 'Guía de Python', 'Material base del bloque de Python.', 'pdf', 'https://example.com/python-guide.pdf', '2026-05-02 08:00:00'),
+('CNT-002', 'BLQ-102', 'PROF-102', 'Slides Cloud Run', 'Presentación del despliegue en GCP.', 'slides', 'https://example.com/cloud-run-slides', '2026-05-03 08:00:00'),
+('CNT-003', 'BLQ-104', 'PROF-104', 'Plantilla de agentes', 'Repositorio base del workshop.', 'repo', 'https://example.com/agents-template', '2026-05-05 08:00:00');

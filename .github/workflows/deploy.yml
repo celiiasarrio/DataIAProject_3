@@ -6,12 +6,13 @@ on:
       - main
     paths:
       - 'backend/**'
+      - 'agent/**'
       - 'frontend/**'
 
 env:
-  PROJECT_ID: edem-hackathon-2026
+  PROJECT_ID: project3grupo6
   REGION: europe-west1
-  REGISTRY: europe-west1-docker.pkg.dev/edem-hackathon-2026/gft-hackaton
+  REGISTRY: europe-west1-docker.pkg.dev/project3grupo6/project3grupo6
 
 jobs:
   deploy-backend:
@@ -45,7 +46,7 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
         run: |
-          gcloud run deploy gft-hackaton-backend \
+          gcloud run deploy project3grupo6-backend \
             --image "$REGISTRY/backend:$IMAGE_TAG" \
             --region "$REGION" \
             --platform managed \
@@ -53,7 +54,7 @@ jobs:
             --add-cloudsql-instances "$CLOUD_SQL_CONNECTION_NAME" \
             --set-env-vars "DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_NAME=$DB_NAME,CLOUD_SQL_CONNECTION_NAME=$CLOUD_SQL_CONNECTION_NAME,JWT_SECRET=$JWT_SECRET,ENVIRONMENT=production"
 
-  deploy-frontend:
+  deploy-agent:
     runs-on: ubuntu-latest
     needs: deploy-backend
     steps:
@@ -71,17 +72,70 @@ jobs:
       - name: Get backend URL
         id: backend
         run: |
-          BACKEND_URL=$(gcloud run services describe gft-hackaton-backend \
+          BACKEND_URL=$(gcloud run services describe project3grupo6-backend \
             --region "$REGION" --format "value(status.url)")
           echo "url=$BACKEND_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push agent image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t "$REGISTRY/agent:$IMAGE_TAG" -t "$REGISTRY/agent:latest" ./agent
+          docker push "$REGISTRY/agent:$IMAGE_TAG"
+          docker push "$REGISTRY/agent:latest"
+
+      - name: Deploy agent to Cloud Run
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          BACKEND_URL: ${{ steps.backend.outputs.url }}
+          AGENT_SERVICE_ACCOUNT: project3grupo6-agent-sa@project3grupo6.iam.gserviceaccount.com
+        run: |
+          gcloud run deploy project3grupo6-agent \
+            --image "$REGISTRY/agent:$IMAGE_TAG" \
+            --region "$REGION" \
+            --platform managed \
+            --allow-unauthenticated \
+            --service-account "$AGENT_SERVICE_ACCOUNT" \
+            --set-env-vars "BACKEND_BASE_URL=$BACKEND_URL,GOOGLE_GENAI_USE_VERTEXAI=TRUE,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=$REGION,MODEL=gemini-2.5-flash"
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: deploy-agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker "$REGION"-docker.pkg.dev --quiet
+
+      - name: Get backend URL
+        id: backend
+        run: |
+          BACKEND_URL=$(gcloud run services describe project3grupo6-backend \
+            --region "$REGION" --format "value(status.url)")
+          echo "url=$BACKEND_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Get agent URL
+        id: agent
+        run: |
+          AGENT_URL=$(gcloud run services describe project3grupo6-agent \
+            --region "$REGION" --format "value(status.url)")
+          echo "url=$AGENT_URL" >> "$GITHUB_OUTPUT"
 
       - name: Build and push frontend image
         env:
           IMAGE_TAG: ${{ github.sha }}
           VITE_BACKEND_URL: ${{ steps.backend.outputs.url }}
+          VITE_AGENT_URL: ${{ steps.agent.outputs.url }}
         run: |
           docker build \
             --build-arg VITE_BACKEND_URL="$VITE_BACKEND_URL" \
+            --build-arg VITE_AGENT_URL="$VITE_AGENT_URL" \
             -t "$REGISTRY/frontend:$IMAGE_TAG" \
             -t "$REGISTRY/frontend:latest" \
             ./frontend
@@ -92,7 +146,7 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          gcloud run deploy gft-hackaton-frontend \
+          gcloud run deploy project3grupo6-frontend \
             --image "$REGISTRY/frontend:$IMAGE_TAG" \
             --region "$REGION" \
             --platform managed \

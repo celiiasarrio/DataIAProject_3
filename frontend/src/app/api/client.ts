@@ -1,10 +1,15 @@
 const BASE_URL = (import.meta.env.VITE_BACKEND_URL as string) || '';
+const AGENT_URL = (import.meta.env.VITE_AGENT_URL as string) || BASE_URL;
 
 function getToken(): string | null {
   return localStorage.getItem('token');
 }
 
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  return authenticatedFetch<T>(BASE_URL, path, options);
+}
+
+async function authenticatedFetch<T>(baseUrl: string, path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -13,7 +18,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  const res = await fetch(`${baseUrl}${path}`, { ...options, headers });
   if (res.status === 401) {
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
@@ -60,7 +65,7 @@ export async function getMyProfile(): Promise<UserProfile> {
 export interface GradeOut {
   id_tarea: number;
   nombre_tarea: string;
-  id_sesion: string;
+  id_bloque: string;
   nota: number;
 }
 
@@ -84,7 +89,8 @@ export interface CalendarEvent {
   id: string;
   tipo: string;
   titulo: string;
-  id_sesion: string;
+  id_bloque: string | null;
+  id_sesion: string | null;
   aula: string | null;
   id_profesor: string | null;
   fecha_inicio: string;
@@ -94,6 +100,25 @@ export interface CalendarEvent {
 
 export async function getCalendarEvents(): Promise<CalendarEvent[]> {
   return apiFetch<CalendarEvent[]>('/api/v1/calendar/events');
+}
+
+export interface AgentChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface AgentChatResponse {
+  reply: string;
+}
+
+export async function sendAgentMessage(
+  message: string,
+  history: AgentChatMessage[] = [],
+): Promise<AgentChatResponse> {
+  return authenticatedFetch<AgentChatResponse>(AGENT_URL, '/api/v1/agent/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message, history }),
+  });
 }
 
 /** Maps backend rol to frontend userRole stored in localStorage */
