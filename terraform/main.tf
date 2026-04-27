@@ -2,7 +2,8 @@ terraform {
   required_version = ">= 1.0"
 
   backend "gcs" {
-    bucket = "gft-hackaton-tfstate-26"
+    # Nota: el bloque backend no admite variables de Terraform, el nombre debe ser literal
+    bucket = "project3grupo6-tfstate"
     prefix = "terraform/state"
   }
 

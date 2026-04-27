@@ -1,6 +1,7 @@
 -- Esquema canónico del backend FastAPI.
--- "bloques" representa el catálogo docente.
--- "sesiones" representa cada clase concreta con fecha, hora y aula.
+-- Bloque = concepto amplio (módulo/materia que agrupa sesiones, contenido, tareas y profesores).
+-- Sesion = encuentro específico (clase concreta con fecha, hora y aula).
+-- Se mantiene "ubicaciones" por compatibilidad con los seeds existentes.
 
 -- Tablas principales
 CREATE TABLE IF NOT EXISTS alumnos (
@@ -47,8 +48,8 @@ CREATE TABLE IF NOT EXISTS sesiones (
     id_bloque VARCHAR REFERENCES bloques(id_bloque),
     nombre VARCHAR,
     fecha DATE,
-    hora_inicio TIME,
-    hora_fin TIME,
+    hora_inicio VARCHAR,
+    hora_fin VARCHAR,
     aula VARCHAR
 );
 
@@ -59,7 +60,7 @@ CREATE TABLE IF NOT EXISTS ubicaciones (
     aula VARCHAR
 );
 
--- Tablas de relación
+-- Tablas de Relaciones
 CREATE TABLE IF NOT EXISTS rel_profesores_bloques (
     id_profesor VARCHAR REFERENCES profesores(id_profesor),
     id_bloque VARCHAR REFERENCES bloques(id_bloque),
@@ -112,7 +113,7 @@ CREATE TABLE IF NOT EXISTS eventos (
     id VARCHAR PRIMARY KEY,
     tipo VARCHAR,
     titulo VARCHAR,
-    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
+    id_bloque VARCHAR REFERENCES bloques(id_bloque),
     aula VARCHAR,
     id_profesor VARCHAR REFERENCES profesores(id_profesor),
     fecha_inicio TIMESTAMP,

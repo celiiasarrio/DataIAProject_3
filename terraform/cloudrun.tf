@@ -1,23 +1,23 @@
 # Service Account for frontend
 resource "google_service_account" "frontend_sa" {
-  account_id   = "hackaton-frontend-sa"
+  account_id   = "${var.app_name}-frontend-sa"
   display_name = "Service Account para Frontend Cloud Run"
 }
 
 # Service Account for backend
 resource "google_service_account" "backend_sa" {
-  account_id   = "hackaton-backend-sa"
+  account_id   = "${var.app_name}-backend-sa"
   display_name = "Service Account para Backend Cloud Run"
 }
 
 # Service Account for Firestore
 resource "google_service_account" "firestore_sa" {
-  account_id   = "hackaton-firestore-sa"
+  account_id   = "${var.app_name}-firestore-sa"
   display_name = "Service Account para Firestore"
 }
 
 resource "google_cloud_run_v2_service" "frontend" {
-  name     = "gft-hackaton-frontend"
+  name     = "${var.app_name}-frontend"
   location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
 
@@ -65,7 +65,7 @@ resource "google_cloud_run_v2_service_iam_member" "backend_public" {
 }
 
 resource "google_cloud_run_v2_service" "backend" {
-  name     = "gft-hackaton-backend"
+  name     = "${var.app_name}-backend"
   location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
 
