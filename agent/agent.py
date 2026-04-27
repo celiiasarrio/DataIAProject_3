@@ -1,7 +1,7 @@
 from google.adk.agents import LlmAgent
 
 from agent.config import settings
-from agent.prompts import SYSTEM_INSTRUCTION
+from agent.prompts import render_instruction
 from agent.tools import academic, communication, profile, scheduling
 
 
@@ -10,13 +10,15 @@ TOOLS = [
     profile.get_my_profile,
     profile.update_my_profile,
     profile.get_user_by_id,
-    # Sesiones (antes "asignaturas")
+    # Bloques y sesiones
+    academic.list_my_blocks,
+    academic.list_blocks,
     academic.list_sessions,
     academic.get_session_detail,
     academic.list_students_in_session,
     # Notas
     academic.get_my_grades,
-    academic.get_my_grades_for_session,
+    academic.get_my_grades_for_block,
     academic.register_grade,
     academic.update_grade,
     # Asistencia
@@ -46,15 +48,16 @@ TOOLS = [
 ]
 
 
-root_agent = LlmAgent(
-    name="campus_assistant",
-    model=settings.MODEL,
-    description=(
-        "Asistente personal del campus virtual de EDEM. Adapta su comportamiento "
-        "al rol del usuario (alumno, profesor o coordinador) y opera contra la API "
-        "del campus para consultar y gestionar notas, asistencia, calendario, "
-        "tutorías, correos y notificaciones."
-    ),
-    instruction=SYSTEM_INSTRUCTION,
-    tools=TOOLS,
-)
+def create_root_agent(user_role: str, user_name: str, user_id: str) -> LlmAgent:
+    return LlmAgent(
+        name="campus_assistant",
+        model=settings.MODEL,
+        description=(
+            "Asistente personal del campus virtual de EDEM. Adapta su comportamiento "
+            "al rol del usuario (alumno, profesor o personal) y opera contra la API "
+            "del campus para consultar y gestionar notas, asistencia, calendario, "
+            "tutorías, correos y notificaciones."
+        ),
+        instruction=render_instruction(user_role=user_role, user_name=user_name, user_id=user_id),
+        tools=TOOLS,
+    )

@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
     # Base de datos PostgreSQL
+    DATABASE_URL: Optional[str] = None
     DB_USER: str = "postgres"
     DB_PASSWORD: str = ""
     DB_HOST: str = "localhost"
@@ -44,6 +45,9 @@ class Settings(BaseSettings):
         3. IP pública: conexión directa (menos segura)
         """
         
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+
         # Modo 1: Usando Cloud SQL Auth Proxy (recomendado para Cloud Run)
         if self.CLOUD_SQL_CONNECTION_NAME:
             cloud_sql_host = self.CLOUD_SQL_CONNECTION_NAME

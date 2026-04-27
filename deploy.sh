@@ -13,6 +13,18 @@ echo "==> Creating Artifact Registry (if not exists)..."
 terraform -chdir="${SCRIPT_DIR}/terraform" init
 terraform -chdir="${SCRIPT_DIR}/terraform" apply -target=google_artifact_registry_repository.docker -auto-approve
 
+echo "==> Building backend image..."
+docker build -t "${REGISTRY}/backend:latest" "${SCRIPT_DIR}/backend"
+
+echo "==> Pushing backend image..."
+docker push "${REGISTRY}/backend:latest"
+
+echo "==> Building agent image..."
+docker build -t "${REGISTRY}/agent:latest" "${SCRIPT_DIR}/agent"
+
+echo "==> Pushing agent image..."
+docker push "${REGISTRY}/agent:latest"
+
 echo "==> Building frontend image..."
 docker build -t "${REGISTRY}/frontend:latest" "${SCRIPT_DIR}/frontend"
 

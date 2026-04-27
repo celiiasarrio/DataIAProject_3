@@ -5,10 +5,20 @@ from google.adk.tools import ToolContext
 from agent.tools.http_client import api_get, api_post, api_put
 
 
-# ---------- Sesiones (antes "asignaturas") ----------
+# ---------- Bloques y sesiones ----------
+
+def list_blocks(tool_context: ToolContext) -> list:
+    """Lista todos los bloques disponibles en el sistema."""
+    return api_get("/api/v1/blocks", tool_context)
+
+
+def list_my_blocks(tool_context: ToolContext) -> list:
+    """Lista los bloques asociados al usuario autenticado."""
+    return api_get("/api/v1/blocks/me", tool_context)
+
 
 def list_sessions(tool_context: ToolContext) -> list:
-    """Lista todas las sesiones/asignaturas del sistema (id_sesion, nombre)."""
+    """Lista sesiones del sistema, opcionalmente filtrables en conversaciones posteriores."""
     return api_get("/api/v1/sessions", tool_context)
 
 
@@ -31,17 +41,17 @@ def get_my_grades(tool_context: ToolContext) -> list:
     """Devuelve todas las notas del alumno autenticado.
 
     Solo funciona si el rol del usuario es 'alumno'. Cada nota incluye
-    id_tarea, nombre_tarea, id_sesion y nota (0-10).
+    id_tarea, nombre_tarea, id_bloque y nota (0-10).
     """
     return api_get("/api/v1/grades/me", tool_context)
 
 
-def get_my_grades_for_session(tool_context: ToolContext, session_id: str) -> list:
-    """Devuelve las notas del alumno autenticado filtradas por sesión/asignatura.
+def get_my_grades_for_block(tool_context: ToolContext, block_id: str) -> list:
+    """Devuelve las notas del alumno autenticado filtradas por bloque.
 
     Solo funciona si el rol del usuario es 'alumno'.
     """
-    return api_get(f"/api/v1/grades/me/sessions/{session_id}", tool_context)
+    return api_get(f"/api/v1/grades/me/blocks/{block_id}", tool_context)
 
 
 def register_grade(
