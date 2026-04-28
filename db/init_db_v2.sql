@@ -4,12 +4,13 @@
 
 CREATE TABLE IF NOT EXISTS alumnos (
     id_alumno VARCHAR PRIMARY KEY,
-    nombre VARCHAR NOT NULL,
-    apellido1 VARCHAR NOT NULL,
+    nombre VARCHAR,
+    apellido1 VARCHAR,
     apellido2 VARCHAR,
     correo VARCHAR NOT NULL UNIQUE,
     contrasena VARCHAR NOT NULL,
-    url_foto VARCHAR
+    url_foto VARCHAR,
+    rol VARCHAR NOT NULL DEFAULT 'Alumno'
 );
 
 CREATE INDEX IF NOT EXISTS idx_alumnos_correo ON alumnos(correo);
@@ -20,13 +21,14 @@ CREATE TABLE IF NOT EXISTS profesores (
     apellido VARCHAR NOT NULL,
     correo VARCHAR NOT NULL UNIQUE,
     contrasena VARCHAR NOT NULL,
-    url_foto VARCHAR
+    url_foto VARCHAR,
+    rol VARCHAR NOT NULL DEFAULT 'Profesor'
 );
 
 CREATE INDEX IF NOT EXISTS idx_profesores_correo ON profesores(correo);
 
-CREATE TABLE IF NOT EXISTS personal_edem (
-    id_personal VARCHAR PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS coordinadores (
+    id_coordinador VARCHAR PRIMARY KEY,
     nombre VARCHAR NOT NULL,
     apellido VARCHAR NOT NULL,
     correo VARCHAR NOT NULL UNIQUE,
@@ -35,7 +37,7 @@ CREATE TABLE IF NOT EXISTS personal_edem (
     url_foto VARCHAR
 );
 
-CREATE INDEX IF NOT EXISTS idx_personal_correo ON personal_edem(correo);
+CREATE INDEX IF NOT EXISTS idx_personal_correo ON coordinadores(correo);
 
 CREATE TABLE IF NOT EXISTS grupos (
     id_grupo VARCHAR PRIMARY KEY,
@@ -85,10 +87,10 @@ CREATE TABLE IF NOT EXISTS rel_bloques_grupos (
     PRIMARY KEY (id_bloque, id_grupo)
 );
 
-CREATE TABLE IF NOT EXISTS rel_personal_grupos (
-    id_personal VARCHAR REFERENCES personal_edem(id_personal),
+CREATE TABLE IF NOT EXISTS rel_coordinadores_grupos (
+    id_coordinador VARCHAR REFERENCES coordinadores(id_coordinador),
     id_grupo VARCHAR REFERENCES grupos(id_grupo),
-    PRIMARY KEY (id_personal, id_grupo)
+    PRIMARY KEY (id_coordinador, id_grupo)
 );
 
 CREATE TABLE IF NOT EXISTS tareas (
