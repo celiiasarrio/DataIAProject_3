@@ -6,6 +6,8 @@ WORKDIR /app
 # Build-time env var for the backend URL (injected by CI/CD)
 ARG VITE_BACKEND_URL
 ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+ARG VITE_AGENT_URL
+ENV VITE_AGENT_URL=$VITE_AGENT_URL
 
 # Copiar los archivos de dependencias primero (aprovecha la caché de Docker)
 COPY package.json package-lock.json ./

@@ -22,7 +22,7 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from agent.agent import root_agent
+from agent.agent import create_root_agent
 from agent.config import settings
 
 
@@ -50,6 +50,8 @@ def fetch_profile(jwt: str) -> dict:
 
 async def _build_session(jwt: str, profile: dict):
     user_id = profile["id"]
+    user_role = profile.get("rol") or "desconocido"
+    user_name = f"{profile.get('nombre', '')} {profile.get('apellido', '')}".strip()
     session_service = InMemorySessionService()
     session = await session_service.create_session(
         app_name=APP_NAME,
@@ -58,11 +60,15 @@ async def _build_session(jwt: str, profile: dict):
         state={
             "jwt": jwt,
             "user_id": user_id,
-            "user_role": profile.get("rol") or "desconocido",
-            "user_name": f"{profile.get('nombre', '')} {profile.get('apellido', '')}".strip(),
+            "user_role": user_role,
+            "user_name": user_name,
         },
     )
-    runner = Runner(agent=root_agent, app_name=APP_NAME, session_service=session_service)
+    runner = Runner(
+        agent=create_root_agent(user_role=user_role, user_name=user_name, user_id=user_id),
+        app_name=APP_NAME,
+        session_service=session_service,
+    )
     return runner, session, user_id
 
 
