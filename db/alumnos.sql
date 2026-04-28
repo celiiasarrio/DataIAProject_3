@@ -3,7 +3,7 @@
 TRUNCATE TABLE
     alumnos,
     profesores,
-    personal_edem,
+    coordinadores,
     grupos,
     bloques,
     sesiones,
@@ -11,7 +11,7 @@ TRUNCATE TABLE
     rel_profesores_bloques,
     rel_alumnos_grupos,
     rel_bloques_grupos,
-    rel_personal_grupos,
+    rel_coordinadores_grupos,
     tareas,
     rel_alumno_tarea,
     asistencia,
@@ -24,37 +24,31 @@ TRUNCATE TABLE
     contenidos
 RESTART IDENTITY CASCADE;
 
-INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido", "apellido2", "correo", "contrasena", "url_foto") VALUES
-('daadgi', 'Daniel', 'Adam', 'Giménez', 'daadgi@edem.es', 'Da7!kLm92Q', ''),
-('joallu', 'Jorge', 'Albalat', 'Luengo', 'joallu@edem.es', 'Jo4#vRt81P', ''),
-('gebaad', 'Gemma', 'Balaguer', 'Adell', 'gebaad@edem.es', 'Ge9$uNx34L', ''),
-('cabesa', 'Carlos', 'Beltrán', 'Sanz', 'cabesa@edem.es', 'Ca2@pWd67M', ''),
-('inbupe', 'Iñaki', 'Buj', 'Peris', 'inbupe@edem.es', 'In8!yQs53K', ''),
-('pagaes', 'Pau', 'García', 'Esparter', 'pagaes@edem.es', 'Pa6#zHt28R', ''),
-('maazlo', 'Marina', 'Azul', 'López', 'maazlo@edem.es', 'Ma3$eJv74N', ''),
-('jomama', 'Jorge', 'Martínez', 'Martínez', 'jomama@edem.es', 'Jo1@xBc95T', ''),
-('japlro', 'Javier', 'Plaza', 'Rosique', 'japlro@edem.es', 'Ja5!mYu46H', ''),
-('sareva', 'Salvador', 'Reche', 'Vázquez', 'sareva@edem.es', 'Sa7#nKi83D', ''),
-('jogrhe', 'Jorge', 'Greus', 'Herrero', 'jogrhe@edem.es', 'Jo8$hPw52C', ''),
-('cesaco', 'Celia', 'Sarrió', 'Colomar', 'cesaco@edem.es', 'Ce4@tLq67B', ''),
-('jaloru', 'Javier', 'Lopez', 'Ruiz', 'jaloru@edem.es', 'Ja9!rMx31F', ''),
-('feorma', 'Felix', 'Ortuño', 'Martinez', 'feorma@edem.es', 'Fe2#vNd84S', '');
+INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido", "apellido2", "correo", "contrasena", "url_foto", "rol") VALUES
+('daadgi', 'Daniel', 'Adam', 'Giménez', 'daadgi@edem.es', 'Da7!kLm92Q', '', 'Alumno'),
+('joallu', 'Jorge', 'Albalat', 'Luengo', 'joallu@edem.es', 'Jo4#vRt81P', '', 'Alumno'),
+('gebaad', 'Gemma', 'Balaguer', 'Adell', 'gebaad@edem.es', 'Ge9$uNx34L', '', 'Alumno'),
+('cabesa', 'Carlos', 'Beltrán', 'Sanz', 'cabesa@edem.es', 'Ca2@pWd67M', '', 'Alumno'),
+('inbupe', 'Iñaki', 'Buj', 'Peris', 'inbupe@edem.es', 'In8!yQs53K', '', 'Alumno'),
+('pagaes', 'Pau', 'García', 'Esparter', 'pagaes@edem.es', 'Pa6#zHt28R', '', 'Alumno'),
+('maazlo', 'Marina', 'Azul', 'López', 'maazlo@edem.es', 'Ma3$eJv74N', '', 'Alumno'),
+('jomama', 'Jorge', 'Martínez', 'Martínez', 'jomama@edem.es', 'Jo1@xBc95T', '', 'Alumno'),
+('japlro', 'Javier', 'Plaza', 'Rosique', 'japlro@edem.es', 'Ja5!mYu46H', '', 'Alumno'),
+('sareva', 'Salvador', 'Reche', 'Vázquez', 'sareva@edem.es', 'Sa7#nKi83D', '', 'Alumno'),
+--('jogrhe', 'Jorge', 'Greus', 'Herrero', 'jogrhe@edem.es', 'Jo8$hPw52C', '', 'Alumno'),
+('cesaco', 'Celia', 'Sarrió', 'Colomar', 'cesaco@edem.es', 'Ce4@tLq67B', '', 'Alumno'),
+--('jaloru', 'Javier', 'Lopez', 'Ruiz', 'jaloru@edem.es', 'Ja9!rMx31F', '', 'Alumno'),
+--('feorma', 'Felix', 'Ortuño', 'Martinez', 'feorma@edem.es', 'Fe2#vNd84S', '', 'Alumno');
 
-INSERT INTO "profesores" ("id_profesor", "nombre", "apellido", "correo", "url_foto", "contrasena") VALUES
-('PROF-101', 'Adriana', 'Campos', 'adriana.campos@seed.local', 'https://ui-avatars.com/api/?name=Adriana%20Campos&size=200', 'prof123'),
-('PROF-102', 'Adrián', 'Colomer', 'adrian.colomer@seed.local', 'https://ui-avatars.com/api/?name=Adri%C3%A1n%20Colomer&size=200', 'prof123'),
-('PROF-103', 'Fabio', 'Castro', 'fabio.castro@seed.local', 'https://ui-avatars.com/api/?name=Fabio%20Castro&size=200', 'prof123'),
-('PROF-104', 'Nuria', 'Berzal', 'nuria.berzal@seed.local', 'https://ui-avatars.com/api/?name=Nuria%20Berzal&size=200', 'prof123'),
-('PROF-105', 'Pedro', 'Nieto', 'pedro.nieto@seed.local', 'https://ui-avatars.com/api/?name=Pedro%20Nieto&size=200', 'prof123'),
-('PROF-106', 'Ángel', 'Llosa', 'angel.llosa@seed.local', 'https://ui-avatars.com/api/?name=%C3%81ngel%20Llosa&size=200', 'prof123');
+INSERT INTO "profesores" ("id_profesor", "nombre", "apellido", "apellido2", "correo", "contrasena", "url_foto", 'rol') VALUES
+('penipe', 'Pedro', 'Nieto', 'Pelaez', 'pedronietopelaez@gmail.com', 'PeNiPe2026!', '', 'Profesor');
 
-INSERT INTO "personal_edem" ("id_personal", "nombre", "apellido", "correo", "rol", "url_foto", "contrasena") VALUES
-('PER-001', 'Andrea', 'Soler', 'andrea.soler@edem.es', 'Coordinador', 'https://ui-avatars.com/api/?name=Andrea%20Soler&size=200', 'staff123'),
-('PER-002', 'Luis', 'Marín', 'luis.marin@edem.es', 'Coordinador', 'https://ui-avatars.com/api/?name=Luis%20Mar%C3%ADn&size=200', 'staff123');
+INSERT INTO "coordinadores" ("id_coordinador", "nombre", "apellido", "correo", "contrasena", "url_foto", "rol") VALUES
+('m.herrera', 'Miguel', 'Herrera', 'm.herrera@edem.es', 'MiHe2026!', '', 'Coordinador');
 
-INSERT INTO "grupos" ("id_grupo", "nombre") VALUES
-('GRP-003', 'MDA A'),
-('GRP-006', 'MIA');
+INSERT INTO "grupos" ("id_grupo") VALUES
+('MDA A 2526'),
+('MIA 2526');
 
 INSERT INTO "bloques" ("id_bloque", "nombre") VALUES
 ('BLQ-101', 'FUNDAMENTOS: Python'),
@@ -119,7 +113,7 @@ INSERT INTO "rel_profesores_bloques" ("id_profesor", "id_bloque") VALUES
 ('PROF-105', 'BLQ-105'),
 ('PROF-106', 'BLQ-106');
 
-INSERT INTO "rel_personal_grupos" ("id_personal", "id_grupo") VALUES
+INSERT INTO "rel_coordinadores_grupos" ("id_coordinador", "id_grupo") VALUES
 ('PER-001', 'GRP-003'),
 ('PER-002', 'GRP-006');
 

@@ -19,10 +19,10 @@ from sqlalchemy.orm import declarative_base
 Base = declarative_base()
 
 
-class PersonalEdem(Base):
-    __tablename__ = "personal_edem"
+class Coordinador(Base):
+    __tablename__ = "coordinadores"
 
-    id_personal = Column(String, primary_key=True, index=True)
+    id_coordinador = Column(String, primary_key=True, index=True)
     nombre = Column(String, nullable=False)
     apellido = Column(String, nullable=False)
     correo = Column(String, nullable=False, unique=True, index=True)
@@ -48,6 +48,7 @@ class Alumno(Base):
     correo = Column(String, nullable=False, unique=True, index=True)
     contrasena = Column(String, nullable=False)
     url_foto = Column(String, nullable=True)
+    rol = Column(String, nullable=False, default="Alumno")
 
     @property
     def apellido(self) -> str:
@@ -80,6 +81,7 @@ class Profesor(Base):
     correo = Column(String, nullable=False, unique=True, index=True)
     contrasena = Column(String, nullable=False)
     url_foto = Column(String, nullable=True)
+    rol = Column(String, nullable=False, default="Profesor")
 
 
 class Bloque(Base):
@@ -132,10 +134,10 @@ class Asistencia(Base):
     presente = Column(Boolean, nullable=False, default=True)
 
 
-class RelPersonalGrupos(Base):
-    __tablename__ = "rel_personal_grupos"
+class RelCoordinadoresGrupos(Base):
+    __tablename__ = "rel_coordinadores_grupos"
 
-    id_personal = Column(String, ForeignKey("personal_edem.id_personal"), primary_key=True)
+    id_coordinador = Column(String, ForeignKey("coordinadores.id_coordinador"), primary_key=True)
     id_grupo = Column(String, ForeignKey("grupos.id_grupo"), primary_key=True)
 
 

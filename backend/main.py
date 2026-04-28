@@ -45,7 +45,7 @@ from models import (
     FranjaTutoria,
     Grupo,
     Notificacion,
-    PersonalEdem,
+    Coordinador,
     Profesor,
     RelAlumnoTarea,
     RelAlumnosGrupos,
@@ -438,7 +438,7 @@ def get_user_id(user) -> str:
     return (
         getattr(user, "id_alumno", None)
         or getattr(user, "id_profesor", None)
-        or getattr(user, "id_personal", None)
+        or getattr(user, "id_coordinador", None)
     )
 
 
@@ -447,7 +447,7 @@ def get_user_role(user) -> str:
         return "alumno"
     if getattr(user, "id_profesor", None):
         return "profesor"
-    if getattr(user, "id_personal", None):
+    if getattr(user, "id_coordinador", None):
         return "personal"
     return "desconocido"
 
@@ -476,7 +476,7 @@ def find_user_by_id(db: Session, user_id: str):
     user = db.query(Profesor).filter(Profesor.id_profesor == user_id).first()
     if user:
         return user
-    return db.query(PersonalEdem).filter(PersonalEdem.id_personal == user_id).first()
+    return db.query(Coordinador).filter(Coordinador.id_coordinador == user_id).first()
 
 
 def find_user_by_email(db: Session, email: str):
@@ -486,7 +486,7 @@ def find_user_by_email(db: Session, email: str):
     user = db.query(Profesor).filter(Profesor.correo == email).first()
     if user:
         return user
-    return db.query(PersonalEdem).filter(PersonalEdem.correo == email).first()
+    return db.query(Coordinador).filter(Coordinador.correo == email).first()
 
 
 def ensure_notification_settings(db: Session, user_id: str) -> ConfiguracionNotificacion:
@@ -786,7 +786,7 @@ def list_my_blocks(
         db.query(Bloque)
         .join(RelBloquesGrupos, RelBloquesGrupos.id_bloque == Bloque.id_bloque)
         .join(RelPersonalGrupos, RelPersonalGrupos.id_grupo == RelBloquesGrupos.id_grupo)
-        .filter(RelPersonalGrupos.id_personal == current_user.id_personal)
+        .filter(RelPersonalGrupos.id_coordinador == current_user.id_coordinador)
         .distinct()
         .order_by(Bloque.nombre)
         .all()
@@ -961,7 +961,7 @@ def list_my_sessions(
         db.query(Sesion)
         .join(RelBloquesGrupos, RelBloquesGrupos.id_bloque == Sesion.id_bloque)
         .join(RelPersonalGrupos, RelPersonalGrupos.id_grupo == RelBloquesGrupos.id_grupo)
-        .filter(RelPersonalGrupos.id_personal == current_user.id_personal)
+        .filter(RelPersonalGrupos.id_coordinador == current_user.id_coordinador)
         .distinct()
         .order_by(Sesion.fecha, Sesion.hora_inicio)
         .all()
@@ -1494,7 +1494,7 @@ def list_my_groups(
     return (
         db.query(Grupo)
         .join(RelPersonalGrupos, RelPersonalGrupos.id_grupo == Grupo.id_grupo)
-        .filter(RelPersonalGrupos.id_personal == current_user.id_personal)
+        .filter(RelPersonalGrupos.id_coordinador == current_user.id_coordinador)
         .order_by(Grupo.nombre)
         .all()
     )
