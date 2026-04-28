@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Camera, Edit2, Check, X, Mail, Linkedin,
   GraduationCap, BadgeCheck, Hash,
 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { useNavigate } from 'react-router';
-import { getMyProfile } from '../api/client';
+import { getMyProfile, uploadProfilePhoto, deleteProfilePhoto } from '../api/client';
 
 const DEFAULT_PHOTO = 'https://images.unsplash.com/photo-1600180758890-6b94519a8ba6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx5b3VuZyUyMG1hbGUlMjBzdHVkZW50JTIwcHJvZmVzc2lvbmFsJTIwaGVhZHNob3R8ZW58MXx8fHwxNzc0NDUzMDQ4fDA&ixlib=rb-4.1.0&q=80&w=1080';
 
@@ -67,11 +67,25 @@ export function ProfileScreen() {
   const isAdmin = userRole === 'admin';
   const isProfessor = userRole === 'professor';
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setPhotoUrl(url);
+    setPhotoUrl(URL.createObjectURL(file));
+    try {
+      const result = await uploadProfilePhoto(file);
+      setPhotoUrl(result.url_foto);
+    } catch {
+      // preview stays but upload failed silently
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    try {
+      await deleteProfilePhoto();
+      setPhotoUrl(DEFAULT_PHOTO);
+    } catch {
+      // ignore
+    }
   };
 
   const handleSaveContact = () => {
@@ -128,6 +142,15 @@ export function ProfileScreen() {
             >
               <Camera size={14} className="text-[#008899]" />
             </button>
+            {/* Delete photo button — only shown when user has a custom photo */}
+            {photoUrl !== DEFAULT_PHOTO && (
+              <button
+                onClick={handleDeletePhoto}
+                className="absolute top-0 right-0 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow hover:bg-red-600 transition-colors"
+              >
+                <X size={10} className="text-white" />
+              </button>
+            )}
             <input
               ref={fileInputRef}
               type="file"

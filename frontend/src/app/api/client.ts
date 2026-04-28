@@ -62,6 +62,26 @@ export async function getMyProfile(): Promise<UserProfile> {
   return apiFetch<UserProfile>('/api/v1/users/me');
 }
 
+export async function uploadProfilePhoto(file: File): Promise<{ url_foto: string }> {
+  const token = localStorage.getItem('token');
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${BASE_URL}/api/v1/users/me/photo`, {
+    method: 'PUT',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { detail?: string }).detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function deleteProfilePhoto(): Promise<void> {
+  return apiFetch<void>('/api/v1/users/me/photo', { method: 'DELETE' });
+}
+
 export interface GradeOut {
   id_tarea: number;
   nombre_tarea: string;
