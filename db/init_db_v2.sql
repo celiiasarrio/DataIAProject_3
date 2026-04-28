@@ -7,7 +7,11 @@
 CREATE TABLE IF NOT EXISTS alumnos (
     id_alumno VARCHAR PRIMARY KEY,
     nombre VARCHAR,
+<<<<<<< Updated upstream
     apellido1 VARCHAR,
+=======
+    apellido VARCHAR,
+>>>>>>> Stashed changes
     apellido2 VARCHAR,
     correo VARCHAR,
     contrasena VARCHAR,

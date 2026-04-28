@@ -18,6 +18,7 @@ import bcrypt as bcrypt_lib
 import uuid
 from datetime import datetime, date, timedelta
 from typing import List
+from google.cloud import storage as gcs
 
 from config import settings
 from models import (
@@ -538,18 +539,61 @@ def update_profile(
     return {"mensaje": "Perfil actualizado correctamente"}
 
 
+GCS_BUCKET = "project3grupo6-photos"
+
 @app.put("/api/v1/users/me/photo", tags=["Perfil y Roles"])
 def upload_profile_photo(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+<<<<<<< Updated upstream
     fake_gcp_url = f"https://storage.googleapis.com/tu-bucket/fotos/{get_user_id(current_user)}_{file.filename}"
     current_user.url_foto = fake_gcp_url
+=======
+    """Sube una foto de perfil a GCS y actualiza la URL en la BBDD."""
+    user_id = getattr(current_user, 'id_alumno', None) or getattr(current_user, 'id_profesor', None) or getattr(current_user, 'id_personal', None)
+    ext = (file.filename or "jpg").rsplit(".", 1)[-1].lower()
+    blob_name = f"fotos/{user_id}.{ext}"
+
+    client = gcs.Client()
+    bucket = client.bucket(GCS_BUCKET)
+    blob = bucket.blob(blob_name)
+    blob.upload_from_file(file.file, content_type=file.content_type)
+
+    public_url = f"https://storage.googleapis.com/{GCS_BUCKET}/{blob_name}"
+    current_user.url_foto = public_url
+>>>>>>> Stashed changes
     db.commit()
     db.refresh(current_user)
     return {"mensaje": "Foto subida con exito", "url_foto": fake_gcp_url}
 
+<<<<<<< Updated upstream
+=======
+    return {"mensaje": "Foto subida con éxito", "url_foto": public_url}
+
+@app.delete("/api/v1/users/me/photo", tags=["Perfil y Roles"])
+def delete_profile_photo(
+    db: Session = Depends(get_db),
+    current_user: Alumno = Depends(get_current_user)
+):
+    """Elimina la foto de perfil de GCS y borra la URL en la BBDD."""
+    user_id = getattr(current_user, 'id_alumno', None) or getattr(current_user, 'id_profesor', None) or getattr(current_user, 'id_personal', None)
+
+    if current_user.url_foto:
+        try:
+            client = gcs.Client()
+            bucket = client.bucket(GCS_BUCKET)
+            blob_name = current_user.url_foto.split(f"{GCS_BUCKET}/")[-1]
+            bucket.blob(blob_name).delete()
+        except Exception:
+            pass
+
+    current_user.url_foto = None
+    db.commit()
+
+    return {"mensaje": "Foto eliminada correctamente"}
+>>>>>>> Stashed changes
 
 @app.get("/api/v1/users/{user_id}", tags=["Perfil y Roles"])
 def get_user_profile(user_id: str, db: Session = Depends(get_db)):

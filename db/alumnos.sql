@@ -15,7 +15,7 @@ TRUNCATE TABLE "rel_profesores_bloques" CASCADE;
 TRUNCATE TABLE "tareas" CASCADE;
 TRUNCATE TABLE "ubicaciones" CASCADE;
 
-INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido1", "apellido2", "correo", "contrasena", "url_foto") VALUES
+INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido", "apellido2", "correo", "contrasena", "url_foto") VALUES
 ('daadgi', 'Daniel', 'Adam', 'Giménez', 'daadgi@edem.es', 'Da7!kLm92Q', ''),
 ('joallu', 'Jorge', 'Albalat', 'Luengo', 'joallu@edem.es', 'Jo4#vRt81P', ''),
 ('gebaad', 'Gemma', 'Balaguer', 'Adell', 'gebaad@edem.es', 'Ge9$uNx34L', ''),

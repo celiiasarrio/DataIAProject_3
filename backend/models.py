@@ -44,7 +44,11 @@ class Alumno(Base):
 
     id_alumno = Column(String, primary_key=True, index=True)
     nombre = Column(String)
+<<<<<<< Updated upstream
     apellido1 = Column(String)
+=======
+    apellido = Column(String)
+>>>>>>> Stashed changes
     apellido2 = Column(String, nullable=True)
     correo = Column(String)
     contrasena = Column(String)
