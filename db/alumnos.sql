@@ -51,12 +51,10 @@ INSERT INTO "grupos" ("id_grupo") VALUES
 ('MIA 2526');
 
 INSERT INTO "bloques" ("id_bloque", "nombre") VALUES
-('BLQ-101', 'FUNDAMENTOS: Python'),
-('BLQ-102', 'ENTORNO CLOUD: GCP Cloud Run'),
-('BLQ-103', 'TRATAMIENTO DEL DATO: PySpark'),
-('BLQ-104', 'IA GENERATIVA: Agentes'),
-('BLQ-105', 'IA PREDICTIVA: ML 1: Regresión'),
-('BLQ-106', 'SKILLS: Comunicación');
+('1-MDA', 'B1. FUNDAMENTOS'),
+('2-MDA', 'B2. TRATAMIENTO DEL DATO'),
+('3-MDA', 'B3. ENTORNO CLOUD'),
+('4-MDA', 'SOFT SKILLS');
 
 INSERT INTO "sesiones" ("id_sesion", "id_bloque", "nombre", "fecha", "hora_inicio", "hora_fin", "aula") VALUES
 ('SES-1011', 'BLQ-101', 'Python para análisis de datos', '2026-05-04', '09:00', '11:00', 'AULA 101'),
