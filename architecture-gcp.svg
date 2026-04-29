@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1200 920" width="1200" height="920" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Arquitectura EDEM Student Hub">
+  <defs>
+    <symbol id="ic-cloudrun" viewBox="0 0 32 32">
+      <path d="M16 3 L28 10 L28 22 L16 29 L4 22 L4 10 Z" fill="#4285f4"/>
+      <path d="M16 8 L23 12 L23 20 L16 24 L9 20 L9 12 Z" fill="#1a73e8"/>
+      <path d="M13.5 12 L20 16 L13.5 20 Z" fill="#ffffff"/>
+    </symbol>
+    <symbol id="ic-cloudsql" viewBox="0 0 32 32">
+      <ellipse cx="16" cy="7" rx="11" ry="3.5" fill="#1a73e8"/>
+      <path d="M5 7 L5 25 C5 27 10 28.5 16 28.5 C22 28.5 27 27 27 25 L27 7" fill="#4285f4"/>
+      <ellipse cx="16" cy="7" rx="11" ry="3.5" fill="#669df6"/>
+      <path d="M5 14 C5 16 10 17.5 16 17.5 C22 17.5 27 16 27 14" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="0.8"/>
+      <path d="M5 21 C5 23 10 24.5 16 24.5 C22 24.5 27 23 27 21" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="0.8"/>
+    </symbol>
+    <symbol id="ic-vertexai" viewBox="0 0 32 32">
+      <path d="M16 3 L28 10 L28 22 L16 29 L4 22 L4 10 Z" fill="#1a73e8"/>
+      <path d="M16 9 L17.5 14.5 L23 16 L17.5 17.5 L16 23 L14.5 17.5 L9 16 L14.5 14.5 Z" fill="#ffffff"/>
+      <circle cx="16" cy="16" r="1.5" fill="#1a73e8"/>
+    </symbol>
+    <symbol id="ic-firestore" viewBox="0 0 32 32">
+      <path d="M16 3 C16 3 11 11 11 17 C11 22 13 26 16 26 C19 26 21 22 21 17 C21 11 16 3 16 3 Z" fill="#f9ab00"/>
+      <path d="M14 17 C14 17 12 21 12 24 C12 26.5 14 28 16 28 C18 28 20 26.5 20 24 C20 21 18 17 18 17" fill="#ea8600"/>
+      <path d="M15 22 C15 22 14.5 24 15 25.5 C15.5 26.5 16.5 26.5 17 25.5 C17.5 24 17 22 17 22" fill="#ffd166"/>
+    </symbol>
+    <symbol id="ic-logging" viewBox="0 0 32 32">
+      <rect x="4" y="6" width="24" height="4" rx="1" fill="#34a853"/>
+      <rect x="4" y="14" width="20" height="4" rx="1" fill="#1a73e8"/>
+      <rect x="4" y="22" width="24" height="4" rx="1" fill="#669df6"/>
+    </symbol>
+    <symbol id="ic-user" viewBox="0 0 32 32">
+      <circle cx="16" cy="11" r="5" fill="#5f6368"/>
+      <path d="M5 28 C5 21 10 18 16 18 C22 18 27 21 27 28 Z" fill="#5f6368"/>
+    </symbol>
+    <symbol id="ic-react" viewBox="0 0 32 32">
+      <circle cx="16" cy="16" r="2.4" fill="#61dafb"/>
+      <ellipse cx="16" cy="16" rx="11" ry="4.2" fill="none" stroke="#61dafb" stroke-width="1.2"/>
+      <ellipse cx="16" cy="16" rx="11" ry="4.2" fill="none" stroke="#61dafb" stroke-width="1.2" transform="rotate(60 16 16)"/>
+      <ellipse cx="16" cy="16" rx="11" ry="4.2" fill="none" stroke="#61dafb" stroke-width="1.2" transform="rotate(120 16 16)"/>
+    </symbol>
+    <filter id="card-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#202124" flood-opacity="0.06"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#9aa0a6"/>
+    </marker>
+    <marker id="arrow-soft" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#c4c7c5"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="920" fill="#ffffff"/>
+
+  <g>
+    <rect x="80" y="40" width="1040" height="150" rx="14" fill="#fafafa" stroke="#dadce0" stroke-width="1" stroke-dasharray="5 4"/>
+    <text x="100" y="68" font-size="12" font-weight="600" fill="#5f6368" letter-spacing="1.2">CLIENTES</text>
+
+    <g>
+      <rect x="130" y="92" width="220" height="78" rx="10" fill="#ffffff" stroke="#e8eaed" stroke-width="1" filter="url(#card-shadow)"/>
+      <use href="#ic-user" x="148" y="115" width="32" height="32"/>
+      <text x="190" y="125" font-size="15" font-weight="600" fill="#202124">Alumno</text>
+      <text x="190" y="146" font-size="12" font-weight="400" fill="#80868b">Cliente web</text>
+    </g>
+    <g>
+      <rect x="370" y="92" width="220" height="78" rx="10" fill="#ffffff" stroke="#e8eaed" stroke-width="1" filter="url(#card-shadow)"/>
+      <use href="#ic-user" x="388" y="115" width="32" height="32"/>
+      <text x="430" y="125" font-size="15" font-weight="600" fill="#202124">Profesor</text>
+      <text x="430" y="146" font-size="12" font-weight="400" fill="#80868b">Cliente web</text>
+    </g>
+    <g>
+      <rect x="610" y="92" width="220" height="78" rx="10" fill="#ffffff" stroke="#e8eaed" stroke-width="1" filter="url(#card-shadow)"/>
+      <use href="#ic-user" x="628" y="115" width="32" height="32"/>
+      <text x="670" y="125" font-size="15" font-weight="600" fill="#202124">Coordinador</text>
+      <text x="670" y="146" font-size="12" font-weight="400" fill="#80868b">Cliente web</text>
+    </g>
+    <g>
+      <rect x="850" y="92" width="220" height="78" rx="10" fill="#ffffff" stroke="#e8eaed" stroke-width="1" filter="url(#card-shadow)"/>
+      <use href="#ic-user" x="868" y="115" width="32" height="32"/>
+      <text x="910" y="125" font-size="15" font-weight="600" fill="#202124">Director de área</text>
+      <text x="910" y="146" font-size="12" font-weight="400" fill="#80868b">Cliente web</text>
+    </g>
+  </g>
+
+  <g stroke="#9aa0a6" stroke-width="1.4" fill="none">
+    <path d="M240,170 C240,210 600,200 600,250" marker-end="url(#arrow)"/>
+    <path d="M480,170 C480,210 600,210 600,250" marker-end="url(#arrow)"/>
+    <path d="M720,170 C720,210 600,210 600,250" marker-end="url(#arrow)"/>
+    <path d="M960,170 C960,210 600,200 600,250" marker-end="url(#arrow)"/>
+  </g>
+  <g>
+    <rect x="568" y="206" width="64" height="22" rx="11" fill="#ffffff" stroke="#e8eaed"/>
+    <text x="600" y="221" text-anchor="middle" font-size="11" font-weight="500" fill="#5f6368" font-family="Roboto Mono, ui-monospace, Consolas, monospace">HTTPS</text>
+  </g>
+
+  <g>
+    <rect x="80" y="250" width="1040" height="240" rx="14" fill="#fafafa" stroke="#dadce0" stroke-width="1" stroke-dasharray="5 4"/>
+    <g transform="translate(100,272)">
+      <use href="#ic-cloudrun" width="20" height="20"/>
+      <text x="28" y="15" font-size="12" font-weight="600" fill="#5f6368" letter-spacing="1.2">CLOUD RUN · AUTOESCALA</text>
+    </g>
+
+    <g>
+      <rect x="370" y="304" width="460" height="78" rx="10" fill="#ffffff" stroke="#e8eaed" stroke-width="1" filter="url(#card-shadow)"/>
+      <use href="#ic-react" x="392" y="327" width="32" height="32"/>
+      <text x="436" y="335" font-size="15" font-weight="600" fill="#202124">Frontend</text>
+      <text x="436" y="357" font-size="12" font-weight="400" fill="#5f6368">React + Vite + Tailwind</text>
+    </g>
+
+    <g>
+      <line x1="600" y1="382" x2="600" y2="410" stroke="#9aa0a6" stroke-width="1.4" marker-end="url(#arrow)"/>
+      <rect x="555" y="386" width="90" height="22" rx="11" fill="#ffffff" stroke="#e8eaed"/>
+      <text x="600" y="401" text-anchor="middle" font-size="11" font-weight="500" fill="#5f6368" font-family="Roboto Mono, ui-monospace, Consolas, monospace">Bearer JWT</text>
+    </g>
+
+    <g>
+      <rect x="370" y="412" width="460" height="78" rx="10" fill="#ffffff" stroke="#e8eaed" stroke-width="1" filter="url(#card-shadow)"/>
+      <use href="#ic-cloudrun" x="392" y="435" width="32" height="32"/>
+      <text x="436" y="443" font-size="15" font-weight="600" fill="#202124">Backend API</text>
+      <text x="436" y="465" font-size="12" font-weight="400" fill="#5f6368">FastAPI · JWT · check_rol</text>
+    </g>
+  </g>
+
+  <g stroke="#9aa0a6" stroke-width="1.4" fill="none">
+    <path d="M420,490 C420,560 220,560 220,610" marker-end="url(#arrow)"/>
+  </g>
+  <g>
+    <rect x="220" y="540" width="120" height="22" rx="11" fill="#ffffff" stroke="#e8eaed"/>
+    <text x="280" y="555" text-anchor="middle" font-size="11" font-weight="500" fill="#5f6368" font-family="Roboto Mono, ui-monospace, Consolas, monospace">SQL · SQLAlchemy</text>
+  </g>
+
+  <g stroke="#9aa0a6" stroke-width="1.4" fill="none">
+    <path d="M540,490 L540,610" marker-end="url(#arrow)"/>
+    <path d="M660,610 L660,490" marker-end="url(#arrow)"/>
+  </g>
+  <g>
+    <rect x="406" y="540" width="118" height="22" rx="11" fill="#ffffff" stroke="#e8eaed"/>
+    <text x="465" y="555" text-anchor="middle" font-size="11" font-weight="500" fill="#5f6368" font-family="Roboto Mono, ui-monospace, Consolas, monospace">propaga JWT</text>
+  </g>
+  <g>
+    <rect x="676" y="540" width="146" height="22" rx="11" fill="#ffffff" stroke="#e8eaed"/>
+    <text x="749" y="555" text-anchor="middle" font-size="11" font-weight="500" fill="#5f6368" font-family="Roboto Mono, ui-monospace, Consolas, monospace">llama API · Bearer JWT</text>
+  </g>
+
+  <g stroke="#c4c7c5" stroke-width="1.2" fill="none" stroke-dasharray="4 4">
+    <path d="M780,490 C780,560 980,560 980,610" marker-end="url(#arrow-soft)"/>
+  </g>
+  <g>
+    <rect x="900" y="540" width="80" height="22" rx="11" fill="#ffffff" stroke="#e8eaed"/>
+    <text x="940" y="555" text-anchor="middle" font-size="11" font-weight="500" fill="#80868b" font-family="Roboto Mono, ui-monospace, Consolas, monospace">logs</text>
+  </g>
+
+  <g>
+    <rect x="100" y="610" width="240" height="100" rx="10" fill="#ffffff" stroke="#e8eaed" stroke-width="1" filter="url(#card-shadow)"/>
+    <use href="#ic-cloudsql" x="120" y="630" width="36" height="36"/>
+    <text x="166" y="640" font-size="15" font-weight="600" fill="#202124">Cloud SQL</text>
+    <text x="166" y="660" font-size="12" font-weight="400" fill="#5f6368">PostgreSQL</text>
+    <text x="120" y="694" font-size="10" font-weight="500" fill="#80868b" font-family="Roboto Mono, ui-monospace, Consolas, monospace">private · vpc</text>
+  </g>
+
+  <g>
+    <rect x="480" y="610" width="240" height="100" rx="10" fill="#ffffff" stroke="#e8eaed" stroke-width="1" filter="url(#card-shadow)"/>
+    <use href="#ic-vertexai" x="500" y="630" width="36" height="36"/>
+    <text x="546" y="640" font-size="15" font-weight="600" fill="#202124">Vertex AI</text>
+    <text x="546" y="660" font-size="12" font-weight="400" fill="#5f6368">Agent Engine · Gemini</text>
+    <text x="500" y="694" font-size="10" font-weight="500" fill="#80868b" font-family="Roboto Mono, ui-monospace, Consolas, monospace">managed agent runtime</text>
+  </g>
+
+  <g>
+    <rect x="860" y="610" width="240" height="100" rx="10" fill="#ffffff" stroke="#e8eaed" stroke-width="1" filter="url(#card-shadow)"/>
+    <use href="#ic-logging" x="880" y="630" width="36" height="36"/>
+    <text x="926" y="640" font-size="15" font-weight="600" fill="#202124">Cloud Logging</text>
+    <text x="926" y="660" font-size="12" font-weight="400" fill="#5f6368">+ Cloud Monitoring</text>
+    <text x="880" y="694" font-size="10" font-weight="500" fill="#80868b" font-family="Roboto Mono, ui-monospace, Consolas, monospace">observabilidad</text>
+  </g>
+
+  <g stroke="#9aa0a6" stroke-width="1.4" fill="none">
+    <path d="M600,710 L600,790" marker-end="url(#arrow)"/>
+  </g>
+  <g>
+    <rect x="540" y="734" width="120" height="22" rx="11" fill="#ffffff" stroke="#e8eaed"/>
+    <text x="600" y="749" text-anchor="middle" font-size="11" font-weight="500" fill="#5f6368" font-family="Roboto Mono, ui-monospace, Consolas, monospace">read · write</text>
+  </g>
+
+  <g>
+    <rect x="480" y="790" width="240" height="100" rx="10" fill="#ffffff" stroke="#e8eaed" stroke-width="1" filter="url(#card-shadow)"/>
+    <use href="#ic-firestore" x="500" y="810" width="36" height="36"/>
+    <text x="546" y="820" font-size="15" font-weight="600" fill="#202124">Firestore</text>
+    <text x="546" y="840" font-size="12" font-weight="400" fill="#5f6368">Memoria del agente</text>
+    <text x="500" y="874" font-size="10" font-weight="500" fill="#80868b" font-family="Roboto Mono, ui-monospace, Consolas, monospace">native mode · multi-region</text>
+  </g>
+</svg>
