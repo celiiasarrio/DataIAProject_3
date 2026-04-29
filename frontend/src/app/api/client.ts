@@ -147,3 +147,15 @@ export function mapRol(rol: string): string {
   if (rol === 'profesor') return 'professor';
   return 'admin';
 }
+
+export interface AgentChatResponse {
+  reply: string;
+  session_id?: string;
+}
+
+export async function sendAgentMessage(message: string, sessionId?: string): Promise<AgentChatResponse> {
+  return apiFetch<AgentChatResponse>('/api/v1/agent/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message, session_id: sessionId }),
+  });
+}

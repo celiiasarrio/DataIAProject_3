@@ -50,7 +50,7 @@ from models import (
     RelAlumnoTarea,
     RelAlumnosGrupos,
     RelBloquesGrupos,
-    RelPersonalGrupos,
+    RelCoordinadoresGrupos,
     RelProfesoresBloques,
     Reserva,
     Sesion,
@@ -785,8 +785,8 @@ def list_my_blocks(
     return (
         db.query(Bloque)
         .join(RelBloquesGrupos, RelBloquesGrupos.id_bloque == Bloque.id_bloque)
-        .join(RelPersonalGrupos, RelPersonalGrupos.id_grupo == RelBloquesGrupos.id_grupo)
-        .filter(RelPersonalGrupos.id_coordinador == current_user.id_coordinador)
+        .join(RelCoordinadoresGrupos, RelCoordinadoresGrupos.id_grupo == RelBloquesGrupos.id_grupo)
+        .filter(RelCoordinadoresGrupos.id_coordinador == current_user.id_coordinador)
         .distinct()
         .order_by(Bloque.nombre)
         .all()
@@ -960,8 +960,8 @@ def list_my_sessions(
     return (
         db.query(Sesion)
         .join(RelBloquesGrupos, RelBloquesGrupos.id_bloque == Sesion.id_bloque)
-        .join(RelPersonalGrupos, RelPersonalGrupos.id_grupo == RelBloquesGrupos.id_grupo)
-        .filter(RelPersonalGrupos.id_coordinador == current_user.id_coordinador)
+        .join(RelCoordinadoresGrupos, RelCoordinadoresGrupos.id_grupo == RelBloquesGrupos.id_grupo)
+        .filter(RelCoordinadoresGrupos.id_coordinador == current_user.id_coordinador)
         .distinct()
         .order_by(Sesion.fecha, Sesion.hora_inicio)
         .all()
@@ -1493,8 +1493,8 @@ def list_my_groups(
         )
     return (
         db.query(Grupo)
-        .join(RelPersonalGrupos, RelPersonalGrupos.id_grupo == Grupo.id_grupo)
-        .filter(RelPersonalGrupos.id_coordinador == current_user.id_coordinador)
+        .join(RelCoordinadoresGrupos, RelCoordinadoresGrupos.id_grupo == Grupo.id_grupo)
+        .filter(RelCoordinadoresGrupos.id_coordinador == current_user.id_coordinador)
         .order_by(Grupo.nombre)
         .all()
     )
