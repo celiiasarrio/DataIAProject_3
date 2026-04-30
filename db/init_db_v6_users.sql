@@ -1,10 +1,10 @@
 -- ============================================================================
 -- init_db_v6_users.sql
--- Pobla la tabla users desde las 3 tablas legacy (alumnos, profesores,
--- personal_edem). Equivalente al script Python scripts/seed_users.py pero
+-- Pobla la tabla users desde las 3 tablas de dominio (alumnos, profesores,
+-- coordinadores). Equivalente al script Python scripts/seed_users.py pero
 -- en SQL puro, idempotente, ejecutable como init script de Postgres.
 --
--- Depende de: v2 (schema), v4 (seeds legacy), v5 (tablas de auth).
+-- Depende de: v2 (schema), v4 (seeds), v5 (tablas de auth).
 -- ============================================================================
 
 -- pgcrypto da crypt() y gen_salt('bf') -> bcrypt compatible con Python bcrypt.

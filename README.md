@@ -115,21 +115,23 @@ La aplicación queda disponible en `http://localhost:5173`.
 
 ## Usuarios de prueba
 
-Las contraseñas del seed están almacenadas con bcrypt y no se conocen en texto plano. Para disponer de cuentas con la contraseña `demo`, ejecuta una sola vez:
-
-```bash
-docker compose exec postgres psql -U postgres -d edem_hub_db -c \
-  "UPDATE users SET password_hash = crypt('demo', gen_salt('bf')) \
-   WHERE email IN ('ahsoka.tano@edem.es','adrian.colomer@seed.local','andrea.soler@edem.es');"
-```
+Las contraseñas viven en texto plano en `db/init_db_v4.sql` y se hashean con bcrypt al arrancar Postgres mediante `init_db_v6_users.sql`.
 
 | Rol | Correo | Contraseña | Vista al iniciar sesión |
 |-----|--------|-----------|------------------------|
-| **Alumno** | `ahsoka.tano@edem.es` | `demo` | Notas, asistencia, calendario propio, chat con el agente |
-| **Profesor** | `adrian.colomer@seed.local` | `demo` | Gestión de notas, asistencia por sesión, sus grupos |
-| **Coordinador** | `andrea.soler@edem.es` | `demo` | Vista global del área, gestión académica |
+| **Alumno** | `ahsoka.tano@edem.es` | `demo123` | Notas, asistencia, calendario propio, chat con el agente |
+| **Profesor** | `adrian.colomer@seed.local` | `prof123` | Gestión de notas, asistencia por sesión, sus grupos |
+| **Coordinador** | `andrea.soler@edem.es` | `staff123` | Vista global del área, gestión académica |
 
-> El frontend persiste el rol en `localStorage` y los componentes adaptan su contenido. Para cambiar de cuenta, cierra sesión desde el menú de perfil. Si ejecutas `docker compose down -v`, las contraseñas vuelven a su valor original y debes repetir el `UPDATE`.
+> El frontend persiste el rol en `localStorage` y los componentes adaptan su contenido. Para cambiar de cuenta, cierra sesión desde el menú de perfil.
+
+> **Opcional** — si prefieres una contraseña única `demo` para las tres cuentas:
+> ```bash
+> docker compose exec postgres psql -U postgres -d edem_hub_db -c \
+>   "UPDATE users SET password_hash = crypt('demo', gen_salt('bf')) \
+>    WHERE email IN ('ahsoka.tano@edem.es','adrian.colomer@seed.local','andrea.soler@edem.es');"
+> ```
+> Tendrás que repetirlo si ejecutas `docker compose down -v`.
 
 ---
 
@@ -145,6 +147,23 @@ docker compose ps
 |----------|-----------------|
 | `postgres` | `Up (healthy)` |
 | `backend` | `Up` |
+
+Verifica que los seeds se han cargado correctamente:
+
+```bash
+docker compose exec postgres psql -U postgres -d edem_hub_db -c \
+  "SELECT 'alumnos:'||COUNT(*) FROM alumnos
+   UNION ALL SELECT 'profesores:'||COUNT(*) FROM profesores
+   UNION ALL SELECT 'coordinadores:'||COUNT(*) FROM coordinadores
+   UNION ALL SELECT 'users:'||COUNT(*) FROM users;"
+```
+
+| Tabla | Filas esperadas |
+|-------|----------------|
+| `alumnos` | 8 |
+| `profesores` | 6 |
+| `coordinadores` | 2 |
+| `users` | 16 |
 
 Abre `http://localhost:5173`, autentícate con cualquiera de los usuarios de prueba y confirma que el dashboard se carga correctamente.
 

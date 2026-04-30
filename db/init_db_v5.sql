@@ -1,19 +1,19 @@
 -- ============================================================================
 -- init_db_v5.sql
 -- Capa de autenticación del EDEM Student Hub.
--- Depende de init_db_v2.sql (alumnos, profesores, personal_edem).
+-- Depende de init_db_v2.sql (alumnos, profesores, coordinadores).
 -- Orden de ejecución (docker-compose): v2 -> v4 -> v5 -> v6.
 -- ----------------------------------------------------------------------------
 -- users:        datos comunes de login (email, hash, rol, estado).
 -- *_profile:    extiende users con datos por rol y enlaza con las tablas de
---               dominio (alumnos, profesores, personal_edem).
+--               dominio (alumnos, profesores, coordinadores).
 --
 -- Roles soportados: alumno, profesor, coordinador, director_area.
 -- coordinador y director_area comparten staff_profile (se distinguen por area).
 --
 -- Integridad: ON DELETE CASCADE limpia el profile al borrar el user.
---             UNIQUE en id_alumno/id_profesor/id_personal evita que un mismo
---             miembro de EDEM tenga dos cuentas distintas.
+--             UNIQUE en id_alumno/id_profesor/id_coordinador evita que un
+--             mismo miembro de EDEM tenga dos cuentas distintas.
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS users (
