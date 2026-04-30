@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); deps=d.get\\('dependencies',{}\\); print\\('react:', deps.get\\('react','MISSING'\\)\\); print\\('react-dom:', deps.get\\('react-dom','MISSING'\\)\\); print\\('react-router:', deps.get\\('react-router','MISSING'\\)\\)\")"
-    ]
-  }
-}
