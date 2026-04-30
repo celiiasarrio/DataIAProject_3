@@ -9,7 +9,7 @@ def get_my_profile(tool_context: ToolContext) -> dict:
     """Devuelve el perfil del usuario autenticado (id, nombre, apellido, correo, rol, url_foto).
 
     Útil al inicio de la conversación para confirmar quién es el usuario y su rol
-    ('alumno', 'profesor' o un rol dentro de personal_edem como 'coordinador').
+    ('alumno', 'profesor' o un rol del staff como 'coordinador').
     """
     return api_get("/api/v1/users/me", tool_context)
 

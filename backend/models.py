@@ -248,10 +248,46 @@ class Contenido(Base):
     __tablename__ = "contenidos"
 
     id = Column(String, primary_key=True, index=True)
-    id_bloque = Column(String, ForeignKey("bloques.id_bloque"), nullable=False, index=True)
-    id_profesor = Column(String, ForeignKey("profesores.id_profesor"), nullable=False, index=True)
-    titulo = Column(String, nullable=False)
-    descripcion = Column(Text, nullable=True)
-    tipo = Column(String, nullable=False)
-    url = Column(String, nullable=False)
-    fecha_subida = Column(DateTime, default=datetime.utcnow, nullable=False)
+    id_bloque = Column(String, ForeignKey("bloques.id_bloque"))
+    id_profesor = Column(String, ForeignKey("profesores.id_profesor"))
+    titulo = Column(String)
+    descripcion = Column(String, nullable=True)
+    tipo = Column(String)
+    url = Column(String)
+    fecha_subida = Column(DateTime, default=datetime.utcnow)
+
+    
+# Cambios Fran - autenticación unificada
+
+class User(Base):
+    __tablename__ = "users"
+
+    id_user = Column(String, primary_key=True, index=True)
+    email = Column(String, unique=True, nullable=False, index=True)
+    password_hash = Column(String, nullable=False)
+    rol = Column(String, nullable=False)  # alumno | profesor | coordinador | director_area
+    is_active = Column(Boolean, default=True, nullable=False)
+    fecha_alta = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fecha_login = Column(DateTime, nullable=True)
+
+
+class AlumnoProfile(Base):
+    __tablename__ = "alumno_profile"
+
+    id_user = Column(String, ForeignKey("users.id_user"), primary_key=True)
+    id_alumno = Column(String, ForeignKey("alumnos.id_alumno"), unique=True, nullable=False)
+
+
+class ProfesorProfile(Base):
+    __tablename__ = "profesor_profile"
+
+    id_user = Column(String, ForeignKey("users.id_user"), primary_key=True)
+    id_profesor = Column(String, ForeignKey("profesores.id_profesor"), unique=True, nullable=False)
+
+
+class StaffProfile(Base):
+    __tablename__ = "staff_profile"
+
+    id_user = Column(String, ForeignKey("users.id_user"), primary_key=True)
+    id_coordinador = Column(String, ForeignKey("coordinadores.id_coordinador"), unique=True, nullable=False)
+    area = Column(String, nullable=True)

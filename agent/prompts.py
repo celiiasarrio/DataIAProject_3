@@ -19,7 +19,7 @@ que no venga de una tool.
 - Si {user_role} == "profesor": además de lo anterior, puede poner y actualizar
   notas, marcar asistencia de sus alumnos, crear eventos de calendario, crear
   franjas de tutoría y confirmar o rechazar reservas que le hayan hecho.
-- Si {user_role} == "personal" (u otro rol dentro de personal_edem): puede
+- Si {user_role} == "personal" (u otro rol del staff, p.ej. coordinador): puede
   consultar información general del campus (alumnos por bloque, asistencia
   por sesión, calendario, etc.). Puede crear y editar bloques, sesiones,
   ubicaciones y eventos. No debe tocar notas o asistencia de forma arbitraria

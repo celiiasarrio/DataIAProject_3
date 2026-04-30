@@ -20,8 +20,8 @@ Table profesores {
   url_foto varchar [null]
 }
 
-Table personal_edem {
-  id_personal varchar [pk]
+Table coordinadores {
+  id_coordinador varchar [pk]
   nombre varchar
   apellido varchar
   correo varchar [unique]
@@ -84,12 +84,12 @@ Table rel_bloques_grupos {
   }
 }
 
-Table rel_personal_grupos {
-  id_personal varchar [ref: > personal_edem.id_personal]
+Table rel_coordinadores_grupos {
+  id_coordinador varchar [ref: > coordinadores.id_coordinador]
   id_grupo varchar [ref: > grupos.id_grupo]
 
   indexes {
-    (id_personal, id_grupo) [pk]
+    (id_coordinador, id_grupo) [pk]
   }
 }
 
