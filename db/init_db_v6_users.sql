@@ -55,11 +55,11 @@ JOIN users u ON u.email = p.correo AND u.rol = 'profesor'
 ON CONFLICT (id_user) DO NOTHING;
 
 
--- ---------------- PERSONAL EDEM ----------------
+-- ---------------- COORDINADORES ----------------
 -- Mapea el campo libre rol a 'director_area' o 'coordinador'.
 INSERT INTO users (id_user, email, password_hash, rol)
 SELECT
-    'usr_s_' || s.id_personal,
+    'usr_s_' || s.id_coordinador,
     s.correo,
     CASE
         WHEN s.contrasena LIKE '$2b$%' THEN s.contrasena
@@ -69,12 +69,12 @@ SELECT
         WHEN LOWER(COALESCE(s.rol, '')) LIKE '%director%' THEN 'director_area'
         ELSE 'coordinador'
     END
-FROM personal_edem s
+FROM coordinadores s
 WHERE s.correo IS NOT NULL
 ON CONFLICT (email) DO NOTHING;
 
-INSERT INTO staff_profile (id_user, id_personal, area)
-SELECT u.id_user, s.id_personal, s.rol
-FROM personal_edem s
+INSERT INTO staff_profile (id_user, id_coordinador, area)
+SELECT u.id_user, s.id_coordinador, s.rol
+FROM coordinadores s
 JOIN users u ON u.email = s.correo AND u.rol IN ('coordinador', 'director_area')
 ON CONFLICT (id_user) DO NOTHING;

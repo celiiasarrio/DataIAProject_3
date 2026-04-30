@@ -289,5 +289,5 @@ class StaffProfile(Base):
     __tablename__ = "staff_profile"
 
     id_user = Column(String, ForeignKey("users.id_user"), primary_key=True)
-    id_personal = Column(String, ForeignKey("personal_edem.id_personal"), unique=True, nullable=False)
+    id_coordinador = Column(String, ForeignKey("coordinadores.id_coordinador"), unique=True, nullable=False)
     area = Column(String, nullable=True)

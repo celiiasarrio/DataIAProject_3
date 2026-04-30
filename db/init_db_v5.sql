@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS profesor_profile (
 );
 
 CREATE TABLE IF NOT EXISTS staff_profile (
-    id_user     VARCHAR PRIMARY KEY REFERENCES users(id_user) ON DELETE CASCADE,
-    id_personal VARCHAR NOT NULL UNIQUE REFERENCES personal_edem(id_personal),
-    area        VARCHAR
+    id_user        VARCHAR PRIMARY KEY REFERENCES users(id_user) ON DELETE CASCADE,
+    id_coordinador VARCHAR NOT NULL UNIQUE REFERENCES coordinadores(id_coordinador),
+    area           VARCHAR
 );

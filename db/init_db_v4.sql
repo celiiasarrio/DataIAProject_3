@@ -3,7 +3,7 @@
 TRUNCATE TABLE
     alumnos,
     profesores,
-    personal_edem,
+    coordinadores,
     grupos,
     bloques,
     sesiones,
@@ -11,7 +11,7 @@ TRUNCATE TABLE
     rel_profesores_bloques,
     rel_alumnos_grupos,
     rel_bloques_grupos,
-    rel_personal_grupos,
+    rel_coordinadores_grupos,
     tareas,
     rel_alumno_tarea,
     asistencia,
@@ -42,9 +42,9 @@ INSERT INTO "profesores" ("id_profesor", "nombre", "apellido", "correo", "url_fo
 ('PROF-105', 'Pedro', 'Nieto', 'pedro.nieto@seed.local', 'https://ui-avatars.com/api/?name=Pedro%20Nieto&size=200', 'prof123'),
 ('PROF-106', 'Ángel', 'Llosa', 'angel.llosa@seed.local', 'https://ui-avatars.com/api/?name=%C3%81ngel%20Llosa&size=200', 'prof123');
 
-INSERT INTO "personal_edem" ("id_personal", "nombre", "apellido", "correo", "rol", "url_foto", "contrasena") VALUES
-('PER-001', 'Andrea', 'Soler', 'andrea.soler@edem.es', 'Coordinador', 'https://ui-avatars.com/api/?name=Andrea%20Soler&size=200', 'staff123'),
-('PER-002', 'Luis', 'Marín', 'luis.marin@edem.es', 'Coordinador', 'https://ui-avatars.com/api/?name=Luis%20Mar%C3%ADn&size=200', 'staff123');
+INSERT INTO "coordinadores" ("id_coordinador", "nombre", "apellido", "correo", "rol", "url_foto", "contrasena") VALUES
+('COO-001', 'Andrea', 'Soler', 'andrea.soler@edem.es', 'Coordinador', 'https://ui-avatars.com/api/?name=Andrea%20Soler&size=200', 'staff123'),
+('COO-002', 'Luis', 'Marín', 'luis.marin@edem.es', 'Coordinador', 'https://ui-avatars.com/api/?name=Luis%20Mar%C3%ADn&size=200', 'staff123');
 
 INSERT INTO "grupos" ("id_grupo", "nombre") VALUES
 ('GRP-003', 'MDA A'),
@@ -107,9 +107,9 @@ INSERT INTO "rel_profesores_bloques" ("id_profesor", "id_bloque") VALUES
 ('PROF-105', 'BLQ-105'),
 ('PROF-106', 'BLQ-106');
 
-INSERT INTO "rel_personal_grupos" ("id_personal", "id_grupo") VALUES
-('PER-001', 'GRP-003'),
-('PER-002', 'GRP-006');
+INSERT INTO "rel_coordinadores_grupos" ("id_coordinador", "id_grupo") VALUES
+('COO-001', 'GRP-003'),
+('COO-002', 'GRP-006');
 
 INSERT INTO "tareas" ("id_tarea", "id_bloque", "nombre", "descripcion") VALUES
 (1, 'BLQ-101', 'Notebook Python', 'Entrega individual de fundamentos de Python'),
@@ -164,7 +164,7 @@ SELECT id_alumno, TRUE, TRUE, TRUE
 FROM alumnos;
 
 INSERT INTO "correos" ("id", "id_remitente", "id_destinatario", "asunto", "cuerpo", "leido", "fecha_envio") VALUES
-('MAIL-001', 'PER-001', 'ALU-001', 'Bienvenida al hub', 'Ya puedes acceder al portal y revisar tus bloques.', TRUE, '2026-05-01 09:00:00'),
+('MAIL-001', 'COO-001', 'ALU-001', 'Bienvenida al hub', 'Ya puedes acceder al portal y revisar tus bloques.', TRUE, '2026-05-01 09:00:00'),
 ('MAIL-002', 'ALU-001', 'PROF-105', 'Duda sobre la práctica', 'Quería revisar la última entrega antes de la tutoría.', FALSE, '2026-05-18 16:30:00');
 
 INSERT INTO "contenidos" ("id", "id_bloque", "id_profesor", "titulo", "descripcion", "tipo", "url", "fecha_subida") VALUES
