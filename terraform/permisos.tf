@@ -10,6 +10,12 @@ resource "google_project_service" "firestore" {
   disable_on_destroy = false
 }
 
+# Enable Vertex AI API
+resource "google_project_service" "aiplatform" {
+  service            = "aiplatform.googleapis.com"
+  disable_on_destroy = false
+}
+
 # Backend SA → Cloud SQL access
 resource "google_project_iam_member" "backend_cloudsql" {
   project = var.project_id
@@ -22,6 +28,13 @@ resource "google_project_iam_member" "firestore_access" {
   project = var.project_id
   role    = "roles/datastore.user"
   member  = "serviceAccount:${google_service_account.firestore_sa.email}"
+}
+
+# Agent SA → Vertex AI access
+resource "google_project_iam_member" "agent_vertex_ai" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${google_service_account.agent_sa.email}"
 }
 
 # CI/CD SA → Artifact Registry push
@@ -48,6 +61,13 @@ resource "google_service_account_iam_member" "cicd_actAs_backend" {
 # CI/CD SA → act as frontend SA (needed to deploy Cloud Run with that SA)
 resource "google_service_account_iam_member" "cicd_actAs_frontend" {
   service_account_id = google_service_account.frontend_sa.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${var.cicd_sa_email}"
+}
+
+# CI/CD SA → act as agent SA (needed to deploy Cloud Run with that SA)
+resource "google_service_account_iam_member" "cicd_actAs_agent" {
+  service_account_id = google_service_account.agent_sa.name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${var.cicd_sa_email}"
 }

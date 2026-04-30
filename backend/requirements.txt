@@ -11,3 +11,4 @@ python-jose[cryptography]
 passlib[bcrypt]
 bcrypt
 google-cloud-firestore
+google-cloud-storage
