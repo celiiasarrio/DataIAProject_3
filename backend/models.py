@@ -259,3 +259,38 @@ class Contenido(Base):
     tipo = Column(String)
     url = Column(String)
     fecha_subida = Column(DateTime, default=datetime.utcnow)
+
+    # Cambios Fran - autenticación unificada
+
+class User(Base):
+    __tablename__ = "users"
+
+    id_user = Column(String, primary_key=True, index=True)
+    email = Column(String, unique=True, nullable=False, index=True)
+    password_hash = Column(String, nullable=False)
+    rol = Column(String, nullable=False)  # alumno | profesor | coordinador | director_area
+    is_active = Column(Boolean, default=True, nullable=False)
+    fecha_alta = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fecha_login = Column(DateTime, nullable=True)
+
+
+class AlumnoProfile(Base):
+    __tablename__ = "alumno_profile"
+
+    id_user = Column(String, ForeignKey("users.id_user"), primary_key=True)
+    id_alumno = Column(String, ForeignKey("alumnos.id_alumno"), unique=True, nullable=False)
+
+
+class ProfesorProfile(Base):
+    __tablename__ = "profesor_profile"
+
+    id_user = Column(String, ForeignKey("users.id_user"), primary_key=True)
+    id_profesor = Column(String, ForeignKey("profesores.id_profesor"), unique=True, nullable=False)
+
+
+class StaffProfile(Base):
+    __tablename__ = "staff_profile"
+
+    id_user = Column(String, ForeignKey("users.id_user"), primary_key=True)
+    id_personal = Column(String, ForeignKey("personal_edem.id_personal"), unique=True, nullable=False)
+    area = Column(String, nullable=True)
