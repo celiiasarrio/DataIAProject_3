@@ -34,7 +34,29 @@ INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido", "apellido2", "correo",
 --('feorma', 'Felix', 'Ortuño', 'Martinez', 'feorma@edem.es', 'Fe2#vNd84S', '', 'Alumno', 'MIA 2526');
 
 INSERT INTO "profesores" ("id_profesor", "nombre", "apellido", "apellido2", "correo", "contrasena", "url_foto", 'rol') VALUES
-('penipe', 'Pedro', 'Nieto', 'Pelaez', 'pedronietopelaez@gmail.com', 'PeNiPe2026!', '', 'Profesor');
+('penipe', 'Pedro', 'Nieto', 'Pelaez', 'pedronietopelaez@gmail.com', 'PeNiPe2026!', '', 'Profesor'),
+('sopina', 'Sofía', 'Pinilla', '', 'sofia.pinilla@edem.es', 'SoPi2026!', '', 'Profesor'),
+('dapina', 'David', 'Pinilla', '', 'david.pinilla@climatetrade.com', 'DaPi2026!', '', 'Profesor'),
+('macola', 'Marco', 'Colapietro', '', 'marco.colapietro@gft.com', 'MaCo2026!', '', 'Profesor'),
+('anllos', 'Ángel', 'Llosa', '', 'angel.llosa@seidor.com', 'AnLl2026!', '', 'Profesor'),
+('anrode', 'Ángel', 'Rodríguez', '', 'angel.rodriguez@sdggroup.com', 'AnRo2026!', '', 'Profesor'),
+('frkrog', 'Franziska', 'Kröger', '', 'franziska.kroger@gft.com', 'FrKr2026!', '', 'Profesor'),
+('nareye', 'Nacho', 'Reyes', '', 'nacho.reyes@bbva.com', 'NaRe2026!', '', 'Profesor'),
+('jugamil', 'Juanjo', 'García', 'Millán', 'juanjo.garcia@empresa.com', 'JuGa2026!', '', 'Profesor'),
+('jolgome', 'Jose Luis', 'Gómez', '', 'joseluis.gomez@ub.com', 'JoGo2026!', '', 'Profesor'),
+('viasen', 'Vicent', 'Asensio', '', 'vicent.asensio@prima.com', 'ViAs2026!', '', 'Profesor'),
+('facast', 'Fabio', 'Castro', '', 'fabio.castro@gft.com', 'FaCa2026!', '', 'Profesor'),
+('heboas', 'Hernan', 'Boasso', '', 'hernan.boasso@gft.com', 'HeBo2026!', '', 'Profesor'),
+('lalath', 'Lars', 'Lathan', '', 'lars.lathan@gft.com', 'LaLa2026!', '', 'Profesor'),
+('mimora', 'Miguel', 'Moratilla', '', 'miguel.moratilla@mercadonatec.com', 'MiMo2026!', '', 'Profesor'),
+('jabrio', 'Javier', 'Briones', '', 'javier.briones@radicant.com', 'JaBr2026!', '', 'Profesor'),
+('nuberz', 'Nuria', 'Berzal', '', 'nuria.berzal@gft.com', 'NuBe2026!', '', 'Profesor'),
+('diegue', 'Diego', 'Guerrero', '', 'diego.guerrero@gft.com', 'DiGu2026!', '', 'Profesor'),
+('joeste', 'Jose Luis', 'Esteban', '', 'joseluis.esteban@medallatech.com', 'JoEs2026!', '', 'Profesor'),
+('adcamp', 'Adriana', 'Campos', '', 'adriana.campos@sdggroup.com', 'AdCa2026!', '', 'Profesor'),
+('bearuiz', 'Bea', 'Ruíz', '', 'bea.ruiz@openbank.com', 'BeRu2026!', '', 'Profesor'),
+('jopere', 'Josiño', 'Pérez', '', 'josino.perez@experto.com', 'JoPe2026!', '', 'Profesor'),
+('tocanto', 'Toni', 'Cantó', '', 'toni.canto@empresa.com', 'ToCa2026!', '', 'Profesor');
 
 INSERT INTO "coordinadores" ("id_coordinador", "nombre", "apellido", "correo", "contrasena", "url_foto", "rol") VALUES
 ('m.herrera', 'Miguel', 'Herrera', 'm.herrera@edem.es', 'MiHe2026!', '', 'Coordinador');
@@ -171,12 +193,37 @@ INSERT INTO "rel_bloques_grupos" ("id_bloque", "id_grupo") VALUES
 ('6-MDA', 'MDA A 2526');
 
 INSERT INTO "rel_profesores_bloques" ("id_profesor", "id_bloque") VALUES
-('PROF-101', 'BLQ-101'),
-('PROF-102', 'BLQ-102'),
-('PROF-103', 'BLQ-103'),
-('PROF-104', 'BLQ-104'),
-('PROF-105', 'BLQ-105'),
-('PROF-106', 'BLQ-106');
+-- FUNDAMENTOS (1-MDA)
+('penipe', '1-MDA'),
+('sopina', '1-MDA'),
+('dapina', '1-MDA'),
+-- TRATAMIENTO DEL DATO (2-MDA)
+('macola', '2-MDA'),
+('anllos', '2-MDA'),
+('anrode', '2-MDA'),
+('frkrog', '2-MDA'),
+('nareye', '2-MDA'),
+('jugamil', '2-MDA'),
+-- ENTORNO CLOUD (3-MDA)
+('jolgome', '3-MDA'),
+('viasen', '3-MDA'),
+('facast', '3-MDA'),
+('heboas', '3-MDA'),
+('lalath', '3-MDA'),
+('mimora', '3-MDA'),
+('jabrio', '3-MDA'),
+('nuberz', '3-MDA'),
+('diegue', '3-MDA'),
+('joeste', '3-MDA'),
+('adcamp', '3-MDA'),
+('anllos', '3-MDA'),
+('nareye', '3-MDA'),
+('bearuiz', '3-MDA'),
+-- SOFT SKILLS (4-MDA)
+('jopere', '4-MDA'),
+('tocanto', '4-MDA'),
+-- DATA PROJECTS (5-MDA)
+('penipe', '5-MDA');
 
 INSERT INTO "rel_coordinadores_grupos" ("id_coordinador", "id_grupo") VALUES
 ('m.herrera', 'MDA A 2526');
