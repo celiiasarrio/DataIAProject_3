@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   BookOpen,
+  BriefcaseBusiness,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock,
   FileText,
+  GraduationCap,
   MapPin,
+  Plane,
+  Trophy,
   UserRound,
   X,
 } from 'lucide-react';
@@ -16,6 +20,12 @@ import { getCalendarEvents, type CalendarEvent } from '../api/client';
 const EVENT_META: Record<string, { label: string; icon: React.ElementType; bg: string; text: string; chip: string }> = {
   class: { label: 'Sesión', icon: BookOpen, bg: 'bg-blue-50', text: 'text-blue-700', chip: 'bg-blue-500' },
   delivery: { label: 'Entrega', icon: FileText, bg: 'bg-amber-50', text: 'text-amber-700', chip: 'bg-amber-400' },
+  international: { label: 'Experiencia internacional', icon: MapPin, bg: 'bg-lime-50', text: 'text-lime-800', chip: 'bg-lime-500' },
+  softSkills: { label: 'Soft skills', icon: UserRound, bg: 'bg-rose-50', text: 'text-rose-700', chip: 'bg-rose-500' },
+  tfm: { label: 'TFM', icon: GraduationCap, bg: 'bg-violet-50', text: 'text-violet-700', chip: 'bg-violet-500' },
+  hackathon: { label: 'Hackatón', icon: Trophy, bg: 'bg-red-50', text: 'text-red-700', chip: 'bg-red-500' },
+  visit: { label: 'Visita', icon: Plane, bg: 'bg-sky-50', text: 'text-sky-700', chip: 'bg-sky-500' },
+  employability: { label: 'Empleabilidad', icon: BriefcaseBusiness, bg: 'bg-teal-50', text: 'text-teal-700', chip: 'bg-teal-500' },
 };
 
 const WEEK_DAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -61,12 +71,65 @@ const buildMonthDays = (visibleMonth: Date) => {
   });
 };
 
+const getEventDayKeys = (event: CalendarEvent) => {
+  const keys: string[] = [];
+  const current = new Date(event.fecha_inicio);
+  current.setHours(0, 0, 0, 0);
+  const end = new Date(event.fecha_fin);
+  end.setHours(0, 0, 0, 0);
+
+  while (current.getTime() <= end.getTime()) {
+    keys.push(getDayKey(current));
+    current.setDate(current.getDate() + 1);
+  }
+
+  return keys;
+};
+
+const normalizeText = (value: string | null | undefined) =>
+  (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+const getEventMeta = (event: CalendarEvent) => {
+  const title = normalizeText(event.titulo);
+
+  if (event.tipo === 'international') return EVENT_META.international;
+  if (title.includes('tfm')) return EVENT_META.tfm;
+  if (event.id_bloque === '6-MDA' || title.includes('hackaton')) return EVENT_META.hackathon;
+  if (title.includes('visita')) return EVENT_META.visit;
+  if (
+    title.includes('empleabilidad') ||
+    title.includes('empleo') ||
+    title.includes('speed dating') ||
+    title.includes('match & go') ||
+    title.includes('charlas empresa')
+  ) {
+    return EVENT_META.employability;
+  }
+  if (event.id_bloque === '4-MDA') return EVENT_META.softSkills;
+  if (event.tipo === 'delivery') return EVENT_META.delivery;
+
+  return EVENT_META.class;
+};
+
+const getEventPrefix = (event: CalendarEvent) => {
+  if (event.tipo === 'international') return '';
+  if (event.tipo === 'class') return formatTime(event.fecha_inicio);
+  return getEventMeta(event).label;
+};
+
+const getEventDisplayTitle = (event: CalendarEvent) =>
+  [getEventPrefix(event), event.titulo].filter(Boolean).join(' ');
+
 export function CalendarScreen() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleMonth, setVisibleMonth] = useState(() => monthStart(new Date()));
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedDayEvents, setSelectedDayEvents] = useState<CalendarEvent[] | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -74,7 +137,7 @@ export function CalendarScreen() {
     getCalendarEvents()
       .then((data) => {
         const sorted = data
-          .filter((event) => event.tipo === 'class' || event.tipo === 'delivery')
+          .filter((event) => event.tipo === 'class' || event.tipo === 'delivery' || event.tipo === 'international')
           .sort((a, b) => new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime());
         setEvents(sorted);
 
@@ -92,8 +155,9 @@ export function CalendarScreen() {
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
     for (const event of events) {
-      const key = getDayKey(event.fecha_inicio);
-      map.set(key, [...(map.get(key) ?? []), event]);
+      for (const key of getEventDayKeys(event)) {
+        map.set(key, [...(map.get(key) ?? []), event]);
+      }
     }
     return map;
   }, [events]);
@@ -147,7 +211,7 @@ export function CalendarScreen() {
           </button>
         </div>
 
-        <div className="flex gap-5 mb-4 px-1">
+        <div className="flex flex-wrap gap-x-5 gap-y-2 mb-4 px-1">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
             <span className="text-xs text-gray-500">Sesiones</span>
@@ -155,6 +219,30 @@ export function CalendarScreen() {
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
             <span className="text-xs text-gray-500">Entregas</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-lime-500" />
+            <span className="text-xs text-gray-500">Internacional</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+            <span className="text-xs text-gray-500">Soft skills</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-violet-500" />
+            <span className="text-xs text-gray-500">TFM</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+            <span className="text-xs text-gray-500">Hackatones</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-sky-500" />
+            <span className="text-xs text-gray-500">Visitas</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-teal-500" />
+            <span className="text-xs text-gray-500">Empleabilidad</span>
           </div>
         </div>
 
@@ -195,7 +283,7 @@ export function CalendarScreen() {
 
                   <div className="space-y-1">
                     {visibleEvents.map((event) => {
-                      const meta = EVENT_META[event.tipo] ?? EVENT_META.class;
+                      const meta = getEventMeta(event);
                       return (
                         <button
                           key={event.id}
@@ -205,14 +293,19 @@ export function CalendarScreen() {
                           <div className="flex items-center gap-1 min-w-0">
                             <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${meta.chip}`} />
                             <span className={`text-[10px] truncate ${meta.text}`} style={{ fontWeight: 700 }}>
-                              {event.tipo === 'class' ? formatTime(event.fecha_inicio) : 'Entrega'} {event.titulo}
+                              {getEventDisplayTitle(event)}
                             </span>
                           </div>
                         </button>
                       );
                     })}
                     {hiddenCount > 0 && (
-                      <p className="text-[10px] text-gray-400 px-1">+{hiddenCount} más</p>
+                      <button
+                        onClick={() => setSelectedDayEvents(dayEvents)}
+                        className="text-[10px] text-gray-500 px-1 underline"
+                      >
+                        +{hiddenCount} más
+                      </button>
                     )}
                   </div>
                 </div>
@@ -234,7 +327,7 @@ export function CalendarScreen() {
             <div className="flex items-start justify-between gap-4 mb-4">
               <div className="flex items-start gap-3 min-w-0">
                 {(() => {
-                  const meta = EVENT_META[selectedEvent.tipo] ?? EVENT_META.class;
+                  const meta = getEventMeta(selectedEvent);
                   const Icon = meta.icon;
                   return (
                     <div className={`p-2 rounded-xl ${meta.bg}`}>
@@ -244,7 +337,7 @@ export function CalendarScreen() {
                 })()}
                 <div className="min-w-0">
                   <p className="text-xs text-gray-400 uppercase" style={{ fontWeight: 800 }}>
-                    {(EVENT_META[selectedEvent.tipo] ?? EVENT_META.class).label}
+                    {getEventMeta(selectedEvent).label}
                   </p>
                   <h3 className="text-lg text-gray-900 leading-tight" style={{ fontWeight: 800 }}>
                     {selectedEvent.titulo}
@@ -291,12 +384,6 @@ export function CalendarScreen() {
                   </div>
                 </div>
               </div>
-              {selectedEvent.id_sesion && (
-                <div>
-                  <p className="text-xs text-gray-400">Sesión</p>
-                  <p className="text-sm text-gray-800">{selectedEvent.id_sesion}</p>
-                </div>
-              )}
               {selectedEvent.descripcion && (
                 <div>
                   <p className="text-xs text-gray-400">Descripción</p>
@@ -314,6 +401,55 @@ export function CalendarScreen() {
                 Pasar asistencia
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {selectedDayEvents && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 px-4 flex items-center justify-center"
+          onClick={() => setSelectedDayEvents(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-5 w-full max-w-md shadow-xl max-h-[80vh] overflow-y-auto"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-xs text-gray-400 uppercase" style={{ fontWeight: 800 }}>
+                  Eventos del día
+                </p>
+                <h3 className="text-lg text-gray-900 capitalize" style={{ fontWeight: 800 }}>
+                  {formatLongDate(selectedDayEvents[0].fecha_inicio)}
+                </h3>
+              </div>
+              <button onClick={() => setSelectedDayEvents(null)} className="p-1 text-gray-400">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {selectedDayEvents.map((event) => {
+                const meta = getEventMeta(event);
+                return (
+                  <button
+                    key={event.id}
+                    onClick={() => {
+                      setSelectedDayEvents(null);
+                      setSelectedEvent(event);
+                    }}
+                    className={`w-full rounded-xl px-3 py-3 text-left ${meta.bg}`}
+                  >
+                    <p className={`text-sm ${meta.text}`} style={{ fontWeight: 800 }}>
+                      {getEventDisplayTitle(event)}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {[event.profesor_nombre, event.aula].filter(Boolean).join(' · ')}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

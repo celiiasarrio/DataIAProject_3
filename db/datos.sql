@@ -52,6 +52,7 @@ INSERT INTO "profesores" ("id_profesor", "nombre", "apellido", "apellido2", "cor
 ('frkrog', 'Franziska', 'Kröger', '', 'franziska.kroger@gft.com', 'FrKr2026!', '', 'Profesor'),
 ('nareye', 'Nacho', 'Reyes', '', 'nacho.reyes@bbva.com', 'NaRe2026!', '', 'Profesor'),
 ('jugamil', 'Juanjo', 'García', 'Millán', 'juanjo.garcia@empresa.com', 'JuGa2026!', '', 'Profesor'),
+('rusanc', 'Rubén', 'Sanchís', '', 'ruben.sanchis@empresa.com', 'RuSa2026!', '', 'Profesor'),
 ('jolgome', 'Jose Luis', 'Gómez', '', 'joseluis.gomez@ub.com', 'JoGo2026!', '', 'Profesor'),
 ('viasen', 'Vicent', 'Asensio', '', 'vicent.asensio@prima.com', 'ViAs2026!', '', 'Profesor'),
 ('facast', 'Fabio', 'Castro', '', 'fabio.castro@gft.com', 'FaCa2026!', '', 'Profesor'),
@@ -80,7 +81,8 @@ INSERT INTO "bloques" ("id_bloque", "nombre") VALUES
 ('3-MDA', 'B3. ENTORNO CLOUD'),
 ('4-MDA', 'SOFT SKILLS'),
 ('5-MDA', 'DATA PROJECTS'),
-('6-MDA', 'HACKATONES');
+('6-MDA', 'HACKATONES'),
+('7-MDA', 'EXPERIENCIA INTERNACIONAL');
 
 INSERT INTO "sesiones" ("id_sesion", "id_bloque", "nombre", "fecha", "hora_inicio", "hora_fin", "edificio", "planta", "aula") VALUES
 ('SES-1', '1-MDA', 'Introducción + Instalación de Software', '2025-09-29', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
@@ -147,11 +149,9 @@ INSERT INTO "sesiones" ("id_sesion", "id_bloque", "nombre", "fecha", "hora_inici
 ('SES-62', '3-MDA', 'AWS Almacenamiento', '2026-02-23', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
 ('SES-63', '3-MDA', 'AWS Almacenamiento', '2026-02-25', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
 ('SES-64', '3-MDA', 'AWS Almacenamiento', '2026-03-02', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-65', '3-MDA', 'AWS Procesamiento', '2026-03-02', '15:30', '19:30', 'Reunión de Microsoft Teams', NULL, NULL),
 ('SES-66', '3-MDA', 'AWS Almacenamiento', '2026-03-03', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
 ('SES-67', '3-MDA', 'AWS Procesamiento', '2026-03-04', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
 ('SES-68', '3-MDA', 'AWS Procesamiento', '2026-03-05', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-69', '3-MDA', 'AWS Almacenamiento', '2026-03-09', '15:30', '19:30', 'Reunión de Microsoft Teams', NULL, NULL),
 ('SES-70', '3-MDA', 'AWS Procesamiento', '2026-03-09', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
 ('SES-71', '3-MDA', 'AWS Procesamiento', '2026-03-10', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
 ('SES-72', '3-MDA', 'AWS E2E', '2026-03-11', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
@@ -166,12 +166,13 @@ INSERT INTO "sesiones" ("id_sesion", "id_bloque", "nombre", "fecha", "hora_inici
 ('SES-81', '3-MDA', 'Azure Almacenamiento', '2026-04-21', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
 ('SES-82', '4-MDA', 'Gestión de equipos y liderazgo', '2026-04-22', '15:30', '19:30', 'EDEM', 'PLANTA 2', 'AULA 202'),
 ('SES-83', '4-MDA', 'Comunicación', '2026-04-27', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-84', '2-MDA', 'Data Products', '2026-04-28', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-84', '2-MDA', 'Data Products', '2026-05-20', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
 ('SES-85', '2-MDA', 'Prototipado', '2026-04-29', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
 ('SES-86', '3-MDA', 'Certificaciones Cloud', '2026-04-30', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
 ('SES-87', '3-MDA', 'Snowflake', '2026-05-11', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
 ('SES-88', '3-MDA', 'Snowflake', '2026-05-12', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-89', '3-MDA', 'Gen AI', '2026-05-14', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115');
+('SES-89', '3-MDA', 'Gen AI', '2026-05-14', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-90', '5-MDA', 'Defensa DATA/IA PROJECT + Dinámica', '2026-05-13', '15:30', '19:30', 'EDEM', 'PLANTA 2', 'AULA 202');
 
 INSERT INTO "ubicaciones" ("id_ubicacion", "descripcion", "planta", "aula") VALUES
 ('UBI-101',    'EDEM, PLANTA 1, AULA 101',        1, 'AULA 101'),
@@ -209,7 +210,8 @@ INSERT INTO "rel_bloques_grupos" ("id_bloque", "id_grupo") VALUES
 ('3-MDA', 'MDA A 2526'),
 ('4-MDA', 'MDA A 2526'),
 ('5-MDA', 'MDA A 2526'),
-('6-MDA', 'MDA A 2526');
+('6-MDA', 'MDA A 2526'),
+('7-MDA', 'MDA A 2526');
 
 INSERT INTO "rel_profesores_bloques" ("id_profesor", "id_bloque") VALUES
 -- FUNDAMENTOS (1-MDA)
@@ -310,7 +312,7 @@ SELECT
     s.nombre AS titulo,
     s.id_bloque,
     s.id_sesion,
-    s.aula,
+    COALESCE(s.aula, s.edificio) AS aula,
     CASE s.id_sesion
         WHEN 'SES-1' THEN 'penipe'
         WHEN 'SES-2' THEN 'penipe'
@@ -405,7 +407,10 @@ SELECT
     END AS id_profesor,
     (s.fecha || ' ' || s.hora_inicio)::TIMESTAMP AS fecha_inicio,
     (s.fecha || ' ' || s.hora_fin)::TIMESTAMP AS fecha_fin,
-    CONCAT('Sesi?n en ', s.edificio, ', ', s.planta, ', ', s.aula) AS descripcion
+    CASE
+        WHEN s.aula IS NULL THEN CONCAT('Sesión online en ', s.edificio)
+        ELSE CONCAT('Sesión en ', s.edificio, ', ', s.planta, ', ', s.aula)
+    END AS descripcion
 FROM sesiones s
 WHERE s.fecha IS NOT NULL AND s.hora_inicio IS NOT NULL AND s.hora_fin IS NOT NULL
 
@@ -425,6 +430,39 @@ SELECT
 FROM tareas
 WHERE fecha IS NOT NULL;
 
+INSERT INTO "eventos" ("id", "tipo", "titulo", "id_bloque", "id_sesion", "aula", "id_profesor", "fecha_inicio", "fecha_fin", "descripcion") VALUES
+('ics-extra-001', 'class', 'JORNADA BIENVENIDA', '5-MDA', NULL, 'AUDITORIO 01', NULL, '2025-09-26 11:00:00', '2025-09-26 12:15:00', 'EDEM, PLANTA BAJA, AUDITORIO 01'),
+('ics-extra-002', 'class', 'MÁSTER EN AULA', '5-MDA', NULL, 'AULA 110', NULL, '2025-09-26 12:15:00', '2025-09-26 18:00:00', 'EDEM, PLANTA 1, AULA 110'),
+('ics-extra-004', 'class', 'CHARLAS EMPRESA - Robert Walters', '4-MDA', NULL, 'AUDITORIO 01', NULL, '2025-10-28 13:00:00', '2025-10-28 14:30:00', 'EDEM, PLANTA BAJA, AUDITORIO 01'),
+('ics-extra-005', 'class', 'CHARLAS EMPRESA - Roig Arena', '4-MDA', NULL, 'AUDITORIO 01', NULL, '2025-10-29 13:00:00', '2025-10-29 14:30:00', 'EDEM, PLANTA BAJA, AUDITORIO 01'),
+('ics-extra-006', 'class', 'CHARLAS EMPRESA - DHL', '4-MDA', NULL, 'AUDITORIO 01', NULL, '2025-10-30 13:00:00', '2025-10-30 14:30:00', 'EDEM, PLANTA BAJA, AUDITORIO 01'),
+('ics-extra-007', 'class', 'TALLER EMPLEABILIDAD', '4-MDA', NULL, 'AULA 202', NULL, '2025-10-31 15:00:00', '2025-10-31 16:00:00', 'EDEM, PLANTA 2, AULA 202'),
+('ics-extra-008', 'class', 'SPEED DATING', '4-MDA', NULL, NULL, NULL, '2025-11-04 08:30:00', '2025-11-04 10:30:00', 'Evento de empleabilidad'),
+('ics-extra-009', 'class', 'FERIA EMPLEO', '4-MDA', NULL, NULL, NULL, '2025-11-04 11:00:00', '2025-11-04 14:00:00', 'Evento de empleabilidad'),
+('ics-extra-010', 'class', 'MATCH & GO', '4-MDA', NULL, NULL, NULL, '2025-11-04 14:00:00', '2025-11-04 15:00:00', 'Evento de empleabilidad'),
+('ics-extra-011', 'class', 'Explicación EI en aula', '4-MDA', NULL, 'AULA 202', NULL, '2025-11-19 15:00:00', '2025-11-19 15:30:00', 'EDEM, PLANTA 2, AULA 202'),
+('ics-extra-012', 'class', 'Lanzamiento DATA PROJECT 1 + E2E Módulo 1.1', '5-MDA', NULL, 'AULA 115', 'penipe', '2025-11-20 15:30:00', '2025-11-20 19:30:00', 'LZD, PLANTA 1, AULA 115'),
+('ics-extra-013', 'class', 'Jornada trabajo DATA PROJECT 1', '5-MDA', NULL, 'AULA 115', NULL, '2025-11-27 15:30:00', '2025-11-27 19:30:00', 'LZD, PLANTA 1, AULA 115'),
+('ics-extra-014', 'class', 'Defensa DATA PROJECT 1', '5-MDA', NULL, 'AULA 115', NULL, '2025-12-10 15:00:00', '2025-12-10 19:00:00', 'LZD, PLANTA 1, AULA 115'),
+('ics-extra-016', 'class', 'Lanzamiento DATA PROJECT 2', '5-MDA', NULL, 'AULA 115', NULL, '2026-02-02 15:30:00', '2026-02-02 19:30:00', 'LZD, PLANTA 1, AULA 115'),
+('ics-extra-017', 'class', 'Jornada trabajo DATA PROJECT 2', '5-MDA', NULL, 'AULA 115', NULL, '2026-02-09 15:30:00', '2026-02-09 19:30:00', 'LZD, PLANTA 1, AULA 115'),
+('ics-extra-018', 'class', 'HACKATÓN (NTT Data)', '6-MDA', NULL, 'AULA 115', NULL, '2026-02-16 15:30:00', '2026-02-16 19:30:00', 'LZD, PLANTA 1, AULA 115'),
+('ics-extra-019', 'class', 'Visita NTT DATA', '4-MDA', NULL, 'Reunión de Microsoft Teams', NULL, '2026-02-24 15:00:00', '2026-02-24 17:00:00', 'Sesión online en Reunión de Microsoft Teams'),
+('ics-extra-020', 'class', 'Defensa DATA PROJECT 2', '5-MDA', NULL, 'AULA 115', NULL, '2026-02-26 15:30:00', '2026-02-26 19:30:00', 'LZD, PLANTA 1, AULA 115'),
+('ics-extra-021', 'class', 'TALLER EMPLEABILIDAD', '4-MDA', NULL, 'AULA 206', NULL, '2026-02-27 15:30:00', '2026-02-27 17:00:00', 'EDEM, PLANTA 2, AULA 206'),
+('ics-extra-022', 'class', 'HACKATÓN (GFT)', '6-MDA', NULL, 'AULA 115', NULL, '2026-03-25 15:30:00', '2026-03-25 19:30:00', 'LZD, PLANTA 1, AULA 115'),
+('ics-extra-023', 'class', 'HACKATÓN (GFT)', '6-MDA', NULL, 'AULA 115', NULL, '2026-03-26 15:30:00', '2026-03-26 19:30:00', 'LZD, PLANTA 1, AULA 115'),
+('ics-extra-024', 'class', 'Visita GFT', '4-MDA', NULL, 'Reunión de Microsoft Teams', NULL, '2026-03-30 15:00:00', '2026-03-30 17:00:00', 'Sesión online en Reunión de Microsoft Teams'),
+('ics-extra-025', 'class', 'Lanzamiento DATA/IA PROJECT 3', '5-MDA', NULL, 'AULA 202', NULL, '2026-04-01 15:30:00', '2026-04-01 19:30:00', 'EDEM, PLANTA 2, AULA 202'),
+('ics-extra-026', 'class', 'Jornada trabajo DATA/IA PROJECT 3', '5-MDA', NULL, 'AULA 209', NULL, '2026-04-23 15:30:00', '2026-04-23 19:30:00', 'EDEM, PLANTA 2, AULA 209'),
+('ics-extra-027', 'class', 'Explicación TFM', '5-MDA', NULL, 'AULA 209', NULL, '2026-04-24 15:00:00', '2026-04-24 15:30:00', 'EDEM, PLANTA 2, AULA 209'),
+('ics-extra-028', 'class', 'FOTO ORLA', '5-MDA', NULL, NULL, NULL, '2026-04-24 16:30:00', '2026-04-24 17:00:00', 'Evento de máster'),
+('ics-extra-029', 'international', 'EXPERIENCIA INTERNACIONAL MDA', '7-MDA', NULL, NULL, NULL, '2026-05-05 00:00:00', '2026-05-07 23:59:59', 'Experiencia internacional MDA'),
+('ics-extra-030', 'class', 'Lanzamiento TFM', '5-MDA', NULL, 'AULA 208', NULL, '2026-05-15 15:30:00', '2026-05-15 17:30:00', 'EDEM, PLANTA 2, AULA 208 (ES)'),
+('ics-extra-031', 'class', 'Defensa 1 TFM', '5-MDA', NULL, 'AULA 103', NULL, '2026-07-16 15:30:00', '2026-07-16 20:00:00', 'EDEM, PLANTA 1, AULA 103'),
+('ics-extra-032', 'class', 'Defensa 2 TFM', '5-MDA', NULL, 'AULA 107', NULL, '2026-07-17 15:30:00', '2026-07-17 18:00:00', 'EDEM, PLANTA 1, AULA 107'),
+('ics-extra-033', 'class', 'GRADUACIÓN MÁSTERS', '5-MDA', NULL, NULL, NULL, '2026-09-11 14:00:00', '2026-09-11 21:00:00', 'Graduación de másters');
+
 -- Vista para unificar eventos del calendario desde sesiones y tareas
 CREATE OR REPLACE VIEW vista_eventos AS
 SELECT
@@ -433,7 +471,7 @@ SELECT
     s.nombre AS titulo,
     s.id_bloque,
     s.id_sesion,
-    s.aula,
+    COALESCE(s.aula, s.edificio) AS aula,
     CASE s.id_sesion
         WHEN 'SES-1' THEN 'penipe'
         WHEN 'SES-2' THEN 'penipe'
@@ -528,7 +566,10 @@ SELECT
     END AS id_profesor,
     (s.fecha || ' ' || s.hora_inicio)::TIMESTAMP AS fecha_inicio,
     (s.fecha || ' ' || s.hora_fin)::TIMESTAMP AS fecha_fin,
-    CONCAT('Sesi?n en ', s.edificio, ', ', s.planta, ', ', s.aula) AS descripcion
+    CASE
+        WHEN s.aula IS NULL THEN CONCAT('Sesión online en ', s.edificio)
+        ELSE CONCAT('Sesión en ', s.edificio, ', ', s.planta, ', ', s.aula)
+    END AS descripcion
 FROM sesiones s
 
 UNION ALL
