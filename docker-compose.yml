@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: edem_hub_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/esquema.sql:/docker-entrypoint-initdb.d/01-esquema.sql:ro
+      - ./db/datos.sql:/docker-entrypoint-initdb.d/02-datos.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d edem_hub_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: edem_hub_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: local-docker-change-me
+      ENVIRONMENT: development
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  agent:
+    build:
+      context: ./agent
+    environment:
+      BACKEND_BASE_URL: http://backend:8080
+      GOOGLE_GENAI_USE_VERTEXAI: "false"
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      PORT: 8080
+    ports:
+      - "8081:8080"
+    depends_on:
+      - backend
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_BACKEND_URL: http://localhost:8080
+        VITE_AGENT_URL: http://localhost:8081
+    ports:
+      - "3000:8080"
+    depends_on:
+      - backend
+      - agent
+
+volumes:
+  postgres_data:

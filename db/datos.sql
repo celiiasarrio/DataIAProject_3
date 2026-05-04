@@ -38,7 +38,7 @@ INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido1", "apellido2", "correo"
 ('japlro', 'Javier', 'Plaza', 'Rosique', 'japlro@edem.es', 'Ja5!mYu46H', '', 'Alumno', 'MDA A 2526'),
 ('sareva', 'Salvador', 'Reche', 'Vázquez', 'sareva@edem.es', 'Sa7#nKi83D', '', 'Alumno', 'MDA A 2526'),
 --('jogrhe', 'Jorge', 'Greus', 'Herrero', 'jogrhe@edem.es', 'Jo8$hPw52C', '', 'Alumno', 'MIA 2526'),
-('cesaco', 'Celia', 'Sarrió', 'Colomar', 'cesaco@edem.es', 'Ce4@tLq67B', '', 'Alumno', 'MDA A 2526'),
+('cesaco', 'Celia', 'Sarrió', 'Colomar', 'cesaco@edem.es', 'Ce4@tLq67B', '', 'Alumno', 'MDA A 2526');
 --('jaloru', 'Javier', 'Lopez', 'Ruiz', 'jaloru@edem.es', 'Ja9!rMx31F', '', 'Alumno', 'MIA 2526'),
 --('feorma', 'Felix', 'Ortuño', 'Martinez', 'feorma@edem.es', 'Fe2#vNd84S', '', 'Alumno', 'MIA 2526');
 
@@ -191,7 +191,7 @@ INSERT INTO "rel_alumnos_grupos" ("id_alumno", "id_grupo") VALUES
 --('jogrhe', 'MIA 2526'),
 ('cesaco', 'MDA A 2526');
 --('jaloru', 'MIA 2526'),
---('feorma', 'MIA 2526');
+--('feorma', 'MIA 2526'),
 
 INSERT INTO "rel_bloques_grupos" ("id_bloque", "id_grupo") VALUES
 ('1-MDA', 'MDA A 2526'),
