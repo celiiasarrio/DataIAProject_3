@@ -1,5 +1,5 @@
--- Esquema canónico del backend FastAPI.
--- Bloque = módulo docente amplio.
+-- Esquema canonico del backend FastAPI.
+-- Bloque = modulo docente amplio.
 -- Sesion = clase concreta con fecha, hora y aula.
 
 CREATE TABLE IF NOT EXISTS alumnos (
@@ -69,7 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_sesiones_fecha ON sesiones(fecha);
 CREATE TABLE IF NOT EXISTS ubicaciones (
     id_ubicacion VARCHAR PRIMARY KEY,
     descripcion TEXT NOT NULL,
-    planta VARCHAR,
+    planta INT,
     aula VARCHAR
 );
 
@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS tareas (
     id_tarea SERIAL PRIMARY KEY,
     id_bloque VARCHAR NOT NULL REFERENCES bloques(id_bloque),
     nombre VARCHAR NOT NULL,
+    descripcion TEXT,
     fecha DATE
 );
 

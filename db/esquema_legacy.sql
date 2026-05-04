@@ -1,5 +1,5 @@
 // LEGACY DBML.
-// La fuente de verdad ejecutable vive en db/init_db_v2.sql.
+// La fuente de verdad ejecutable vive en db/esquema.sql.
 
 Table alumnos {
   id_alumno varchar [pk]
@@ -59,7 +59,7 @@ Table sesiones {
 Table ubicaciones {
   id_ubicacion varchar [pk]
   descripcion varchar
-  planta varchar [null]
+  planta int [null]
   aula varchar [null]
 }
 
@@ -103,6 +103,7 @@ Table tareas {
   id_tarea int [pk, increment]
   id_bloque varchar [ref: > bloques.id_bloque]
   nombre varchar
+  descripcion text [null]
   fecha date [null]
 }
 

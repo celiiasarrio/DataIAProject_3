@@ -1,4 +1,6 @@
--- Seed local/manual. Mantiene alumnos personalizados y reutiliza el catálogo canónico.
+-- Seed local/manual. Mantiene alumnos personalizados y reutiliza el catalogo canonico.
+
+DROP VIEW IF EXISTS vista_eventos;
 
 TRUNCATE TABLE
     alumnos,
@@ -14,7 +16,14 @@ TRUNCATE TABLE
     rel_coordinadores_grupos,
     tareas,
     rel_alumno_tarea,
-    asistencia
+    asistencia,
+    eventos,
+    franja_tutoria,
+    reservas,
+    notificaciones,
+    configuracion_notificaciones,
+    correos,
+    contenidos
 RESTART IDENTITY CASCADE;
 
 INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido", "apellido2", "correo", "contrasena", "url_foto", "rol", "grupo") VALUES
@@ -33,7 +42,7 @@ INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido", "apellido2", "correo",
 --('jaloru', 'Javier', 'Lopez', 'Ruiz', 'jaloru@edem.es', 'Ja9!rMx31F', '', 'Alumno', 'MIA 2526'),
 --('feorma', 'Felix', 'Ortuño', 'Martinez', 'feorma@edem.es', 'Fe2#vNd84S', '', 'Alumno', 'MIA 2526');
 
-INSERT INTO "profesores" ("id_profesor", "nombre", "apellido", "apellido2", "correo", "contrasena", "url_foto", 'rol') VALUES
+INSERT INTO "profesores" ("id_profesor", "nombre", "apellido", "apellido2", "correo", "contrasena", "url_foto", "rol") VALUES
 ('penipe', 'Pedro', 'Nieto', 'Pelaez', 'pedronietopelaez@gmail.com', 'PeNiPe2026!', '', 'Profesor'),
 ('sopina', 'Sofía', 'Pinilla', '', 'sofia.pinilla@edem.es', 'SoPi2026!', '', 'Profesor'),
 ('dapina', 'David', 'Pinilla', '', 'david.pinilla@climatetrade.com', 'DaPi2026!', '', 'Profesor'),
@@ -61,9 +70,9 @@ INSERT INTO "profesores" ("id_profesor", "nombre", "apellido", "apellido2", "cor
 INSERT INTO "coordinadores" ("id_coordinador", "nombre", "apellido", "correo", "contrasena", "url_foto", "rol") VALUES
 ('m.herrera', 'Miguel', 'Herrera', 'm.herrera@edem.es', 'MiHe2026!', '', 'Coordinador');
 
-INSERT INTO "grupos" ("id_grupo") VALUES
-('MDA A 2526'),
-('MIA 2526');
+INSERT INTO "grupos" ("id_grupo", "nombre") VALUES
+('MDA A 2526', 'MDA A 2526'),
+('MIA 2526', 'MIA 2526');
 
 INSERT INTO "bloques" ("id_bloque", "nombre") VALUES
 ('1-MDA', 'B1. FUNDAMENTOS'),
@@ -150,9 +159,9 @@ INSERT INTO "sesiones" ("id_sesion", "id_bloque", "nombre", "fecha", "hora_inici
 ('SES-51', '5-MDA', 'Lanzamiento DP2',                  '2026-02-02', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
 ('SES-55', '5-MDA', 'Jornada trabajo DP2',              '2026-02-09', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
 -- HACKATONES (LZD PLANTA 1 AULA 115)
-('SES-63', '5-MDA', 'Hackatón NTT Data', '2026-02-16', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-67', '5-MDA', 'Hackatón GFT',      '2026-03-25', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-68', '5-MDA', 'Hackatón GFT',      '2026-03-26', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115');
+('SES-63', '6-MDA', 'Hackatón NTT Data', '2026-02-16', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-67', '6-MDA', 'Hackatón GFT',      '2026-03-25', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-68', '6-MDA', 'Hackatón GFT',      '2026-03-26', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115');
 
 INSERT INTO "ubicaciones" ("id_ubicacion", "descripcion", "planta", "aula") VALUES
 ('UBI-101',    'EDEM, PLANTA 1, AULA 101',        1, 'AULA 101'),
@@ -208,6 +217,15 @@ INSERT INTO "rel_profesores_bloques" ("id_profesor", "id_bloque") VALUES
 ('jolgome', '3-MDA'),
 ('viasen', '3-MDA'),
 ('facast', '3-MDA'),
+-- SOFT SKILLS (4-MDA)
+('heboas', '4-MDA'),
+('lalath', '4-MDA'),
+-- DATA PROJECTS (5-MDA)
+('penipe', '5-MDA'),
+('sopina', '5-MDA'),
+-- HACKATONES (6-MDA)
+('macola', '6-MDA'),
+('anllos', '6-MDA'),
 ('heboas', '3-MDA'),
 ('lalath', '3-MDA'),
 ('mimora', '3-MDA'),
@@ -221,9 +239,7 @@ INSERT INTO "rel_profesores_bloques" ("id_profesor", "id_bloque") VALUES
 ('bearuiz', '3-MDA'),
 -- SOFT SKILLS (4-MDA)
 ('jopere', '4-MDA'),
-('tocanto', '4-MDA'),
--- DATA PROJECTS (5-MDA)
-('penipe', '5-MDA');
+('tocanto', '4-MDA');
 
 INSERT INTO "rel_coordinadores_grupos" ("id_coordinador", "id_grupo") VALUES
 ('m.herrera', 'MDA A 2526');
@@ -258,7 +274,14 @@ INSERT INTO "tareas" ("id_tarea", "id_bloque", "nombre", "fecha") VALUES
 -- TFM
 (22, '5-MDA', 'Deadline Memoria TFM',       '2026-07-09'),
 (23, '5-MDA', 'Deadline Autoevaluación TFM','2026-07-13'),
-(24, '5-MDA', 'Deadline PPTX TFM',          '2026-07-15');
+-- Más tareas para B6. HACKATONES
+(24, '6-MDA', 'Deadline Hackatón NTT Data', '2026-02-16'),
+(25, '6-MDA', 'Deadline Hackatón GFT',     '2026-03-25'),
+(26, '6-MDA', 'Deadline Hackatón Final',   '2026-05-15'),
+(27, '5-MDA', 'Deadline PPTX TFM',          '2026-07-15');
+
+SELECT setval(pg_get_serial_sequence('tareas', 'id_tarea'), COALESCE(MAX(id_tarea), 1), true)
+FROM tareas;
 
 INSERT INTO "rel_alumno_tarea" ("id_alumno", "id_tarea", "nota")
 SELECT
@@ -279,8 +302,39 @@ FROM rel_alumnos_grupos rag
 JOIN rel_bloques_grupos rbg ON rbg.id_grupo = rag.id_grupo
 JOIN sesiones s ON s.id_bloque = rbg.id_bloque;
 
+INSERT INTO "eventos" ("id", "tipo", "titulo", "id_bloque", "id_sesion", "aula", "id_profesor", "fecha_inicio", "fecha_fin", "descripcion")
+SELECT
+    CONCAT('ses-', id_sesion) AS id,
+    'class' AS tipo,
+    nombre AS titulo,
+    id_bloque,
+    id_sesion,
+    aula,
+    NULL AS id_profesor,
+    (fecha || ' ' || hora_inicio)::TIMESTAMP AS fecha_inicio,
+    (fecha || ' ' || hora_fin)::TIMESTAMP AS fecha_fin,
+    CONCAT('Sesión en ', edificio, ', ', planta, ', ', aula) AS descripcion
+FROM sesiones
+WHERE fecha IS NOT NULL AND hora_inicio IS NOT NULL AND hora_fin IS NOT NULL
+
+UNION ALL
+
+SELECT
+    CONCAT('task-', id_tarea) AS id,
+    'delivery' AS tipo,
+    nombre AS titulo,
+    id_bloque,
+    NULL AS id_sesion,
+    NULL AS aula,
+    NULL AS id_profesor,
+    (fecha || ' 00:00:00')::TIMESTAMP AS fecha_inicio,
+    (fecha || ' 23:59:59')::TIMESTAMP AS fecha_fin,
+    COALESCE(descripcion, CONCAT('Entrega: ', nombre)) AS descripcion
+FROM tareas
+WHERE fecha IS NOT NULL;
+
 -- Vista para unificar eventos del calendario desde sesiones y tareas
-CREATE VIEW vista_eventos AS
+CREATE OR REPLACE VIEW vista_eventos AS
 -- Eventos de sesiones (clases)
 SELECT
     CONCAT('ses-', id_sesion) AS id_evento,
@@ -300,7 +354,7 @@ UNION ALL
 -- Eventos de tareas (entregas)
 SELECT
     CONCAT('task-', id_tarea) AS id_evento,
-    'deadline' AS tipo,
+    'delivery' AS tipo,
     nombre AS titulo,
     id_bloque,
     NULL AS id_sesion,
@@ -308,5 +362,5 @@ SELECT
     NULL AS id_profesor,
     (fecha || ' 00:00:00')::TIMESTAMP AS fecha_inicio,
     (fecha || ' 23:59:59')::TIMESTAMP AS fecha_fin,
-    descripcion
+    COALESCE(descripcion, CONCAT('Entrega: ', nombre)) AS descripcion
 FROM tareas;
