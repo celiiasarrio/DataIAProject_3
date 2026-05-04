@@ -5,12 +5,13 @@
 CREATE TABLE IF NOT EXISTS alumnos (
     id_alumno VARCHAR PRIMARY KEY,
     nombre VARCHAR,
-    apellido1 VARCHAR,
+    apellido VARCHAR,
     apellido2 VARCHAR,
     correo VARCHAR NOT NULL UNIQUE,
     contrasena VARCHAR NOT NULL,
     url_foto VARCHAR,
-    rol VARCHAR NOT NULL DEFAULT 'Alumno'
+    rol VARCHAR NOT NULL DEFAULT 'Alumno',
+    grupo VARCHAR
 );
 
 CREATE INDEX IF NOT EXISTS idx_alumnos_correo ON alumnos(correo);
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS profesores (
     id_profesor VARCHAR PRIMARY KEY,
     nombre VARCHAR NOT NULL,
     apellido VARCHAR NOT NULL,
+    apellido2 VARCHAR,
     correo VARCHAR NOT NULL UNIQUE,
     contrasena VARCHAR NOT NULL,
     url_foto VARCHAR,
@@ -41,7 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_personal_correo ON coordinadores(correo);
 
 CREATE TABLE IF NOT EXISTS grupos (
     id_grupo VARCHAR PRIMARY KEY,
-    nombre VARCHAR NOT NULL
+    nombre VARCHAR
 );
 
 CREATE TABLE IF NOT EXISTS bloques (
@@ -56,6 +58,8 @@ CREATE TABLE IF NOT EXISTS sesiones (
     fecha DATE,
     hora_inicio TIME,
     hora_fin TIME,
+    edificio VARCHAR,
+    planta VARCHAR,
     aula VARCHAR
 );
 
@@ -65,7 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_sesiones_fecha ON sesiones(fecha);
 CREATE TABLE IF NOT EXISTS ubicaciones (
     id_ubicacion VARCHAR PRIMARY KEY,
     descripcion TEXT NOT NULL,
-    planta INT,
+    planta VARCHAR,
     aula VARCHAR
 );
 
@@ -97,7 +101,7 @@ CREATE TABLE IF NOT EXISTS tareas (
     id_tarea SERIAL PRIMARY KEY,
     id_bloque VARCHAR NOT NULL REFERENCES bloques(id_bloque),
     nombre VARCHAR NOT NULL,
-    descripcion TEXT
+    fecha DATE
 );
 
 CREATE INDEX IF NOT EXISTS idx_tareas_bloque ON tareas(id_bloque);
