@@ -2,6 +2,8 @@ import { Bot, Send, X } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { sendAgentMessage } from '../api/client';
 
+const FLOATING_AGENT_SESSION_KEY = 'campus-floating-agent-session-id';
+
 interface ChatMessage {
   id: number;
   role: 'user' | 'agent';
@@ -19,7 +21,7 @@ export function FloatingAgent() {
   ]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [sessionId, setSessionId] = useState<string | undefined>(undefined);
+  const [sessionId, setSessionId] = useState<string | undefined>(() => sessionStorage.getItem(FLOATING_AGENT_SESSION_KEY) || undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,8 +43,11 @@ export function FloatingAgent() {
     setInput('');
     setSending(true);
     try {
-      const res = await sendAgentMessage(text, sessionId);
-      if (res.session_id && !sessionId) setSessionId(res.session_id);
+      const res = await sendAgentMessage(text, { sessionId });
+      if (res.session_id && res.session_id !== sessionId) {
+        setSessionId(res.session_id);
+        sessionStorage.setItem(FLOATING_AGENT_SESSION_KEY, res.session_id);
+      }
       setMessages((prev) => [
         ...prev,
         { id: Date.now() + 1, role: 'agent', text: res.reply },

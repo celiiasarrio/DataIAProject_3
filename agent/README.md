@@ -12,7 +12,7 @@ Frontend / CLI
   └─> Agent service (Cloud Run o local)
         ├─ Bearer JWT del usuario
         ├─ GET  /api/v1/users/me            (role, nombre, id)
-        └─ ADK Runner + InMemorySessionService
+        └─ ADK Runner + SessionService (memoria o Firestore)
               └─ LlmAgent (gemini-2.5-flash)
                     └─ tools (httpx) ─> FastAPI backend con Bearer JWT
 ```
@@ -31,6 +31,7 @@ agent/
 ├── config.py             # Settings (BACKEND_BASE_URL, modelo, Vertex/API key)
 ├── run_local.py          # CLI interactiva: login + chat
 ├── service.py            # API FastAPI para Cloud Run (/health, /api/v1/agent/chat)
+├── firestore_session_service.py  # Persistencia opcional de sesiones en Firestore
 ├── tools/
 │   ├── http_client.py    # httpx client con JWT desde session state
 │   ├── profile.py
@@ -64,6 +65,8 @@ Y en el `.env` del agente:
 GOOGLE_GENAI_USE_VERTEXAI=TRUE
 GOOGLE_CLOUD_PROJECT=project3grupo6
 GOOGLE_CLOUD_LOCATION=europe-west1
+FIRESTORE_PROJECT=project3grupo6
+FIRESTORE_DATABASE=(default)
 ```
 
 **Opción B — Gemini API** (más rápido para arrancar, sólo para local):
@@ -91,6 +94,9 @@ python -m agent.run_local
 
 Te pedirá email + contraseña de un usuario del campus. A partir de ahí, chat
 libre. Escribe `salir` para terminar.
+
+Si llamas al servicio HTTP, `POST /api/v1/agent/chat` acepta `session_id`
+opcional y devuelve siempre `reply` + `session_id` para reanudar el hilo.
 
 ## Ejemplos de conversación
 
@@ -147,7 +153,7 @@ libre. Escribe `salir` para terminar.
 
 ## Próximas fases
 
-1. **Firestore**: memoria conversacional y preferencias del usuario.
-2. **Terraform**: cerrar memoria persistente y reglas de IAM del agente.
+1. **Memoria**: resumir conversaciones largas y guardar preferencias explícitas del usuario.
+2. **Terraform**: endurecer reglas de IAM y observabilidad del agente.
 3. **Vertex AI Agent Engine**: migrar desde Cloud Run si queréis runtime gestionado.
 4. **Frontend**: añadir streaming y mejor UX conversacional.

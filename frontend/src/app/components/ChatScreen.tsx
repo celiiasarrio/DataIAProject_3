@@ -1,11 +1,12 @@
 import { ChevronLeft, Send, Sparkles } from 'lucide-react';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { sendAgentMessage, type AgentChatMessage } from '../api/client';
 
 
 const WELCOME_MESSAGE =
   'Soy tu asistente del campus. Puedo ayudarte con notas, asistencia, sesiones, calendario, tutorías, correos y notificaciones.';
+const CHAT_SESSION_KEY = 'campus-chat-screen-session-id';
 
 
 export function ChatScreen() {
@@ -17,11 +18,7 @@ export function ChatScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const conversationHistory = useMemo(
-    () => messages.filter((message) => message.content !== WELCOME_MESSAGE),
-    [messages],
-  );
+  const [sessionId, setSessionId] = useState<string | undefined>(() => sessionStorage.getItem(CHAT_SESSION_KEY) || undefined);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -29,7 +26,6 @@ export function ChatScreen() {
     if (!trimmed || loading) return;
 
     const nextUserMessage: AgentChatMessage = { role: 'user', content: trimmed };
-    const historyForRequest = conversationHistory.slice(-10);
 
     setMessages((current) => [...current, nextUserMessage]);
     setInput('');
@@ -37,7 +33,11 @@ export function ChatScreen() {
     setError(null);
 
     try {
-      const response = await sendAgentMessage(trimmed, historyForRequest);
+      const response = await sendAgentMessage(trimmed, { sessionId });
+      if (response.session_id && response.session_id !== sessionId) {
+        setSessionId(response.session_id);
+        sessionStorage.setItem(CHAT_SESSION_KEY, response.session_id);
+      }
       setMessages((current) => [...current, { role: 'assistant', content: response.reply }]);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'No se pudo contactar con el asistente';

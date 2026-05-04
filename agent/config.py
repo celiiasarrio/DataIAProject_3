@@ -28,6 +28,7 @@ class AgentSettings(BaseSettings):
 
     FIRESTORE_PROJECT: str = ""
     FIRESTORE_DATABASE: str = "(default)"
+    FIRESTORE_COLLECTION: str = "agent_sessions"
 
     AGENT_EMAIL: str = ""
     AGENT_PASSWORD: str = ""
