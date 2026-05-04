@@ -13,6 +13,12 @@ from pydantic import BaseModel, Field
 from agent.agent import create_root_agent
 from agent.config import settings
 from agent.firestore_session_service import FirestoreSessionService
+from agent.user_memory import (
+    FirestoreUserMemoryStore,
+    InMemoryUserMemoryStore,
+    format_user_memory_for_prompt,
+    update_user_memory,
+)
 
 
 APP_NAME = "campus_assistant"
@@ -46,6 +52,15 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     session_id: str
+
+
+class UserMemoryResponse(BaseModel):
+    user_id: str
+    preferences: dict[str, str] = Field(default_factory=dict)
+    facts: List[str] = Field(default_factory=list)
+    recent_topics: List[str] = Field(default_factory=list)
+    conversation_summary: str = ""
+    updated_at: Optional[float] = None
 
 
 def extract_bearer_token(authorization: Optional[str]) -> str:
@@ -106,6 +121,17 @@ def get_session_service():
     return InMemorySessionService()
 
 
+@lru_cache(maxsize=1)
+def get_user_memory_store():
+    if settings.FIRESTORE_PROJECT:
+        return FirestoreUserMemoryStore(
+            project=settings.FIRESTORE_PROJECT,
+            database=settings.FIRESTORE_DATABASE,
+            collection=settings.FIRESTORE_USER_MEMORY_COLLECTION,
+        )
+    return InMemoryUserMemoryStore()
+
+
 def build_runtime_state(jwt_token: str, profile: dict) -> dict:
     user_id = profile["id"]
     user_role = profile.get("rol") or "desconocido"
@@ -157,14 +183,28 @@ async def ensure_session(jwt_token: str, profile: dict, session_id: Optional[str
     return session_service, session
 
 
-async def run_agent(jwt_token: str, profile: dict, message: str, session_id: Optional[str]) -> tuple[str, str]:
+async def run_agent(
+    jwt_token: str,
+    profile: dict,
+    message: str,
+    session_id: Optional[str],
+    memory_message: Optional[str] = None,
+) -> tuple[str, str]:
     session_service, session = await ensure_session(jwt_token=jwt_token, profile=profile, session_id=session_id)
+    memory_store = get_user_memory_store()
     user_id = profile["id"]
     user_role = profile.get("rol") or "desconocido"
     user_name = f"{profile.get('nombre', '')} {profile.get('apellido', '')}".strip()
+    user_memory = await memory_store.get_user_memory(user_id)
+    user_memory_context = format_user_memory_for_prompt(user_memory)
 
     runner = Runner(
-        agent=create_root_agent(user_role=user_role, user_name=user_name, user_id=user_id),
+        agent=create_root_agent(
+            user_role=user_role,
+            user_name=user_name,
+            user_id=user_id,
+            user_memory_context=user_memory_context,
+        ),
         app_name=APP_NAME,
         session_service=session_service,
     )
@@ -177,19 +217,30 @@ async def run_agent(jwt_token: str, profile: dict, message: str, session_id: Opt
     reply = "\n".join(part for part in output_parts if part).strip()
     if not reply:
         raise HTTPException(status_code=502, detail="El agente no devolvió respuesta")
+
+    updated_memory = update_user_memory(
+        user_memory,
+        user_id=user_id,
+        message=memory_message or message,
+        reply=reply,
+    )
+    await memory_store.upsert_user_memory(user_id, updated_memory)
     return reply, session.id
 
 
 @app.get("/health")
 def health():
     session_backend = "firestore" if settings.FIRESTORE_PROJECT else "memory"
+    user_memory_backend = "firestore" if settings.FIRESTORE_PROJECT else "memory"
     return {
         "status": "ok",
         "backend_base_url": settings.BACKEND_BASE_URL,
         "model": settings.MODEL,
         "vertex_ai": settings.GOOGLE_GENAI_USE_VERTEXAI,
         "session_backend": session_backend,
+        "user_memory_backend": user_memory_backend,
         "firestore_project": settings.FIRESTORE_PROJECT or None,
+        "firestore_user_memory_collection": settings.FIRESTORE_USER_MEMORY_COLLECTION,
     }
 
 
@@ -209,5 +260,26 @@ async def chat(
         profile,
         composed_message,
         payload.session_id,
+        memory_message=payload.message,
     )
     return ChatResponse(reply=reply, session_id=resolved_session_id)
+
+
+@app.get("/api/v1/agent/memory", response_model=UserMemoryResponse)
+async def get_memory(
+    authorization: Optional[str] = Header(default=None),
+):
+    jwt_token = extract_bearer_token(authorization)
+    profile = fetch_profile(jwt_token)
+    memory = await get_user_memory_store().get_user_memory(profile["id"])
+    return UserMemoryResponse.model_validate(memory)
+
+
+@app.delete("/api/v1/agent/memory", response_model=UserMemoryResponse)
+async def delete_memory(
+    authorization: Optional[str] = Header(default=None),
+):
+    jwt_token = extract_bearer_token(authorization)
+    profile = fetch_profile(jwt_token)
+    memory = await get_user_memory_store().delete_user_memory(profile["id"])
+    return UserMemoryResponse.model_validate(memory)

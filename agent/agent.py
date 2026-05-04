@@ -48,7 +48,12 @@ TOOLS = [
 ]
 
 
-def create_root_agent(user_role: str, user_name: str, user_id: str) -> LlmAgent:
+def create_root_agent(
+    user_role: str,
+    user_name: str,
+    user_id: str,
+    user_memory_context: str = "No hay memoria persistente relevante del usuario.",
+) -> LlmAgent:
     return LlmAgent(
         name="campus_assistant",
         model=settings.MODEL,
@@ -58,6 +63,11 @@ def create_root_agent(user_role: str, user_name: str, user_id: str) -> LlmAgent:
             "del campus para consultar y gestionar notas, asistencia, calendario, "
             "tutorías, correos y notificaciones."
         ),
-        instruction=render_instruction(user_role=user_role, user_name=user_name, user_id=user_id),
+        instruction=render_instruction(
+            user_role=user_role,
+            user_name=user_name,
+            user_id=user_id,
+            user_memory_context=user_memory_context,
+        ),
         tools=TOOLS,
     )
