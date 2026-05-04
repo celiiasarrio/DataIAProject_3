@@ -24,13 +24,6 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import create_engine, or_
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool
-from pydantic import BaseModel
-from typing import Optional
-from jose import JWTError, jwt
-import bcrypt as bcrypt_lib
-import uuid
-from datetime import datetime, date, timedelta
-from typing import List
 
 from config import settings
 from models import (

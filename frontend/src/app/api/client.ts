@@ -129,15 +129,22 @@ export interface AgentChatMessage {
 
 export interface AgentChatResponse {
   reply: string;
+  session_id?: string;
+}
+
+export interface SendAgentMessageOptions {
+  history?: AgentChatMessage[];
+  sessionId?: string;
 }
 
 export async function sendAgentMessage(
   message: string,
-  history: AgentChatMessage[] = [],
+  options: SendAgentMessageOptions = {},
 ): Promise<AgentChatResponse> {
+  const { history = [], sessionId } = options;
   return authenticatedFetch<AgentChatResponse>(AGENT_URL, '/api/v1/agent/chat', {
     method: 'POST',
-    body: JSON.stringify({ message, history }),
+    body: JSON.stringify({ message, history, session_id: sessionId }),
   });
 }
 
@@ -146,16 +153,4 @@ export function mapRol(rol: string): string {
   if (rol === 'alumno') return 'student';
   if (rol === 'profesor') return 'professor';
   return 'admin';
-}
-
-export interface AgentChatResponse {
-  reply: string;
-  session_id?: string;
-}
-
-export async function sendAgentMessage(message: string, sessionId?: string): Promise<AgentChatResponse> {
-  return apiFetch<AgentChatResponse>('/api/v1/agent/chat', {
-    method: 'POST',
-    body: JSON.stringify({ message, session_id: sessionId }),
-  });
 }

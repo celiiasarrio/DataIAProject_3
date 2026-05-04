@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import List, Literal, Optional
 import uuid
 
@@ -7,10 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from agent.agent import create_root_agent
 from agent.config import settings
+from agent.firestore_session_service import FirestoreSessionService
 
 
 APP_NAME = "campus_assistant"
@@ -37,11 +39,13 @@ class ChatHistoryMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
-    history: List[ChatHistoryMessage] = []
+    history: List[ChatHistoryMessage] = Field(default_factory=list)
+    session_id: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
     reply: str
+    session_id: str
 
 
 def extract_bearer_token(authorization: Optional[str]) -> str:
@@ -91,23 +95,74 @@ def build_message(history: List[ChatHistoryMessage], message: str) -> str:
     )
 
 
-async def run_agent(jwt_token: str, profile: dict, message: str) -> str:
-    session_service = InMemorySessionService()
+@lru_cache(maxsize=1)
+def get_session_service():
+    if settings.FIRESTORE_PROJECT:
+        return FirestoreSessionService(
+            project=settings.FIRESTORE_PROJECT,
+            database=settings.FIRESTORE_DATABASE,
+            root_collection=settings.FIRESTORE_COLLECTION,
+        )
+    return InMemorySessionService()
+
+
+def build_runtime_state(jwt_token: str, profile: dict) -> dict:
     user_id = profile["id"]
     user_role = profile.get("rol") or "desconocido"
     user_name = f"{profile.get('nombre', '')} {profile.get('apellido', '')}".strip()
+    return {
+        "jwt": jwt_token,
+        "user_id": user_id,
+        "user_role": user_role,
+        "user_name": user_name,
+    }
+
+
+async def ensure_session(jwt_token: str, profile: dict, session_id: Optional[str]):
+    session_service = get_session_service()
+    runtime_state = build_runtime_state(jwt_token, profile)
+    user_id = profile["id"]
+
+    if hasattr(session_service, "set_volatile_state") and session_id:
+        session_service.set_volatile_state(
+            app_name=APP_NAME,
+            user_id=user_id,
+            session_id=session_id,
+            state=runtime_state,
+        )
+
+    if session_id:
+        session = await session_service.get_session(
+            app_name=APP_NAME,
+            user_id=user_id,
+            session_id=session_id,
+        )
+        if session is not None:
+            session.state.update(runtime_state)
+            return session_service, session
 
     session = await session_service.create_session(
         app_name=APP_NAME,
         user_id=user_id,
-        session_id=str(uuid.uuid4()),
-        state={
-            "jwt": jwt_token,
-            "user_id": user_id,
-            "user_role": user_role,
-            "user_name": user_name,
-        },
+        session_id=session_id or str(uuid.uuid4()),
+        state=runtime_state,
     )
+    if hasattr(session_service, "set_volatile_state"):
+        session_service.set_volatile_state(
+            app_name=APP_NAME,
+            user_id=user_id,
+            session_id=session.id,
+            state=runtime_state,
+        )
+    return session_service, session
+
+
+async def run_agent(jwt_token: str, profile: dict, message: str, session_id: Optional[str]) -> tuple[str, str]:
+    session_service, session = await ensure_session(jwt_token=jwt_token, profile=profile, session_id=session_id)
+    user_id = profile["id"]
+    user_role = profile.get("rol") or "desconocido"
+    user_name = f"{profile.get('nombre', '')} {profile.get('apellido', '')}".strip()
+
     runner = Runner(
         agent=create_root_agent(user_role=user_role, user_name=user_name, user_id=user_id),
         app_name=APP_NAME,
@@ -122,16 +177,19 @@ async def run_agent(jwt_token: str, profile: dict, message: str) -> str:
     reply = "\n".join(part for part in output_parts if part).strip()
     if not reply:
         raise HTTPException(status_code=502, detail="El agente no devolvió respuesta")
-    return reply
+    return reply, session.id
 
 
 @app.get("/health")
 def health():
+    session_backend = "firestore" if settings.FIRESTORE_PROJECT else "memory"
     return {
         "status": "ok",
         "backend_base_url": settings.BACKEND_BASE_URL,
         "model": settings.MODEL,
         "vertex_ai": settings.GOOGLE_GENAI_USE_VERTEXAI,
+        "session_backend": session_backend,
+        "firestore_project": settings.FIRESTORE_PROJECT or None,
     }
 
 
@@ -142,6 +200,14 @@ async def chat(
 ):
     jwt_token = extract_bearer_token(authorization)
     profile = fetch_profile(jwt_token)
-    composed_message = build_message(payload.history, payload.message)
-    reply = await run_agent(jwt_token, profile, composed_message)
-    return ChatResponse(reply=reply)
+    composed_message = payload.message
+    if payload.history and not payload.session_id:
+        composed_message = build_message(payload.history, payload.message)
+
+    reply, resolved_session_id = await run_agent(
+        jwt_token,
+        profile,
+        composed_message,
+        payload.session_id,
+    )
+    return ChatResponse(reply=reply, session_id=resolved_session_id)

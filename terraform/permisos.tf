@@ -37,6 +37,13 @@ resource "google_project_iam_member" "agent_vertex_ai" {
   member  = "serviceAccount:${google_service_account.agent_sa.email}"
 }
 
+# Agent SA → Firestore access
+resource "google_project_iam_member" "agent_firestore_access" {
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${google_service_account.agent_sa.email}"
+}
+
 # CI/CD SA → Artifact Registry push
 resource "google_project_iam_member" "cicd_artifact_registry" {
   project = var.project_id

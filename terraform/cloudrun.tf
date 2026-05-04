@@ -208,6 +208,16 @@ resource "google_cloud_run_v2_service" "agent" {
         name  = "HTTP_TIMEOUT_SECONDS"
         value = "15"
       }
+
+      env {
+        name  = "FIRESTORE_PROJECT"
+        value = var.project_id
+      }
+
+      env {
+        name  = "FIRESTORE_DATABASE"
+        value = google_firestore_database.database.name
+      }
     }
   }
 
