@@ -180,9 +180,11 @@ export interface CalendarEvent {
   tipo: string;
   titulo: string;
   id_bloque: string | null;
+  bloque_nombre: string | null;
   id_sesion: string | null;
   aula: string | null;
   id_profesor: string | null;
+  profesor_nombre: string | null;
   fecha_inicio: string;
   fecha_fin: string;
   descripcion: string | null;

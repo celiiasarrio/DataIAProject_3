@@ -196,9 +196,11 @@ class EventOut(ORMModel):
     tipo: str
     titulo: str
     id_bloque: Optional[str] = None
+    bloque_nombre: Optional[str] = None
     id_sesion: Optional[str] = None
     aula: Optional[str] = None
     id_profesor: Optional[str] = None
+    profesor_nombre: Optional[str] = None
     fecha_inicio: datetime
     fecha_fin: datetime
     descripcion: Optional[str] = None
@@ -539,6 +541,29 @@ def enrich_event_block(session: Session, event_payload: dict) -> dict:
     return event_payload
 
 
+def serialize_calendar_event(db: Session, event: Evento) -> EventOut:
+    block = db.query(Bloque).filter(Bloque.id_bloque == event.id_bloque).first() if event.id_bloque else None
+    professor = (
+        db.query(Profesor).filter(Profesor.id_profesor == event.id_profesor).first()
+        if event.id_profesor
+        else None
+    )
+    return EventOut(
+        id=event.id,
+        tipo=event.tipo,
+        titulo=event.titulo,
+        id_bloque=event.id_bloque,
+        bloque_nombre=block.nombre if block else None,
+        id_sesion=event.id_sesion,
+        aula=event.aula,
+        id_profesor=event.id_profesor,
+        profesor_nombre=f"{professor.nombre} {professor.apellido}" if professor else None,
+        fecha_inicio=event.fecha_inicio,
+        fecha_fin=event.fecha_fin,
+        descripcion=event.descripcion,
+    )
+
+
 async def get_current_user(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
@@ -714,7 +739,7 @@ def list_events(
         query = query.filter(Evento.id_bloque == id_bloque)
     if id_sesion:
         query = query.filter(Evento.id_sesion == id_sesion)
-    return query.order_by(Evento.fecha_inicio).all()
+    return [serialize_calendar_event(db, event) for event in query.order_by(Evento.fecha_inicio).all()]
 
 
 @app.post("/api/v1/calendar/events", response_model=EventOut, tags=["Calendario"], status_code=201)
@@ -728,7 +753,7 @@ def create_event(
     db.add(event)
     db.commit()
     db.refresh(event)
-    return event
+    return serialize_calendar_event(db, event)
 
 
 @app.get("/api/v1/calendar/events/{event_id}", response_model=EventOut, tags=["Calendario"])
@@ -740,7 +765,7 @@ def get_event(
     event = db.query(Evento).filter(Evento.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Evento no encontrado")
-    return event
+    return serialize_calendar_event(db, event)
 
 
 @app.put("/api/v1/calendar/events/{event_id}", response_model=EventOut, tags=["Calendario"])

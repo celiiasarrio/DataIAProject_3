@@ -1,600 +1,319 @@
-import { useState, useEffect } from 'react';
-import { ChevronLeft, BookOpen, FileText, AlertCircle, Plus, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  BookOpen,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  FileText,
+  MapPin,
+  UserRound,
+  X,
+} from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { getCalendarEvents, type CalendarEvent } from '../api/client';
 
-type ViewMode = 'semana' | 'jus' | 'dia' | 'mes';
-type EventType = 'clase' | 'entrega' | 'examen';
-
-interface CalEvent {
-  id: number;
-  sessionCode: string;
-  type: EventType;
-  sessionTitle: string;
-  day: number; // 0=LUN, 1=MAR, 2=MIÉ, 3=JUE, 4=VIE, 5=SÁB
-  startHour: number;
-  endHour: number;
-}
-
-const HOUR_HEIGHT = 56;
-const START_HOUR = 8;
-
-const EVENT_STYLES: Record<EventType, { bg: string; text: string; dot: string; border: string }> = {
-  clase:   { bg: 'bg-blue-500',  text: 'text-white', dot: 'bg-blue-500',  border: 'border-blue-600' },
-  entrega: { bg: 'bg-amber-400', text: 'text-white', dot: 'bg-amber-400', border: 'border-amber-500' },
-  examen:  { bg: 'bg-red-500',   text: 'text-white', dot: 'bg-red-500',   border: 'border-red-600'  },
+const EVENT_META: Record<string, { label: string; icon: React.ElementType; bg: string; text: string; chip: string }> = {
+  class: { label: 'Sesión', icon: BookOpen, bg: 'bg-blue-50', text: 'text-blue-700', chip: 'bg-blue-500' },
+  delivery: { label: 'Entrega', icon: FileText, bg: 'bg-amber-50', text: 'text-amber-700', chip: 'bg-amber-400' },
 };
 
-const weekDays = [
-  { short: 'LUN', date: 23, label: 'Lunes 23' },
-  { short: 'MAR', date: 24, label: 'Martes 24' },
-  { short: 'MIÉ', date: 25, label: 'Miércoles 25' },
-  { short: 'JUE', date: 26, label: 'Jueves 26' },
-  { short: 'VIE', date: 27, label: 'Viernes 27' },
-  { short: 'SÁB', date: 28, label: 'Sábado 28' },
-];
+const WEEK_DAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
-const allEvents: CalEvent[] = [
-  // Lunes 23
-  { id: 1,  type: 'clase',   sessionTitle: 'Big Data & Analytics', sessionCode: 'bda-301', day: 0, startHour: 10,   endHour: 12   },
-  { id: 2,  type: 'clase',   sessionTitle: 'Análisis de Datos',    sessionCode: 'ada-303', day: 0, startHour: 16,   endHour: 18   },
-  // Martes 24
-  { id: 3,  type: 'clase',   sessionTitle: 'Marketing Digital',    sessionCode: 'mkt-201', day: 1, startHour: 9,    endHour: 11   },
-  { id: 4,  type: 'clase',   sessionTitle: 'Finanzas Corporativas',sessionCode: 'fin-302', day: 1, startHour: 14,   endHour: 16   },
-  // Miércoles 25 (hoy)
-  { id: 5,  type: 'clase',   sessionTitle: 'Estrategia Empresarial',sessionCode: 'est-401', day: 2, startHour: 10,   endHour: 12   },
-  { id: 6,  type: 'entrega', sessionTitle: 'Entrega: Proy. Big Data', sessionCode: 'bda-301', day: 2, startHour: 13, endHour: 13.5 },
-  // Jueves 26
-  { id: 7,  type: 'clase',   sessionTitle: 'Big Data & Analytics', sessionCode: 'bda-301', day: 3, startHour: 9,    endHour: 11   },
-  { id: 8,  type: 'examen',  sessionTitle: 'Examen Finanzas',      sessionCode: 'fin-302', day: 3, startHour: 12,   endHour: 14   },
-  { id: 9,  type: 'clase',   sessionTitle: 'Coaching & Liderazgo', sessionCode: 'coa-201', day: 3, startHour: 16,   endHour: 18   },
-  // Viernes 27
-  { id: 10, type: 'clase',   sessionTitle: 'Marketing Digital',    sessionCode: 'mkt-201', day: 4, startHour: 10,   endHour: 12   },
-  { id: 11, type: 'entrega', sessionTitle: 'Entrega: Informe Mkt', sessionCode: 'mkt-201', day: 4, startHour: 13,   endHour: 13.5 },
-  // Sábado 28
-  { id: 12, type: 'clase',   sessionTitle: 'Finanzas Corporativas',sessionCode: 'fin-302', day: 5, startHour: 10,   endHour: 12   },
-];
+const formatMonth = (value: Date) =>
+  new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(value);
 
-// March 2026: March 1 = Sunday → Monday-first grid: 6 leading nulls
-const marchDays: (number | null)[] = [
-  null, null, null, null, null, null, 1,
-  2,  3,  4,  5,  6,  7,  8,
-  9,  10, 11, 12, 13, 14, 15,
-  16, 17, 18, 19, 20, 21, 22,
-  23, 24, 25, 26, 27, 28, 29,
-  30, 31, null, null, null, null, null,
-];
+const formatLongDate = (value: string) =>
+  new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(value));
 
-const monthEventMap: Record<number, EventType[]> = {
-  2:  ['clase'],
-  3:  ['clase'],
-  4:  ['clase'],
-  5:  ['clase', 'examen'],
-  6:  ['clase'],
-  7:  ['clase'],
-  9:  ['clase'],
-  10: ['clase'],
-  11: ['clase', 'entrega'],
-  12: ['clase', 'examen'],
-  13: ['clase'],
-  14: ['clase'],
-  16: ['clase'],
-  17: ['clase'],
-  18: ['clase'],
-  19: ['clase'],
-  20: ['clase', 'examen'],
-  21: ['clase'],
-  23: ['clase'],
-  24: ['clase'],
-  25: ['clase', 'entrega'],
-  26: ['clase', 'examen'],
-  27: ['clase', 'entrega'],
-  28: ['clase'],
-  30: ['clase'],
-  31: ['clase'],
+const formatTime = (value: string) =>
+  new Intl.DateTimeFormat('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+
+const getDayKey = (value: string | Date) => {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
-const formatHour = (h: number): string => {
-  const hrs = Math.floor(h);
-  const mins = String(Math.round((h - hrs) * 60)).padStart(2, '0');
-  return `${hrs}:${mins}`;
-};
+const monthStart = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1);
+const addMonths = (date: Date, amount: number) => new Date(date.getFullYear(), date.getMonth() + amount, 1);
 
-const VIEW_BUTTONS: { mode: ViewMode; label: string }[] = [
-  { mode: 'semana', label: 'L - V' },
-  { mode: 'jus',    label: 'J - S' },
-  { mode: 'dia',    label: 'Día'   },
-  { mode: 'mes',    label: 'Mes'   },
-];
+const buildMonthDays = (visibleMonth: Date) => {
+  const first = monthStart(visibleMonth);
+  const mondayOffset = (first.getDay() + 6) % 7;
+  const gridStart = new Date(first);
+  gridStart.setDate(first.getDate() - mondayOffset);
 
-const EVENT_ICONS: Record<EventType, React.ElementType> = {
-  clase:   BookOpen,
-  entrega: FileText,
-  examen:  AlertCircle,
+  return Array.from({ length: 42 }, (_, index) => {
+    const day = new Date(gridStart);
+    day.setDate(gridStart.getDate() + index);
+    return day;
+  });
 };
 
 export function CalendarScreen() {
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<ViewMode>('semana');
-  const [selectedDayIdx, setSelectedDayIdx] = useState(2); // MIÉ 25 (hoy)
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [visibleMonth, setVisibleMonth] = useState(() => monthStart(new Date()));
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-
-  const [events, setEvents] = useState<CalEvent[]>(allEvents);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newEvent, setNewEvent] = useState<Partial<CalEvent>>({ type: 'examen', sessionTitle: '', day: 2, startHour: 10, endHour: 12 });
-  const [selectedEvent, setSelectedEvent] = useState<CalEvent | null>(null);
 
   useEffect(() => {
     setUserRole(localStorage.getItem('userRole'));
+    getCalendarEvents()
+      .then((data) => {
+        const sorted = data
+          .filter((event) => event.tipo === 'class' || event.tipo === 'delivery')
+          .sort((a, b) => new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime());
+        setEvents(sorted);
+
+        const nextEvent =
+          sorted.find((event) => new Date(event.fecha_inicio).getTime() >= Date.now()) ??
+          sorted[0];
+        if (nextEvent) setVisibleMonth(monthStart(new Date(nextEvent.fecha_inicio)));
+      })
+      .catch(() => setEvents([]))
+      .finally(() => setLoading(false));
   }, []);
 
-  const isProfessor = userRole === 'professor';
-  const isStudent = userRole === 'student';
+  const isStaff = userRole === 'admin' || userRole === 'professor';
 
-  const hours = Array.from({ length: 12 }, (_, i) => i + START_HOUR); // 8–19
+  const eventsByDay = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    for (const event of events) {
+      const key = getDayKey(event.fecha_inicio);
+      map.set(key, [...(map.get(key) ?? []), event]);
+    }
+    return map;
+  }, [events]);
 
-  const isCoordinator = userRole === 'admin';
+  const monthDays = useMemo(() => buildMonthDays(visibleMonth), [visibleMonth]);
 
-  // Which days to display in time-grid views
-  const getDisplayDays = () => {
-    if (viewMode === 'semana') return weekDays.slice(0, 5);
-    if (viewMode === 'jus')    return weekDays.slice(3, 6);
-    if (viewMode === 'dia')    return [weekDays[selectedDayIdx]];
-    return [];
-  };
-
-  // Which events to show
-  const getDisplayEvents = (): CalEvent[] => {
-    if (viewMode === 'semana') return events.filter(e => e.day <= 4);
-    if (viewMode === 'jus')    return events.filter(e => e.day >= 3);
-    if (viewMode === 'dia')    return events.filter(e => e.day === selectedDayIdx);
-    return [];
-  };
-
-  // Map event.day → display column index
-  const getDisplayColIndex = (event: CalEvent): number => {
-    if (viewMode === 'semana') return event.day;
-    if (viewMode === 'jus')    return event.day - 3;
-    return 0;
-  };
-
-  const displayDays   = getDisplayDays();
-  const displayEvents = getDisplayEvents();
-  const totalCols     = displayDays.length;
-
-  const gridTitle = () => {
-    if (viewMode === 'mes')    return 'MARZO 2026';
-    if (viewMode === 'dia')    return weekDays[selectedDayIdx].label.toUpperCase() + ' · MAR 2026';
-    if (viewMode === 'semana') return 'SEMANA 23–27 MAR 2026';
-    return 'JUE–SÁB 26–28 MAR 2026';
-  };
+  const nextEvent = events.find((event) => new Date(event.fecha_inicio).getTime() >= Date.now());
 
   return (
-    <div className="min-h-screen bg-[#008899] pb-20 flex flex-col">
-      {/* ── Header ── */}
-      <div className="px-5 pt-12 pb-4 flex-shrink-0">
-        <div className="flex items-center gap-3 mb-4">
+    <div className="min-h-screen bg-[#008899] pb-20">
+      <div className="px-5 pt-12 pb-5">
+        <div className="flex items-center gap-3 mb-5">
           <button onClick={() => navigate(-1)} className="p-1">
             <ChevronLeft className="text-white" size={24} />
           </button>
           <div>
-            <h1 className="text-white text-xl" style={{ fontWeight: 300, fontFamily: 'Didot, Bodoni, serif' }}>EDEM</h1>
-            <p className="text-white text-xs opacity-80">EDEM STUDENT HUB</p>
+            <h1 className="text-white text-xl" style={{ fontWeight: 600 }}>Calendario</h1>
+            <p className="text-white text-xs opacity-80">Sesiones y entregas</p>
           </div>
         </div>
 
-        {/* View mode toggle */}
-        <div className="flex gap-1.5 mb-3">
-          {VIEW_BUTTONS.map(({ mode, label }) => (
-            <button
-              key={mode}
-              onClick={() => setViewMode(mode)}
-              className={`flex-1 py-2 rounded-xl text-sm transition-all ${
-                viewMode === mode
-                  ? 'bg-white text-[#008899]'
-                  : 'bg-white/20 text-white'
-              }`}
-              style={{ fontWeight: viewMode === mode ? 700 : 400 }}
-            >
-              {label}
-            </button>
+        {nextEvent && (
+          <div className="bg-white/15 rounded-2xl p-4">
+            <p className="text-white/70 text-xs mb-1">Próximo evento</p>
+            <p className="text-white text-base" style={{ fontWeight: 700 }}>{nextEvent.titulo}</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-white/75">
+              <span>{formatLongDate(nextEvent.fecha_inicio)}</span>
+              <span>{formatTime(nextEvent.fecha_inicio)} - {formatTime(nextEvent.fecha_fin)}</span>
+              {nextEvent.profesor_nombre && <span>{nextEvent.profesor_nombre}</span>}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-t-3xl px-4 pt-5 pb-6 min-h-[70vh]">
+        <div className="flex items-center justify-between mb-4 px-1">
+          <button
+            onClick={() => setVisibleMonth((current) => addMonths(current, -1))}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <h2 className="text-[#008899] capitalize" style={{ fontWeight: 800 }}>
+            {formatMonth(visibleMonth)}
+          </h2>
+          <button
+            onClick={() => setVisibleMonth((current) => addMonths(current, 1))}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+
+        <div className="flex gap-5 mb-4 px-1">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+            <span className="text-xs text-gray-500">Sesiones</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+            <span className="text-xs text-gray-500">Entregas</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 mb-1">
+          {WEEK_DAYS.map((day) => (
+            <div key={day} className="text-center text-xs text-gray-400 py-2">
+              {day}
+            </div>
           ))}
         </div>
 
-        {/* Legend */}
-        <div className="flex gap-5">
-          {(['clase', 'entrega', 'examen'] as EventType[]).map(type => {
-            const Icon = EVENT_ICONS[type];
-            return (
-              <div key={type} className="flex items-center gap-1.5">
-                <div className={`w-2 h-2 rounded-full ${EVENT_STYLES[type].dot}`} />
-                <span className="text-white text-xs opacity-80 capitalize">{type}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+        {loading ? (
+          <p className="text-gray-400 text-sm text-center py-8">Cargando calendario...</p>
+        ) : (
+          <div className="grid grid-cols-7 border-t border-l border-gray-100 rounded-xl overflow-hidden">
+            {monthDays.map((day) => {
+              const key = getDayKey(day);
+              const dayEvents = eventsByDay.get(key) ?? [];
+              const inMonth = day.getMonth() === visibleMonth.getMonth();
+              const visibleEvents = dayEvents.slice(0, 3);
+              const hiddenCount = Math.max(dayEvents.length - visibleEvents.length, 0);
 
-      {/* ── Calendar Body ── */}
-      <div className="bg-white rounded-t-3xl flex-1 overflow-hidden flex flex-col">
-        {/* Title row */}
-        <div className="px-4 pt-4 pb-2 flex-shrink-0">
-          <p className="text-[#008899] text-sm" style={{ fontWeight: 700 }}>{gridTitle()}</p>
-        </div>
-
-        {/* ── MONTHLY VIEW ── */}
-        {viewMode === 'mes' && (
-          <div className="px-4 pb-4">
-            <div className="grid grid-cols-7 mb-1">
-              {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, i) => (
-                <div key={i} className="text-center text-xs text-gray-400 py-1">{d}</div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-y-1">
-              {marchDays.map((day, i) => (
-                <div key={i} className="flex flex-col items-center py-0.5">
-                  {day !== null ? (
-                    <>
-                      <div
-                        className={`w-7 h-7 flex items-center justify-center rounded-full text-xs ${
-                          day === 25
-                            ? 'bg-[#008899] text-white'
-                            : 'text-gray-800'
-                        }`}
-                        style={{ fontWeight: day === 25 ? 700 : 400 }}
-                      >
-                        {day}
-                      </div>
-                      <div className="flex gap-0.5 mt-0.5">
-                        {(monthEventMap[day] ?? []).map((type, j) => (
-                          <div
-                            key={j}
-                            className={`w-1.5 h-1.5 rounded-full ${EVENT_STYLES[type].dot}`}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="w-7 h-7" />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Event list for the month */}
-            <div className="mt-5 space-y-2">
-              <p className="text-xs text-gray-500 mb-2" style={{ fontWeight: 600 }}>PRÓXIMAS FECHAS CLAVE</p>
-              {[
-                { date: '25 Mar', type: 'entrega' as EventType, text: 'Entrega Proyecto Big Data' },
-                { date: '26 Mar', type: 'examen'  as EventType, text: 'Examen Finanzas' },
-                { date: '27 Mar', type: 'entrega' as EventType, text: 'Entrega Informe Marketing' },
-                { date: '5 Abr',  type: 'examen'  as EventType, text: 'Examen Marketing Digital' },
-                { date: '12 Abr', type: 'entrega' as EventType, text: 'Entrega Análisis de Datos' },
-              ].map((item, i) => {
-                const Icon = EVENT_ICONS[item.type];
-                return (
-                  <div
-                    key={i}
-                    onClick={() => isStudent && setSelectedEvent({ id: 999+i, sessionCode: '', type: item.type, sessionTitle: item.text, day: -1, startHour: 0, endHour: 0 })}
-                    className={`flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2 ${isStudent ? 'cursor-pointer hover:bg-gray-100 transition-colors' : ''}`}
-                  >
-                    <div className={`p-1.5 rounded-lg ${EVENT_STYLES[item.type].bg}`}>
-                      <Icon size={14} className="text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-gray-800 text-sm" style={{ fontWeight: 500 }}>{item.text}</p>
-                    </div>
-                    <span className="text-xs text-gray-400">{item.date}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        {/* ── DAY SELECTOR (only for "Día" mode) ── */}
-        {viewMode === 'dia' && (
-          <div className="px-4 flex-shrink-0">
-            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-              {weekDays.map((day, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSelectedDayIdx(i)}
-                  className={`flex-shrink-0 flex flex-col items-center px-3 py-1.5 rounded-xl transition-all ${
-                    selectedDayIdx === i
-                      ? 'bg-[#008899] text-white'
-                      : 'bg-gray-100 text-gray-600'
+              return (
+                <div
+                  key={key}
+                  className={`min-h-[104px] border-r border-b border-gray-100 p-1.5 ${
+                    inMonth ? 'bg-white' : 'bg-gray-50'
                   }`}
                 >
-                  <span className="text-xs">{day.short}</span>
-                  <span className="text-sm" style={{ fontWeight: 700 }}>{day.date}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {/* ── TIME GRID (semana, jus, dia) ── */}
-        {viewMode !== 'mes' && (
-          <div className="flex flex-col flex-1 overflow-hidden">
-            {/* Day headers */}
-            {viewMode !== 'dia' && (
-              <div
-                className="flex flex-shrink-0 border-b border-gray-100 px-4 py-2"
-                style={{ paddingLeft: '3.5rem' }}
-              >
-                {displayDays.map((day, i) => (
-                  <div
-                    key={i}
-                    className="text-center"
-                    style={{ width: `${100 / totalCols}%` }}
-                  >
-                    <p className="text-xs text-gray-400">{day.short}</p>
-                    <div
-                      className={`w-7 h-7 mx-auto flex items-center justify-center rounded-full text-sm ${
-                        day.date === 25
-                          ? 'bg-[#008899] text-white'
-                          : 'text-gray-700'
-                      }`}
-                      style={{ fontWeight: day.date === 25 ? 700 : 400 }}
-                    >
-                      {day.date}
-                    </div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-xs ${inMonth ? 'text-gray-700' : 'text-gray-300'}`}>
+                      {day.getDate()}
+                    </span>
+                    {dayEvents.length > 0 && (
+                      <CalendarDays size={11} className="text-gray-300" />
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
 
-            {/* Scrollable grid */}
-            <div className="overflow-y-auto flex-1">
-              <div className="flex px-2 pb-4">
-                {/* Hours column */}
-                <div className="flex-shrink-0" style={{ width: '3rem' }}>
-                  {hours.map((h, i) => (
-                    <div
-                      key={i}
-                      className="flex items-start justify-end pr-2 pt-0.5"
-                      style={{ height: `${HOUR_HEIGHT}px` }}
-                    >
-                      <span className="text-xs text-gray-400">{`${h}:00`}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Events area */}
-                <div
-                  className="flex-1 relative"
-                  style={{ height: `${hours.length * HOUR_HEIGHT}px` }}
-                >
-                  {/* Background: hour lines */}
-                  {hours.map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute w-full border-t border-gray-100"
-                      style={{ top: `${i * HOUR_HEIGHT}px` }}
-                    />
-                  ))}
-
-                  {/* Background: column separators */}
-                  {displayDays.map((_, i) => i > 0 && (
-                    <div
-                      key={i}
-                      className="absolute top-0 bottom-0 border-l border-gray-100"
-                      style={{ left: `${(i / totalCols) * 100}%` }}
-                    />
-                  ))}
-
-                  {/* Events */}
-                  {displayEvents.map(event => {
-                    const colIdx  = getDisplayColIndex(event);
-                    const colW    = 100 / totalCols;
-                    const top     = (event.startHour - START_HOUR) * HOUR_HEIGHT;
-                    const height  = Math.max((event.endHour - event.startHour) * HOUR_HEIGHT - 3, 22);
-                    const Icon    = EVENT_ICONS[event.type];
-                    const styles  = EVENT_STYLES[event.type];
-                    const isClickableForCoordinator = isCoordinator && event.type === 'clase';
-
-                    const EventComponent = isClickableForCoordinator ? 'button' : 'div';
-
-                    return (
-                      <EventComponent
-                        key={event.id}
-                        onClick={() => {
-                          if (isClickableForCoordinator) {
-                            navigate(`/sessions/${event.sessionCode}/attendance`);
-                          } else if (isStudent) {
-                            setSelectedEvent(event);
-                          }
-                        }}
-                        className={`absolute rounded-lg px-1.5 py-1 overflow-hidden shadow-sm text-left ${styles.bg} ${styles.text} ${
-                          (isClickableForCoordinator || isStudent) ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
-                        style={{
-                          top:    `${top + 1}px`,
-                          left:   `calc(${colIdx * colW}% + 2px)`,
-                          width:  `calc(${colW}% - 4px)`,
-                          height: `${height}px`,
-                        }}
-                      >
-                        <div className="flex items-start gap-1">
-                          <div className="w-3 flex-shrink-0">
-                            <Icon size={10} className="mt-0.5 opacity-90" />
+                  <div className="space-y-1">
+                    {visibleEvents.map((event) => {
+                      const meta = EVENT_META[event.tipo] ?? EVENT_META.class;
+                      return (
+                        <button
+                          key={event.id}
+                          onClick={() => setSelectedEvent(event)}
+                          className={`w-full rounded-md px-1.5 py-1 text-left ${meta.bg} hover:brightness-95 transition`}
+                        >
+                          <div className="flex items-center gap-1 min-w-0">
+                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${meta.chip}`} />
+                            <span className={`text-[10px] truncate ${meta.text}`} style={{ fontWeight: 700 }}>
+                              {event.tipo === 'class' ? formatTime(event.fecha_inicio) : 'Entrega'} {event.titulo}
+                            </span>
                           </div>
-                          <div className="min-w-0">
-                            <p
-                              className="text-xs truncate leading-tight"
-                              style={{ fontWeight: 700 }}
-                            >
-                              {event.sessionTitle}
-                            </p>
-                            {height > 32 && (
-                              <p className="text-xs opacity-80 leading-tight">
-                                {formatHour(event.startHour)}–{formatHour(event.endHour)}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </EventComponent>
-                    );
-                  })}
+                        </button>
+                      );
+                    })}
+                    {hiddenCount > 0 && (
+                      <p className="text-[10px] text-gray-400 px-1">+{hiddenCount} más</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Add event button for professors and coordinators */}
-      {(isProfessor || isCoordinator) && (
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="fixed bottom-24 right-6 w-14 h-14 bg-[#008899] rounded-full flex items-center justify-center text-white shadow-lg hover:bg-[#007788] transition-colors z-40"
-        >
-          <Plus size={28} />
-        </button>
-      )}
-
-      {/* Add Event Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-            <h3 className="text-lg font-bold text-[#008899] mb-4">Añadir Nuevo Evento</h3>
-            
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Tipo</label>
-                <select
-                  value={newEvent.type}
-                  onChange={e => setNewEvent({...newEvent, type: e.target.value as EventType})}
-                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:border-[#008899]"
-                >
-                  {isCoordinator && <option value="clase">Clase</option>}
-                  <option value="entrega">Entrega</option>
-                  <option value="examen">Examen</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Sesión / Título</label>
-                <input
-                  type="text"
-                  value={newEvent.sessionTitle}
-                  onChange={e => setNewEvent({...newEvent, sessionTitle: e.target.value})}
-                  placeholder="Ej. Examen de Finanzas"
-                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:border-[#008899]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Día de la semana</label>
-                <select
-                  value={newEvent.day}
-                  onChange={e => setNewEvent({...newEvent, day: parseInt(e.target.value)})}
-                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:border-[#008899]"
-                >
-                  {weekDays.map((d, i) => (
-                    <option key={i} value={i}>{d.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="block text-xs text-gray-500 mb-1">Hora Inicio</label>
-                  <select
-                    value={newEvent.startHour}
-                    onChange={e => setNewEvent({...newEvent, startHour: parseInt(e.target.value)})}
-                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:border-[#008899]"
-                  >
-                    {hours.map(h => (
-                      <option key={h} value={h}>{h}:00</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="block text-xs text-gray-500 mb-1">Hora Fin</label>
-                  <select
-                    value={newEvent.endHour}
-                    onChange={e => setNewEvent({...newEvent, endHour: parseInt(e.target.value)})}
-                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:border-[#008899]"
-                  >
-                    {hours.map(h => (
-                      <option key={h} value={h}>{h}:00</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="flex-1 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-semibold hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  if (!newEvent.sessionTitle) return;
-                  setEvents([...events, { id: Date.now(), ...newEvent } as CalEvent]);
-                  setIsAddModalOpen(false);
-                  setNewEvent({ type: 'examen', sessionTitle: '', day: 2, startHour: 10, endHour: 12 });
-                }}
-                className="flex-1 py-2 rounded-lg bg-[#008899] text-white text-sm font-semibold hover:bg-[#007788]"
-              >
-                Guardar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Event Details Modal */}
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => setSelectedEvent(null)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm relative" onClick={e => e.stopPropagation()}>
-            <button
-              onClick={() => setSelectedEvent(null)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-            >
-              <X size={20} />
-            </button>
-            
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`p-2 rounded-lg ${EVENT_STYLES[selectedEvent.type].bg}`}>
+        <div
+          className="fixed inset-0 z-50 bg-black/50 px-4 flex items-center justify-center"
+          onClick={() => setSelectedEvent(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-5 w-full max-w-md shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="flex items-start gap-3 min-w-0">
                 {(() => {
-                  const Icon = EVENT_ICONS[selectedEvent.type];
-                  return <Icon size={20} className="text-white" />;
+                  const meta = EVENT_META[selectedEvent.tipo] ?? EVENT_META.class;
+                  const Icon = meta.icon;
+                  return (
+                    <div className={`p-2 rounded-xl ${meta.bg}`}>
+                      <Icon size={20} className={meta.text} />
+                    </div>
+                  );
                 })()}
+                <div className="min-w-0">
+                  <p className="text-xs text-gray-400 uppercase" style={{ fontWeight: 800 }}>
+                    {(EVENT_META[selectedEvent.tipo] ?? EVENT_META.class).label}
+                  </p>
+                  <h3 className="text-lg text-gray-900 leading-tight" style={{ fontWeight: 800 }}>
+                    {selectedEvent.titulo}
+                  </h3>
+                </div>
               </div>
-              <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">
-                {selectedEvent.type}
-              </span>
+              <button onClick={() => setSelectedEvent(null)} className="p-1 text-gray-400">
+                <X size={20} />
+              </button>
             </div>
-            
-            <h3 className="text-xl font-bold text-[#008899] mb-4 leading-tight">{selectedEvent.sessionTitle}</h3>
-            
-            <div className="bg-gray-50 rounded-xl p-4 space-y-3 mb-6">
-              <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                <span className="text-sm text-gray-500">Día</span>
-                <span className="text-sm font-semibold text-gray-800">
-                  {selectedEvent.day >= 0 && selectedEvent.day < weekDays.length 
-                    ? weekDays[selectedEvent.day].label 
-                    : 'Próximamente'}
-                </span>
+
+            <div className="space-y-3 bg-gray-50 rounded-2xl p-4">
+              <div>
+                <p className="text-xs text-gray-400">Asignatura / bloque</p>
+                <p className="text-sm text-gray-800" style={{ fontWeight: 700 }}>
+                  {selectedEvent.bloque_nombre ?? selectedEvent.id_bloque ?? 'Sin bloque'}
+                </p>
               </div>
-              {selectedEvent.day !== -1 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Horario</span>
-                  <span className="text-sm font-semibold text-gray-800">
-                    {formatHour(selectedEvent.startHour)} - {formatHour(selectedEvent.endHour)}
-                  </span>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-gray-400">Fecha</p>
+                  <p className="text-sm text-gray-800 capitalize">{formatLongDate(selectedEvent.fecha_inicio)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Hora</p>
+                  <p className="text-sm text-gray-800">
+                    {formatTime(selectedEvent.fecha_inicio)} - {formatTime(selectedEvent.fecha_fin)}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-start gap-2">
+                  <UserRound size={15} className="text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-400">Profesor</p>
+                    <p className="text-sm text-gray-800">{selectedEvent.profesor_nombre ?? 'Profesor pendiente'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <MapPin size={15} className="text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-400">Aula</p>
+                    <p className="text-sm text-gray-800">{selectedEvent.aula ?? 'Aula pendiente'}</p>
+                  </div>
+                </div>
+              </div>
+              {selectedEvent.id_sesion && (
+                <div>
+                  <p className="text-xs text-gray-400">Sesión</p>
+                  <p className="text-sm text-gray-800">{selectedEvent.id_sesion}</p>
+                </div>
+              )}
+              {selectedEvent.descripcion && (
+                <div>
+                  <p className="text-xs text-gray-400">Descripción</p>
+                  <p className="text-sm text-gray-700">{selectedEvent.descripcion}</p>
                 </div>
               )}
             </div>
 
-            <button
-              onClick={() => setSelectedEvent(null)}
-              className="w-full py-3 rounded-xl bg-[#008899] text-white text-sm font-semibold hover:bg-[#007788] transition-colors"
-            >
-              Cerrar
-            </button>
+            {isStaff && selectedEvent.tipo === 'class' && selectedEvent.id_sesion && (
+              <button
+                onClick={() => navigate(`/sessions/${selectedEvent.id_sesion}/attendance`)}
+                className="w-full mt-4 bg-[#008899] text-white py-3 rounded-xl text-sm hover:bg-[#007788] transition-colors"
+                style={{ fontWeight: 700 }}
+              >
+                Pasar asistencia
+              </button>
+            )}
           </div>
         </div>
       )}

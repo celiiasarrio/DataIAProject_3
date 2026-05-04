@@ -83,85 +83,95 @@ INSERT INTO "bloques" ("id_bloque", "nombre") VALUES
 ('6-MDA', 'HACKATONES');
 
 INSERT INTO "sesiones" ("id_sesion", "id_bloque", "nombre", "fecha", "hora_inicio", "hora_fin", "edificio", "planta", "aula") VALUES
--- B1. FUNDAMENTOS: Python, Git, Docker, SQL (EDEM PLANTA 1 AULA 102)
-('SES-1',  '1-MDA', 'Introducción + Instalación de Software', '2025-09-29', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-2',  '1-MDA', 'Git',                                    '2025-09-30', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-3',  '1-MDA', 'Python',                                 '2025-10-01', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-4',  '1-MDA', 'Git',                                    '2025-10-02', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-5',  '1-MDA', 'Python',                                 '2025-10-06', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-6',  '1-MDA', 'Python',                                 '2025-10-07', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-7',  '1-MDA', 'Python',                                 '2025-10-08', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-8',  '1-MDA', 'Docker',                                 '2025-10-13', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-9',  '1-MDA', 'Linux',                                  '2025-10-14', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-10', '1-MDA', 'Docker',                                 '2025-10-15', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-11', '1-MDA', 'Docker',                                 '2025-10-16', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-12', '1-MDA', 'SQL',                                    '2025-10-20', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-13', '1-MDA', 'Docker Compose',                         '2025-10-21', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-14', '1-MDA', 'SQL',                                    '2025-10-22', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-15', '1-MDA', 'SQL',                                    '2025-10-23', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-16', '1-MDA', 'Python',                                 '2025-10-27', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
-('SES-17', '1-MDA', 'E2E Módulo 0',                           '2025-10-28', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
--- B2. TRATAMIENTO DEL DATO: PySpark, Kafka, DBT... (LZD PLANTA 1 AULA 115)
-('SES-18', '2-MDA', 'Intro Módulo + Origen del Dato', '2025-10-29', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-19', '2-MDA', 'Visualización de datos',        '2025-10-30', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-20', '2-MDA', 'Visualización de datos',        '2025-11-03', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-21', '2-MDA', 'Ingesta de Datos y NoSQL',      '2025-11-05', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-22', '2-MDA', 'Ingesta de Datos y NoSQL',      '2025-11-06', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-23', '2-MDA', 'Ingesta de Datos y NoSQL',      '2025-11-10', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-24', '2-MDA', 'DBT',                           '2025-11-11', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-25', '2-MDA', 'DBT',                           '2025-11-12', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-26', '2-MDA', 'Kafka',                         '2025-11-18', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-28', '2-MDA', 'Kafka avanzado',                '2025-11-21', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-29', '2-MDA', 'API Management',                '2025-11-24', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-30', '2-MDA', 'API Management',                '2025-11-25', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-31', '2-MDA', 'PySpark',                       '2025-11-26', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-32', '2-MDA', 'PySpark',                       '2025-11-27', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-33', '2-MDA', 'PySpark',                       '2025-12-01', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-34', '2-MDA', 'Blockchain',                    '2025-12-04', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-71', '2-MDA', 'Data Products',                 '2026-04-28', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-72', '2-MDA', 'Prototipado',                   '2026-04-29', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
--- B3. ENTORNO CLOUD: GCP, Terraform, Cloud Run, Agentes (LZD PLANTA 1 AULA 115)
-('SES-36', '3-MDA', 'Cloud Intro',           '2025-12-11', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-37', '3-MDA', 'Certificaciones Cloud', '2025-12-15', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-38', '3-MDA', 'Terraform',             '2025-12-16', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-39', '3-MDA', 'GCP Project Setup',     '2025-12-17', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-40', '3-MDA', 'Terraform',             '2025-12-18', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-41', '3-MDA', 'Terraform',             '2026-01-07', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-42', '3-MDA', 'GCP Almacenamiento',    '2026-01-08', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-43', '3-MDA', 'GCP Almacenamiento',    '2026-01-12', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-44', '3-MDA', 'GCP Almacenamiento',    '2026-01-15', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-45', '3-MDA', 'GCP PubSub/DataFlow',   '2026-01-19', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-46', '3-MDA', 'GCP PubSub/DataFlow',   '2026-01-21', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-47', '3-MDA', 'GCP PubSub/DataFlow',   '2026-01-26', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-48', '3-MDA', 'GCP DataFlow',          '2026-01-27', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-49', '3-MDA', 'GCP DataFlow',          '2026-01-28', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-50', '3-MDA', 'GCP DataFlow',          '2026-01-29', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-52', '3-MDA', 'GCP Funciones',         '2026-02-03', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-53', '3-MDA', 'GCP Cloud Run',         '2026-02-04', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-54', '3-MDA', 'Gobierno del Dato',     '2026-02-05', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-56', '3-MDA', 'GCP Específicos',       '2026-02-10', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-57', '3-MDA', 'Git Actions',           '2026-02-11', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-58', '3-MDA', 'Calidad del Dato',      '2026-02-12', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-65', '3-MDA', 'Airflow',               '2026-03-23', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-66', '3-MDA', 'Agentes',               '2026-03-24', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-73', '3-MDA', 'Gen AI',                '2026-05-14', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
--- SOFT SKILLS: Autoconocimiento, Comunicación, Inteligencia Emocional... (EDEM PLANTA 2 AULA 202 / LZD)
-('SES-59', '4-MDA', 'Skills Autoconocimiento',               '2025-11-04', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 101'),
-('SES-60', '4-MDA', 'Skills Comunicación',                   '2025-11-17', '15:30', '19:30', 'LZD',  'PLANTA 1', 'AULA 115'),
-('SES-61', '4-MDA', 'Skills Inteligencia Emocional',         '2025-11-19', '15:30', '19:30', 'EDEM', 'PLANTA 2', 'AULA 202'),
-('SES-62', '4-MDA', 'Skills Comunicación eficaz',            '2026-01-20', '15:30', '19:30', 'EDEM', 'PLANTA 2', 'AULA 202'),
-('SES-64', '4-MDA', 'Skills Productividad Sana',             '2026-02-18', '15:30', '19:30', 'EDEM', 'PLANTA 2', 'AULA 202'),
-('SES-69', '4-MDA', 'Skills Gestión de equipos y liderazgo', '2026-04-22', '15:30', '19:30', 'EDEM', 'PLANTA 2', 'AULA 202'),
-('SES-70', '4-MDA', 'Skills Comunicación',                   '2026-04-27', '15:30', '19:30', 'LZD',  'PLANTA 1', 'AULA 115'),
--- DATA PROJECTS: Lanzamientos y jornadas de trabajo de los Data Projects (LZD PLANTA 1 AULA 115)
-('SES-27', '5-MDA', 'Lanzamiento DP1 + E2E Módulo 1.1', '2025-11-20', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-35', '5-MDA', 'E2E Módulo 1.2',                   '2025-12-09', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-51', '5-MDA', 'Lanzamiento DP2',                  '2026-02-02', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-55', '5-MDA', 'Jornada trabajo DP2',              '2026-02-09', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
--- HACKATONES (LZD PLANTA 1 AULA 115)
-('SES-63', '6-MDA', 'Hackatón NTT Data', '2026-02-16', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-67', '6-MDA', 'Hackatón GFT',      '2026-03-25', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
-('SES-68', '6-MDA', 'Hackatón GFT',      '2026-03-26', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115');
+('SES-1', '1-MDA', 'Introducción + Instalación de Software', '2025-09-29', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-2', '1-MDA', 'Git', '2025-09-30', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-3', '1-MDA', 'Python', '2025-10-01', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-4', '1-MDA', 'Git', '2025-10-02', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-5', '1-MDA', 'Python', '2025-10-06', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-6', '1-MDA', 'Python', '2025-10-07', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-7', '1-MDA', 'Python', '2025-10-08', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-8', '1-MDA', 'Docker', '2025-10-13', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-9', '1-MDA', 'Linux', '2025-10-14', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-10', '1-MDA', 'Docker', '2025-10-15', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-11', '1-MDA', 'Docker', '2025-10-16', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-12', '1-MDA', 'SQL', '2025-10-20', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-13', '1-MDA', 'Docker Compose', '2025-10-21', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-14', '1-MDA', 'SQL', '2025-10-22', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-15', '1-MDA', 'SQL', '2025-10-23', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-16', '1-MDA', 'Python', '2025-10-27', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-17', '1-MDA', 'E2E Módulo 0', '2025-10-28', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 102'),
+('SES-18', '2-MDA', 'Intro Módulo + Origen', '2025-10-29', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-19', '2-MDA', 'Visualización de datos', '2025-10-30', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-20', '2-MDA', 'Visualización de datos', '2025-11-03', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-21', '4-MDA', 'Autoconocimiento', '2025-11-04', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 101'),
+('SES-22', '2-MDA', 'Ingestión de Datos y NOSQL', '2025-11-05', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-23', '2-MDA', 'Ingestión de Datos y NOSQL', '2025-11-06', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-24', '2-MDA', 'Ingestión de Datos y NOSQL', '2025-11-10', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-25', '2-MDA', 'DBT', '2025-11-11', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-26', '2-MDA', 'DBT', '2025-11-12', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-27', '4-MDA', 'Comunicación', '2025-11-17', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-28', '2-MDA', 'Introducción a Kafka y programación básica con Kafka/Python', '2025-11-18', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-29', '4-MDA', 'Inteligencia Emocional', '2025-11-19', '15:30', '19:30', 'EDEM', 'PLANTA 2', 'AULA 202'),
+('SES-30', '2-MDA', 'Conceptos avanzados de Kafka. Ejercicios prácticos con KSQL, Kafka/Python en Cloud y caso de uso final(Kafka/Python)', '2025-11-21', '15:30', '19:30', 'EDEM', 'PLANTA 1', 'AULA 111'),
+('SES-31', '2-MDA', 'API Management', '2025-11-24', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-32', '2-MDA', 'API Management', '2025-11-25', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-33', '2-MDA', 'PySpark', '2025-11-26', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-34', '2-MDA', 'PySpark', '2025-12-01', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-35', '2-MDA', 'Blockchain', '2025-12-04', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-36', '2-MDA', 'E2E Módulo 1.2', '2025-12-09', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-37', '3-MDA', 'Cloud Intro', '2025-12-11', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-38', '3-MDA', 'Certificaciones Cloud', '2025-12-15', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-39', '3-MDA', 'Terraform', '2025-12-16', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-40', '3-MDA', 'GCP Project Setup', '2025-12-17', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-41', '3-MDA', 'Terraform', '2025-12-18', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-42', '3-MDA', 'Terraform', '2026-01-07', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-43', '3-MDA', 'GCP Almacenamiento', '2026-01-08', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-44', '3-MDA', 'GCP Almacenamiento', '2026-01-12', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-45', '3-MDA', 'GCP Almacenamiento', '2026-01-15', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-46', '3-MDA', 'GCP PubSub/DataFlow', '2026-01-19', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-47', '4-MDA', 'Comunicación eficaz', '2026-01-20', '15:30', '19:30', 'EDEM', 'PLANTA 2', 'AULA 202'),
+('SES-48', '3-MDA', 'GCP PubSub/DataFlow', '2026-01-21', '15:00', '18:00', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-49', '3-MDA', 'GCP PubSub/DataFlow', '2026-01-26', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-50', '3-MDA', 'GCP DataFlow', '2026-01-27', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-51', '3-MDA', 'GCP DataFlow', '2026-01-28', '15:00', '20:00', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-52', '3-MDA', 'GCP DataFlow', '2026-01-29', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-53', '3-MDA', 'GCP Funciones', '2026-02-03', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-54', '3-MDA', 'GCP Cloud Run', '2026-02-04', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-55', '3-MDA', 'Gobierno del Dato', '2026-02-05', '15:00', '19:00', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-56', '3-MDA', 'GCP Específicos', '2026-02-10', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-57', '3-MDA', 'Git Actions', '2026-02-11', '15:30', '19:00', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-58', '3-MDA', 'Calidad del Dato', '2026-02-12', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-59', '3-MDA', 'AWS Project Setup', '2026-02-17', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-60', '4-MDA', 'Productividad Sana', '2026-02-18', '15:30', '19:30', 'EDEM', 'PLANTA 2', 'AULA 202'),
+('SES-61', '3-MDA', 'GCP Específicos', '2026-02-19', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-62', '3-MDA', 'AWS Almacenamiento', '2026-02-23', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-63', '3-MDA', 'AWS Almacenamiento', '2026-02-25', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-64', '3-MDA', 'AWS Almacenamiento', '2026-03-02', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-65', '3-MDA', 'AWS Procesamiento', '2026-03-02', '15:30', '19:30', 'Reunión de Microsoft Teams', NULL, NULL),
+('SES-66', '3-MDA', 'AWS Almacenamiento', '2026-03-03', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-67', '3-MDA', 'AWS Procesamiento', '2026-03-04', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-68', '3-MDA', 'AWS Procesamiento', '2026-03-05', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-69', '3-MDA', 'AWS Almacenamiento', '2026-03-09', '15:30', '19:30', 'Reunión de Microsoft Teams', NULL, NULL),
+('SES-70', '3-MDA', 'AWS Procesamiento', '2026-03-09', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-71', '3-MDA', 'AWS Procesamiento', '2026-03-10', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-72', '3-MDA', 'AWS E2E', '2026-03-11', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-73', '3-MDA', 'Certificaciones Cloud', '2026-03-12', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-74', '3-MDA', 'Airflow', '2026-03-23', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-75', '3-MDA', 'Agentes', '2026-03-24', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-76', '3-MDA', 'Azure Project Setup', '2026-03-31', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-77', '3-MDA', 'Azure Procesamiento', '2026-04-14', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-78', '3-MDA', 'Azure Procesamiento', '2026-04-15', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-79', '3-MDA', 'Azure Procesamiento', '2026-04-16', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-80', '3-MDA', 'Azure Almacenamiento', '2026-04-20', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-81', '3-MDA', 'Azure Almacenamiento', '2026-04-21', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-82', '4-MDA', 'Gestión de equipos y liderazgo', '2026-04-22', '15:30', '19:30', 'EDEM', 'PLANTA 2', 'AULA 202'),
+('SES-83', '4-MDA', 'Comunicación', '2026-04-27', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-84', '2-MDA', 'Data Products', '2026-04-28', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-85', '2-MDA', 'Prototipado', '2026-04-29', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-86', '3-MDA', 'Certificaciones Cloud', '2026-04-30', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-87', '3-MDA', 'Snowflake', '2026-05-11', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-88', '3-MDA', 'Snowflake', '2026-05-12', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115'),
+('SES-89', '3-MDA', 'Gen AI', '2026-05-14', '15:30', '19:30', 'LZD', 'PLANTA 1', 'AULA 115');
 
 INSERT INTO "ubicaciones" ("id_ubicacion", "descripcion", "planta", "aula") VALUES
 ('UBI-101',    'EDEM, PLANTA 1, AULA 101',        1, 'AULA 101'),
@@ -213,6 +223,7 @@ INSERT INTO "rel_profesores_bloques" ("id_profesor", "id_bloque") VALUES
 ('frkrog', '2-MDA'),
 ('nareye', '2-MDA'),
 ('jugamil', '2-MDA'),
+('rusanc', '2-MDA'),
 -- ENTORNO CLOUD (3-MDA)
 ('jolgome', '3-MDA'),
 ('viasen', '3-MDA'),
@@ -245,40 +256,30 @@ INSERT INTO "rel_coordinadores_grupos" ("id_coordinador", "id_grupo") VALUES
 ('m.herrera', 'MDA A 2526');
 
 INSERT INTO "tareas" ("id_tarea", "id_bloque", "nombre", "fecha") VALUES
--- B1. FUNDAMENTOS
-(1,  '1-MDA', 'Deadline Entregable Linux',           '2025-10-28'),
-(2,  '1-MDA', 'Deadline Entregable Python',          '2025-11-03'),
-(3,  '1-MDA', 'Deadline Entregable Docker',          '2025-11-04'),
-(4,  '1-MDA', 'Deadline Entregable SQL',             '2025-11-10'),
-(5,  '1-MDA', 'Deadline Entregable Ahorcado',        '2025-11-11'),
--- B2. TRATAMIENTO DEL DATO
-(6,  '2-MDA', 'Deadline Entregable Kafka',           '2025-12-02'),
-(7,  '2-MDA', 'Deadline Entregable APIs',            '2025-12-09'),
-(8,  '2-MDA', 'Deadline Entregable Spark Streaming', '2025-12-15'),
--- B3. ENTORNO CLOUD
-(9,  '3-MDA', 'Deadline Entregable GCP',             '2026-02-25'),
-(10, '3-MDA', 'Deadline Entregable AWS',             '2026-03-24'),
-(11, '3-MDA', 'Deadline Entregable Azure',           '2026-05-12'),
--- B4. SOFT SKILLS
-(12, '4-MDA', 'Deadline Experiencia Internacional',              '2025-12-19'),
-(13, '4-MDA', 'Deadline Confirmación Experiencia Internacional', '2026-02-23'),
--- B5. DATA PROJECTS
-(14, '5-MDA', 'Deadline DP1',           '2025-12-08'),
-(15, '5-MDA', 'Deadline pptx DP1',      '2025-12-10'),
-(16, '5-MDA', 'Deadline Entrega DP2',   '2026-02-23'),
-(17, '5-MDA', 'Deadline PPTX DP2',      '2026-02-25'),
-(18, '5-MDA', 'Deadline 2º Hito',       '2026-04-02'),
-(19, '5-MDA', 'Deadline DP3',           '2026-05-10'),
-(20, '5-MDA', 'Deadline PPTX DP3',      '2026-05-12'),
-(21, '5-MDA', 'DEADLINE Entregables',   '2026-06-01'),
--- TFM
-(22, '5-MDA', 'Deadline Memoria TFM',       '2026-07-09'),
-(23, '5-MDA', 'Deadline Autoevaluación TFM','2026-07-13'),
--- Más tareas para B6. HACKATONES
-(24, '6-MDA', 'Deadline Hackatón NTT Data', '2026-02-16'),
-(25, '6-MDA', 'Deadline Hackatón GFT',     '2026-03-25'),
-(26, '6-MDA', 'Deadline Hackatón Final',   '2026-05-15'),
-(27, '5-MDA', 'Deadline PPTX TFM',          '2026-07-15');
+(1, '1-MDA', 'Deadline Entregable Linux', '2025-10-28'),
+(2, '1-MDA', 'Deadline Entregable Python', '2025-11-03'),
+(3, '1-MDA', 'Deadline Entregable Docker', '2025-11-04'),
+(4, '1-MDA', 'Deadline Entregable SQL', '2025-11-10'),
+(5, '1-MDA', 'Deadline Entregable Ahorcado', '2025-11-11'),
+(6, '2-MDA', 'Deadline Entregable Kafka', '2025-12-02'),
+(7, '5-MDA', 'Deadline DP1', '2025-12-08'),
+(8, '2-MDA', 'Deadline Entregable APIs', '2025-12-09'),
+(9, '5-MDA', 'Deadline pptx DP1', '2025-12-10'),
+(10, '2-MDA', 'Deadline Entregable Spark Streaming', '2025-12-15'),
+(11, '4-MDA', 'Deadline Experiencia Internacional', '2025-12-19'),
+(12, '4-MDA', 'Deadline Confirmación Experiencia Internacional', '2026-02-23'),
+(13, '5-MDA', 'Deadline Entrega DP2', '2026-02-23'),
+(14, '3-MDA', 'Deadline Entregable GCP', '2026-02-25'),
+(15, '5-MDA', 'Deadline PPTX DP2', '2026-02-25'),
+(16, '3-MDA', 'Deadline Entregable AWS', '2026-03-24'),
+(17, '5-MDA', 'Deadline 2º Hito', '2026-04-02'),
+(18, '5-MDA', 'Deadline DP3', '2026-05-10'),
+(19, '3-MDA', 'Deadline Entregable Azure', '2026-05-12'),
+(20, '5-MDA', 'Deadline PPTX DP2', '2026-05-12'),
+(21, '5-MDA', 'DEADLINE Entregables', '2026-06-01'),
+(22, '5-MDA', 'Deadline MEMORIA TFM', '2026-07-09'),
+(23, '5-MDA', 'Deadline AUTOEVALUACIÓN TFM', '2026-07-13'),
+(24, '5-MDA', 'Deadline PPTX TFM', '2026-07-15');
 
 SELECT setval(pg_get_serial_sequence('tareas', 'id_tarea'), COALESCE(MAX(id_tarea), 1), true)
 FROM tareas;
@@ -304,18 +305,109 @@ JOIN sesiones s ON s.id_bloque = rbg.id_bloque;
 
 INSERT INTO "eventos" ("id", "tipo", "titulo", "id_bloque", "id_sesion", "aula", "id_profesor", "fecha_inicio", "fecha_fin", "descripcion")
 SELECT
-    CONCAT('ses-', id_sesion) AS id,
+    CONCAT('ses-', s.id_sesion) AS id,
     'class' AS tipo,
-    nombre AS titulo,
-    id_bloque,
-    id_sesion,
-    aula,
-    NULL AS id_profesor,
-    (fecha || ' ' || hora_inicio)::TIMESTAMP AS fecha_inicio,
-    (fecha || ' ' || hora_fin)::TIMESTAMP AS fecha_fin,
-    CONCAT('Sesión en ', edificio, ', ', planta, ', ', aula) AS descripcion
-FROM sesiones
-WHERE fecha IS NOT NULL AND hora_inicio IS NOT NULL AND hora_fin IS NOT NULL
+    s.nombre AS titulo,
+    s.id_bloque,
+    s.id_sesion,
+    s.aula,
+    CASE s.id_sesion
+        WHEN 'SES-1' THEN 'penipe'
+        WHEN 'SES-2' THEN 'penipe'
+        WHEN 'SES-3' THEN 'sopina'
+        WHEN 'SES-4' THEN 'penipe'
+        WHEN 'SES-5' THEN 'sopina'
+        WHEN 'SES-6' THEN 'sopina'
+        WHEN 'SES-7' THEN 'sopina'
+        WHEN 'SES-8' THEN 'dapina'
+        WHEN 'SES-9' THEN 'sopina'
+        WHEN 'SES-10' THEN 'dapina'
+        WHEN 'SES-11' THEN 'dapina'
+        WHEN 'SES-12' THEN 'sopina'
+        WHEN 'SES-13' THEN 'dapina'
+        WHEN 'SES-14' THEN 'sopina'
+        WHEN 'SES-15' THEN 'sopina'
+        WHEN 'SES-16' THEN 'sopina'
+        WHEN 'SES-17' THEN 'penipe'
+        WHEN 'SES-18' THEN 'penipe'
+        WHEN 'SES-19' THEN 'jugamil'
+        WHEN 'SES-20' THEN 'jugamil'
+        WHEN 'SES-21' THEN 'jopere'
+        WHEN 'SES-22' THEN 'frkrog'
+        WHEN 'SES-23' THEN 'frkrog'
+        WHEN 'SES-24' THEN 'frkrog'
+        WHEN 'SES-25' THEN 'anrode'
+        WHEN 'SES-26' THEN 'anrode'
+        WHEN 'SES-27' THEN 'tocanto'
+        WHEN 'SES-28' THEN 'rusanc'
+        WHEN 'SES-29' THEN 'jopere'
+        WHEN 'SES-30' THEN 'rusanc'
+        WHEN 'SES-31' THEN 'macola'
+        WHEN 'SES-32' THEN 'macola'
+        WHEN 'SES-33' THEN 'nareye'
+        WHEN 'SES-34' THEN 'nareye'
+        WHEN 'SES-35' THEN 'macola'
+        WHEN 'SES-36' THEN 'penipe'
+        WHEN 'SES-37' THEN 'jolgome'
+        WHEN 'SES-38' THEN 'lalath'
+        WHEN 'SES-39' THEN 'penipe'
+        WHEN 'SES-40' THEN 'frkrog'
+        WHEN 'SES-41' THEN 'penipe'
+        WHEN 'SES-42' THEN 'penipe'
+        WHEN 'SES-43' THEN 'frkrog'
+        WHEN 'SES-44' THEN 'frkrog'
+        WHEN 'SES-45' THEN 'frkrog'
+        WHEN 'SES-46' THEN 'jabrio'
+        WHEN 'SES-47' THEN 'jopere'
+        WHEN 'SES-48' THEN 'jabrio'
+        WHEN 'SES-49' THEN 'jabrio'
+        WHEN 'SES-50' THEN 'jabrio'
+        WHEN 'SES-51' THEN 'jabrio'
+        WHEN 'SES-52' THEN 'jabrio'
+        WHEN 'SES-53' THEN 'adcamp'
+        WHEN 'SES-54' THEN 'adcamp'
+        WHEN 'SES-55' THEN 'joeste'
+        WHEN 'SES-56' THEN 'penipe'
+        WHEN 'SES-57' THEN 'nareye'
+        WHEN 'SES-58' THEN 'joeste'
+        WHEN 'SES-59' THEN 'lalath'
+        WHEN 'SES-60' THEN 'jopere'
+        WHEN 'SES-61' THEN 'penipe'
+        WHEN 'SES-62' THEN 'facast'
+        WHEN 'SES-63' THEN 'lalath'
+        WHEN 'SES-64' THEN 'heboas'
+        WHEN 'SES-65' THEN 'jabrio'
+        WHEN 'SES-66' THEN 'facast'
+        WHEN 'SES-67' THEN 'heboas'
+        WHEN 'SES-68' THEN 'facast'
+        WHEN 'SES-69' THEN 'mimora'
+        WHEN 'SES-70' THEN 'facast'
+        WHEN 'SES-71' THEN 'facast'
+        WHEN 'SES-72' THEN 'penipe'
+        WHEN 'SES-73' THEN 'lalath'
+        WHEN 'SES-74' THEN 'viasen'
+        WHEN 'SES-75' THEN 'jolgome'
+        WHEN 'SES-76' THEN 'diegue'
+        WHEN 'SES-77' THEN 'nuberz'
+        WHEN 'SES-78' THEN 'nuberz'
+        WHEN 'SES-79' THEN 'nuberz'
+        WHEN 'SES-80' THEN 'nuberz'
+        WHEN 'SES-81' THEN 'nuberz'
+        WHEN 'SES-82' THEN 'jopere'
+        WHEN 'SES-83' THEN 'tocanto'
+        WHEN 'SES-84' THEN 'anllos'
+        WHEN 'SES-85' THEN 'anllos'
+        WHEN 'SES-86' THEN 'lalath'
+        WHEN 'SES-87' THEN 'bearuiz'
+        WHEN 'SES-88' THEN 'bearuiz'
+        WHEN 'SES-89' THEN 'anllos'
+        ELSE NULL
+    END AS id_profesor,
+    (s.fecha || ' ' || s.hora_inicio)::TIMESTAMP AS fecha_inicio,
+    (s.fecha || ' ' || s.hora_fin)::TIMESTAMP AS fecha_fin,
+    CONCAT('Sesi?n en ', s.edificio, ', ', s.planta, ', ', s.aula) AS descripcion
+FROM sesiones s
+WHERE s.fecha IS NOT NULL AND s.hora_inicio IS NOT NULL AND s.hora_fin IS NOT NULL
 
 UNION ALL
 
@@ -335,23 +427,112 @@ WHERE fecha IS NOT NULL;
 
 -- Vista para unificar eventos del calendario desde sesiones y tareas
 CREATE OR REPLACE VIEW vista_eventos AS
--- Eventos de sesiones (clases)
 SELECT
-    CONCAT('ses-', id_sesion) AS id_evento,
+    CONCAT('ses-', s.id_sesion) AS id_evento,
     'class' AS tipo,
-    nombre AS titulo,
-    id_bloque,
-    id_sesion,
-    aula,
-    NULL AS id_profesor,
-    (fecha || ' ' || hora_inicio)::TIMESTAMP AS fecha_inicio,
-    (fecha || ' ' || hora_fin)::TIMESTAMP AS fecha_fin,
-    CONCAT('Sesión en ', edificio, ', ', planta, ', ', aula) AS descripcion
-FROM sesiones
+    s.nombre AS titulo,
+    s.id_bloque,
+    s.id_sesion,
+    s.aula,
+    CASE s.id_sesion
+        WHEN 'SES-1' THEN 'penipe'
+        WHEN 'SES-2' THEN 'penipe'
+        WHEN 'SES-3' THEN 'sopina'
+        WHEN 'SES-4' THEN 'penipe'
+        WHEN 'SES-5' THEN 'sopina'
+        WHEN 'SES-6' THEN 'sopina'
+        WHEN 'SES-7' THEN 'sopina'
+        WHEN 'SES-8' THEN 'dapina'
+        WHEN 'SES-9' THEN 'sopina'
+        WHEN 'SES-10' THEN 'dapina'
+        WHEN 'SES-11' THEN 'dapina'
+        WHEN 'SES-12' THEN 'sopina'
+        WHEN 'SES-13' THEN 'dapina'
+        WHEN 'SES-14' THEN 'sopina'
+        WHEN 'SES-15' THEN 'sopina'
+        WHEN 'SES-16' THEN 'sopina'
+        WHEN 'SES-17' THEN 'penipe'
+        WHEN 'SES-18' THEN 'penipe'
+        WHEN 'SES-19' THEN 'jugamil'
+        WHEN 'SES-20' THEN 'jugamil'
+        WHEN 'SES-21' THEN 'jopere'
+        WHEN 'SES-22' THEN 'frkrog'
+        WHEN 'SES-23' THEN 'frkrog'
+        WHEN 'SES-24' THEN 'frkrog'
+        WHEN 'SES-25' THEN 'anrode'
+        WHEN 'SES-26' THEN 'anrode'
+        WHEN 'SES-27' THEN 'tocanto'
+        WHEN 'SES-28' THEN 'rusanc'
+        WHEN 'SES-29' THEN 'jopere'
+        WHEN 'SES-30' THEN 'rusanc'
+        WHEN 'SES-31' THEN 'macola'
+        WHEN 'SES-32' THEN 'macola'
+        WHEN 'SES-33' THEN 'nareye'
+        WHEN 'SES-34' THEN 'nareye'
+        WHEN 'SES-35' THEN 'macola'
+        WHEN 'SES-36' THEN 'penipe'
+        WHEN 'SES-37' THEN 'jolgome'
+        WHEN 'SES-38' THEN 'lalath'
+        WHEN 'SES-39' THEN 'penipe'
+        WHEN 'SES-40' THEN 'frkrog'
+        WHEN 'SES-41' THEN 'penipe'
+        WHEN 'SES-42' THEN 'penipe'
+        WHEN 'SES-43' THEN 'frkrog'
+        WHEN 'SES-44' THEN 'frkrog'
+        WHEN 'SES-45' THEN 'frkrog'
+        WHEN 'SES-46' THEN 'jabrio'
+        WHEN 'SES-47' THEN 'jopere'
+        WHEN 'SES-48' THEN 'jabrio'
+        WHEN 'SES-49' THEN 'jabrio'
+        WHEN 'SES-50' THEN 'jabrio'
+        WHEN 'SES-51' THEN 'jabrio'
+        WHEN 'SES-52' THEN 'jabrio'
+        WHEN 'SES-53' THEN 'adcamp'
+        WHEN 'SES-54' THEN 'adcamp'
+        WHEN 'SES-55' THEN 'joeste'
+        WHEN 'SES-56' THEN 'penipe'
+        WHEN 'SES-57' THEN 'nareye'
+        WHEN 'SES-58' THEN 'joeste'
+        WHEN 'SES-59' THEN 'lalath'
+        WHEN 'SES-60' THEN 'jopere'
+        WHEN 'SES-61' THEN 'penipe'
+        WHEN 'SES-62' THEN 'facast'
+        WHEN 'SES-63' THEN 'lalath'
+        WHEN 'SES-64' THEN 'heboas'
+        WHEN 'SES-65' THEN 'jabrio'
+        WHEN 'SES-66' THEN 'facast'
+        WHEN 'SES-67' THEN 'heboas'
+        WHEN 'SES-68' THEN 'facast'
+        WHEN 'SES-69' THEN 'mimora'
+        WHEN 'SES-70' THEN 'facast'
+        WHEN 'SES-71' THEN 'facast'
+        WHEN 'SES-72' THEN 'penipe'
+        WHEN 'SES-73' THEN 'lalath'
+        WHEN 'SES-74' THEN 'viasen'
+        WHEN 'SES-75' THEN 'jolgome'
+        WHEN 'SES-76' THEN 'diegue'
+        WHEN 'SES-77' THEN 'nuberz'
+        WHEN 'SES-78' THEN 'nuberz'
+        WHEN 'SES-79' THEN 'nuberz'
+        WHEN 'SES-80' THEN 'nuberz'
+        WHEN 'SES-81' THEN 'nuberz'
+        WHEN 'SES-82' THEN 'jopere'
+        WHEN 'SES-83' THEN 'tocanto'
+        WHEN 'SES-84' THEN 'anllos'
+        WHEN 'SES-85' THEN 'anllos'
+        WHEN 'SES-86' THEN 'lalath'
+        WHEN 'SES-87' THEN 'bearuiz'
+        WHEN 'SES-88' THEN 'bearuiz'
+        WHEN 'SES-89' THEN 'anllos'
+        ELSE NULL
+    END AS id_profesor,
+    (s.fecha || ' ' || s.hora_inicio)::TIMESTAMP AS fecha_inicio,
+    (s.fecha || ' ' || s.hora_fin)::TIMESTAMP AS fecha_fin,
+    CONCAT('Sesi?n en ', s.edificio, ', ', s.planta, ', ', s.aula) AS descripcion
+FROM sesiones s
 
 UNION ALL
 
--- Eventos de tareas (entregas)
 SELECT
     CONCAT('task-', id_tarea) AS id_evento,
     'delivery' AS tipo,
