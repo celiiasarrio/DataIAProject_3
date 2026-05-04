@@ -123,6 +123,12 @@ const getEventPrefix = (event: CalendarEvent) => {
 const getEventDisplayTitle = (event: CalendarEvent) =>
   [getEventPrefix(event), event.titulo].filter(Boolean).join(' ');
 
+const shouldShowEvent = (event: CalendarEvent) => {
+  const title = normalizeText(event.titulo);
+  if (title.includes('experiencia internacional') && event.tipo !== 'international') return false;
+  return event.tipo === 'class' || event.tipo === 'delivery' || event.tipo === 'international';
+};
+
 export function CalendarScreen() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -137,7 +143,7 @@ export function CalendarScreen() {
     getCalendarEvents()
       .then((data) => {
         const sorted = data
-          .filter((event) => event.tipo === 'class' || event.tipo === 'delivery' || event.tipo === 'international')
+          .filter(shouldShowEvent)
           .sort((a, b) => new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime());
         setEvents(sorted);
 
