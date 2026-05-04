@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS alumnos (
     id_alumno VARCHAR PRIMARY KEY,
     nombre VARCHAR,
-    apellido VARCHAR,
+    apellido1 VARCHAR,
     apellido2 VARCHAR,
     correo VARCHAR NOT NULL UNIQUE,
     contrasena VARCHAR NOT NULL,

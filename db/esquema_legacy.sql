@@ -4,7 +4,7 @@
 Table alumnos {
   id_alumno varchar [pk]
   nombre varchar
-  apellido varchar
+  apellido1 varchar
   apellido2 varchar [null]
   correo varchar [unique]
   contrasena varchar

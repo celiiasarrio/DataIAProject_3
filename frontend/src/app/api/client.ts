@@ -89,8 +89,50 @@ export interface GradeOut {
   nota: number;
 }
 
+export interface BlockOut {
+  id_bloque: string;
+  nombre: string;
+}
+
+export interface TaskOut {
+  id_tarea: number;
+  id_bloque: string;
+  nombre: string;
+  descripcion: string | null;
+  fecha: string | null;
+}
+
+export interface GradeRosterRow {
+  id_alumno: string;
+  nombre: string;
+  apellido: string;
+  id_tarea: number;
+  nombre_tarea: string;
+  id_bloque: string;
+  nota: number | null;
+}
+
 export async function getMyGrades(): Promise<GradeOut[]> {
   return apiFetch<GradeOut[]>('/api/v1/grades/me');
+}
+
+export async function getMyBlocks(): Promise<BlockOut[]> {
+  return apiFetch<BlockOut[]>('/api/v1/blocks/me');
+}
+
+export async function getBlockTasks(blockId: string): Promise<TaskOut[]> {
+  return apiFetch<TaskOut[]>(`/api/v1/blocks/${blockId}/tasks`);
+}
+
+export async function getTaskGrades(taskId: number): Promise<GradeRosterRow[]> {
+  return apiFetch<GradeRosterRow[]>(`/api/v1/grades/tasks/${taskId}`);
+}
+
+export async function saveGrade(id_alumno: string, id_tarea: number, nota: number): Promise<void> {
+  return apiFetch<void>('/api/v1/grades', {
+    method: 'POST',
+    body: JSON.stringify({ id_alumno, id_tarea, nota }),
+  });
 }
 
 export interface AttendanceRecord {
@@ -101,8 +143,36 @@ export interface AttendanceRecord {
   presente: boolean;
 }
 
+export interface AttendanceRosterRow {
+  id_alumno: string;
+  nombre: string;
+  apellido: string;
+  id_sesion: string;
+  fecha: string | null;
+  presente: boolean | null;
+  id_asistencia: number | null;
+}
+
 export async function getMyAttendance(): Promise<AttendanceRecord[]> {
   return apiFetch<AttendanceRecord[]>('/api/v1/attendance/me');
+}
+
+export async function checkInAttendance(id_sesion: string): Promise<AttendanceRecord> {
+  return apiFetch<AttendanceRecord>('/api/v1/attendance/me/check-in', {
+    method: 'POST',
+    body: JSON.stringify({ id_sesion }),
+  });
+}
+
+export async function getSessionAttendanceRoster(sessionId: string): Promise<AttendanceRosterRow[]> {
+  return apiFetch<AttendanceRosterRow[]>(`/api/v1/attendance/sessions/${sessionId}/roster`);
+}
+
+export async function saveAttendance(id_alumno: string, id_sesion: string, presente: boolean, fecha?: string | null): Promise<AttendanceRecord> {
+  return apiFetch<AttendanceRecord>('/api/v1/attendance', {
+    method: 'POST',
+    body: JSON.stringify({ id_alumno, id_sesion, presente, fecha }),
+  });
 }
 
 export interface CalendarEvent {

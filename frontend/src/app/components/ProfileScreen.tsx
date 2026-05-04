@@ -297,13 +297,20 @@ export function ProfileScreen() {
 
         {/* Quick access buttons */}
         {isAdmin ? (
-          <div className="pt-2">
+          <div className="pt-2 grid grid-cols-1 gap-3">
             <button
               onClick={() => navigate('/courses')}
               className="bg-[#008899] text-white py-3 rounded-2xl text-sm w-full hover:bg-[#007788] transition-colors"
               style={{ fontWeight: 600 }}
             >
               📚 Mis Cursos
+            </button>
+            <button
+              onClick={() => navigate('/teacher/grades')}
+              className="bg-white text-[#008899] border border-[#008899] py-3 rounded-2xl text-sm w-full hover:bg-[#008899]/5 transition-colors"
+              style={{ fontWeight: 600 }}
+            >
+              Gestionar notas
             </button>
           </div>
         ) : isProfessor ? (

@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, CheckCircle, XCircle, Clock, Users } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import { getMyAttendance, type AttendanceRecord } from '../api/client';
+import {
+  checkInAttendance,
+  getCalendarEvents,
+  getMyAttendance,
+  type AttendanceRecord,
+  type CalendarEvent,
+} from '../api/client';
 
 interface SessionAttendance {
   id_sesion: string;
@@ -41,7 +47,9 @@ function RingChart({ pct, size = 56 }: { pct: number; size?: number }) {
 export function AttendanceScreen() {
   const navigate = useNavigate();
   const [records, setRecords] = useState<SessionAttendance[]>([]);
+  const [classEvents, setClassEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [checkInMessage, setCheckInMessage] = useState<string | null>(null);
 
   useEffect(() => {
     getMyAttendance()
@@ -61,7 +69,41 @@ export function AttendanceScreen() {
       })
       .catch(() => setRecords([]))
       .finally(() => setLoading(false));
+    getCalendarEvents()
+      .then((events) => {
+        const now = Date.now();
+        setClassEvents(
+          events
+            .filter((event) => event.tipo === 'class' && Boolean(event.id_sesion))
+            .sort((a, b) => Math.abs(new Date(a.fecha_inicio).getTime() - now) - Math.abs(new Date(b.fecha_inicio).getTime() - now))
+            .slice(0, 8),
+        );
+      })
+      .catch(() => setClassEvents([]));
   }, []);
+
+  const reloadAttendance = async () => {
+    const data = await getMyAttendance();
+    const map = new Map<string, { attended: number; total: number }>();
+    for (const r of data) {
+      const entry = map.get(r.id_sesion) || { attended: 0, total: 0 };
+      entry.total += 1;
+      if (r.presente) entry.attended += 1;
+      map.set(r.id_sesion, entry);
+    }
+    setRecords(Array.from(map.entries()).map(([id_sesion, v]) => ({ id_sesion, ...v })));
+  };
+
+  const handleCheckIn = async (sessionId: string) => {
+    setCheckInMessage(null);
+    try {
+      await checkInAttendance(sessionId);
+      await reloadAttendance();
+      setCheckInMessage('Asistencia registrada');
+    } catch (error) {
+      setCheckInMessage(error instanceof Error ? error.message : 'No se ha podido registrar la asistencia');
+    }
+  };
 
   const overallAttended = records.reduce((a, r) => a + r.attended, 0);
   const overallTotal    = records.reduce((a, r) => a + r.total, 0);
@@ -116,6 +158,34 @@ export function AttendanceScreen() {
 
       {/* ── Content ── */}
       <div className="bg-white rounded-t-3xl px-5 pt-5 pb-6 min-h-[60vh]">
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <CheckCircle size={18} className="text-[#008899]" />
+            <h2 className="text-[#008899]" style={{ fontWeight: 700 }}>REGISTRAR ASISTENCIA</h2>
+          </div>
+          {classEvents.length === 0 ? (
+            <p className="text-gray-400 text-sm">No hay sesiones disponibles para registrar.</p>
+          ) : (
+            <div className="space-y-2">
+              {classEvents.map((event) => (
+                <div key={event.id} className="bg-gray-50 rounded-2xl p-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-gray-800 text-sm truncate" style={{ fontWeight: 600 }}>{event.titulo}</p>
+                    <p className="text-xs text-gray-400">{event.id_sesion}</p>
+                  </div>
+                  <button
+                    onClick={() => event.id_sesion && handleCheckIn(event.id_sesion)}
+                    className="bg-[#008899] text-white text-xs px-3 py-2 rounded-lg hover:bg-[#007788] transition-colors"
+                  >
+                    Confirmar
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {checkInMessage && <p className="mt-3 text-center text-sm text-gray-500">{checkInMessage}</p>}
+        </div>
+
         <div className="flex items-center gap-2 mb-5">
           <Users size={18} className="text-[#008899]" />
           <h2 className="text-[#008899]" style={{ fontWeight: 700 }}>ASISTENCIA POR SESIÓN</h2>

@@ -222,11 +222,33 @@ class GradeOut(BaseModel):
     nota: float
 
 
+class TaskOut(ORMModel):
+    id_tarea: int
+    id_bloque: str
+    nombre: str
+    descripcion: Optional[str] = None
+    fecha: Optional[date] = None
+
+
+class GradeRosterRow(BaseModel):
+    id_alumno: str
+    nombre: str
+    apellido: str
+    id_tarea: int
+    nombre_tarea: str
+    id_bloque: str
+    nota: Optional[float] = None
+
+
 class AttendanceCreate(BaseModel):
     id_alumno: str
     id_sesion: str
     fecha: Optional[date] = None
     presente: bool
+
+
+class StudentAttendanceCreate(BaseModel):
+    id_sesion: str
 
 
 class AttendanceOut(ORMModel):
@@ -235,6 +257,16 @@ class AttendanceOut(ORMModel):
     id_sesion: str
     fecha: Optional[date] = None
     presente: bool
+
+
+class AttendanceRosterRow(BaseModel):
+    id_alumno: str
+    nombre: str
+    apellido: str
+    id_sesion: str
+    fecha: Optional[date] = None
+    presente: Optional[bool] = None
+    id_asistencia: Optional[int] = None
 
 
 class AttendanceMetricsOut(BaseModel):
@@ -1059,6 +1091,23 @@ def list_session_students(
     ]
 
 
+@app.get("/api/v1/blocks/{block_id}/tasks", response_model=List[TaskOut], tags=["Notas"])
+def list_block_tasks(
+    block_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    block = db.query(Bloque).filter(Bloque.id_bloque == block_id).first()
+    if not block:
+        raise HTTPException(status_code=404, detail="Bloque no encontrado")
+    return (
+        db.query(Tarea)
+        .filter(Tarea.id_bloque == block_id)
+        .order_by(Tarea.fecha, Tarea.id_tarea)
+        .all()
+    )
+
+
 @app.get("/api/v1/grades/me", response_model=List[GradeOut], tags=["Notas"])
 def list_my_grades(
     db: Session = Depends(get_db),
@@ -1104,12 +1153,51 @@ def list_my_grades_for_block(
     ]
 
 
+@app.get("/api/v1/grades/tasks/{task_id}", response_model=List[GradeRosterRow], tags=["Notas"])
+def list_task_grades(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_professor_or_staff),
+):
+    task = db.query(Tarea).filter(Tarea.id_tarea == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+
+    students = (
+        db.query(Alumno)
+        .join(RelAlumnosGrupos, RelAlumnosGrupos.id_alumno == Alumno.id_alumno)
+        .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
+        .filter(RelBloquesGrupos.id_bloque == task.id_bloque)
+        .distinct()
+        .order_by(Alumno.nombre, Alumno.apellido1)
+        .all()
+    )
+    grades = {
+        grade.id_alumno: grade.nota
+        for grade in db.query(RelAlumnoTarea).filter(RelAlumnoTarea.id_tarea == task_id).all()
+    }
+    return [
+        GradeRosterRow(
+            id_alumno=student.id_alumno,
+            nombre=student.nombre,
+            apellido=student.apellido,
+            id_tarea=task.id_tarea,
+            nombre_tarea=task.nombre,
+            id_bloque=task.id_bloque,
+            nota=grades.get(student.id_alumno),
+        )
+        for student in students
+    ]
+
+
 @app.post("/api/v1/grades", tags=["Notas"], status_code=201)
 def create_grade(
     grade_in: GradeCreate,
     db: Session = Depends(get_db),
     current_user=Depends(require_professor_or_staff),
 ):
+    if grade_in.nota < 0 or grade_in.nota > 10:
+        raise HTTPException(status_code=422, detail="La nota debe estar entre 0 y 10")
     if not db.query(Alumno).filter(Alumno.id_alumno == grade_in.id_alumno).first():
         raise HTTPException(status_code=404, detail="Alumno no encontrado")
     task = db.query(Tarea).filter(Tarea.id_tarea == grade_in.id_tarea).first()
@@ -1139,6 +1227,8 @@ def update_grade(
     db: Session = Depends(get_db),
     current_user=Depends(require_professor_or_staff),
 ):
+    if grade_in.nota < 0 or grade_in.nota > 10:
+        raise HTTPException(status_code=422, detail="La nota debe estar entre 0 y 10")
     grade = db.query(RelAlumnoTarea).filter(
         RelAlumnoTarea.id_alumno == grade_in.id_alumno,
         RelAlumnoTarea.id_tarea == tarea_id,
@@ -1212,6 +1302,49 @@ def upsert_attendance(
     return record
 
 
+@app.post("/api/v1/attendance/me/check-in", response_model=AttendanceOut, tags=["Asistencia"], status_code=201)
+def student_check_in(
+    attendance_in: StudentAttendanceCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_student),
+):
+    session_row = db.query(Sesion).filter(Sesion.id_sesion == attendance_in.id_sesion).first()
+    if not session_row:
+        raise HTTPException(status_code=404, detail="Sesion no encontrada")
+
+    belongs_to_session_block = (
+        db.query(RelAlumnosGrupos)
+        .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
+        .filter(
+            RelAlumnosGrupos.id_alumno == current_user.id_alumno,
+            RelBloquesGrupos.id_bloque == session_row.id_bloque,
+        )
+        .first()
+    )
+    if not belongs_to_session_block:
+        raise HTTPException(status_code=403, detail="No puedes registrar asistencia en esta sesion")
+
+    attendance_date = session_row.fecha or date.today()
+    record = db.query(Asistencia).filter(
+        Asistencia.id_alumno == current_user.id_alumno,
+        Asistencia.id_sesion == session_row.id_sesion,
+    ).first()
+    if record:
+        record.fecha = attendance_date
+        record.presente = True
+    else:
+        record = Asistencia(
+            id_alumno=current_user.id_alumno,
+            id_sesion=session_row.id_sesion,
+            fecha=attendance_date,
+            presente=True,
+        )
+        db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
 @app.get("/api/v1/attendance/sessions/{session_id}", response_model=List[AttendanceOut], tags=["Asistencia"])
 def list_session_attendance(
     session_id: str,
@@ -1224,6 +1357,43 @@ def list_session_attendance(
         .order_by(Asistencia.id_alumno)
         .all()
     )
+
+
+@app.get("/api/v1/attendance/sessions/{session_id}/roster", response_model=List[AttendanceRosterRow], tags=["Asistencia"])
+def list_session_attendance_roster(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_professor_or_staff),
+):
+    session_row = db.query(Sesion).filter(Sesion.id_sesion == session_id).first()
+    if not session_row:
+        raise HTTPException(status_code=404, detail="Sesion no encontrada")
+
+    students = (
+        db.query(Alumno)
+        .join(RelAlumnosGrupos, RelAlumnosGrupos.id_alumno == Alumno.id_alumno)
+        .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
+        .filter(RelBloquesGrupos.id_bloque == session_row.id_bloque)
+        .distinct()
+        .order_by(Alumno.nombre, Alumno.apellido1)
+        .all()
+    )
+    attendance_records = {
+        record.id_alumno: record
+        for record in db.query(Asistencia).filter(Asistencia.id_sesion == session_id).all()
+    }
+    return [
+        AttendanceRosterRow(
+            id_alumno=student.id_alumno,
+            nombre=student.nombre,
+            apellido=student.apellido,
+            id_sesion=session_id,
+            fecha=attendance_records[student.id_alumno].fecha if student.id_alumno in attendance_records else session_row.fecha,
+            presente=attendance_records[student.id_alumno].presente if student.id_alumno in attendance_records else None,
+            id_asistencia=attendance_records[student.id_alumno].id_asistencia if student.id_alumno in attendance_records else None,
+        )
+        for student in students
+    ]
 
 
 @app.get("/api/v1/tutorings/slots", response_model=List[TutoringSlotOut], tags=["Reservas y Tutorias"])
