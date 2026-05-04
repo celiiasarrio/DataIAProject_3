@@ -49,6 +49,7 @@ class Alumno(Base):
     contrasena = Column(String, nullable=False)
     url_foto = Column(String, nullable=True)
     rol = Column(String, nullable=False, default="Alumno")
+    grupo = Column(String, nullable=True)
 
     @property
     def apellido(self) -> str:
@@ -119,6 +120,7 @@ class Tarea(Base):
     id_bloque = Column(String, ForeignKey("bloques.id_bloque"), nullable=False, index=True)
     nombre = Column(String, nullable=False)
     descripcion = Column(Text, nullable=True)
+    fecha = Column(Date, nullable=True)
 
 
 class Asistencia(Base):
@@ -139,6 +141,9 @@ class RelCoordinadoresGrupos(Base):
 
     id_coordinador = Column(String, ForeignKey("coordinadores.id_coordinador"), primary_key=True)
     id_grupo = Column(String, ForeignKey("grupos.id_grupo"), primary_key=True)
+
+
+RelPersonalGrupos = RelCoordinadoresGrupos
 
 
 class RelAlumnosGrupos(Base):
