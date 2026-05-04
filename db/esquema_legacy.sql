@@ -4,24 +4,28 @@
 Table alumnos {
   id_alumno varchar [pk]
   nombre varchar
-  apellido1 varchar
+  apellido varchar
   apellido2 varchar [null]
   correo varchar [unique]
   contrasena varchar
   url_foto varchar [null]
+  rol varchar
+  grupo varchar [null]
 }
 
 Table profesores {
   id_profesor varchar [pk]
   nombre varchar
   apellido varchar
+  apellido2 varchar [null]
   correo varchar [unique]
   contrasena varchar
   url_foto varchar [null]
+  rol varchar
 }
 
-Table personal_edem {
-  id_personal varchar [pk]
+Table coordinadores {
+  id_coordinador varchar [pk]
   nombre varchar
   apellido varchar
   correo varchar [unique]
@@ -32,7 +36,7 @@ Table personal_edem {
 
 Table grupos {
   id_grupo varchar [pk]
-  nombre varchar
+  nombre varchar [null]
 }
 
 Table bloques {
@@ -47,13 +51,15 @@ Table sesiones {
   fecha date [null]
   hora_inicio time [null]
   hora_fin time [null]
+  edificio varchar [null]
+  planta varchar [null]
   aula varchar [null]
 }
 
 Table ubicaciones {
   id_ubicacion varchar [pk]
   descripcion varchar
-  planta int [null]
+  planta varchar [null]
   aula varchar [null]
 }
 
@@ -84,12 +90,12 @@ Table rel_bloques_grupos {
   }
 }
 
-Table rel_personal_grupos {
-  id_personal varchar [ref: > personal_edem.id_personal]
+Table rel_coordinadores_grupos {
+  id_coordinador varchar [ref: > coordinadores.id_coordinador]
   id_grupo varchar [ref: > grupos.id_grupo]
 
   indexes {
-    (id_personal, id_grupo) [pk]
+    (id_coordinador, id_grupo) [pk]
   }
 }
 
@@ -97,7 +103,7 @@ Table tareas {
   id_tarea int [pk, increment]
   id_bloque varchar [ref: > bloques.id_bloque]
   nombre varchar
-  descripcion text [null]
+  fecha date [null]
 }
 
 Table rel_alumno_tarea {
