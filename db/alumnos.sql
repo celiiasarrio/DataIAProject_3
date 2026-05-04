@@ -14,14 +14,7 @@ TRUNCATE TABLE
     rel_coordinadores_grupos,
     tareas,
     rel_alumno_tarea,
-    asistencia,
-    eventos,
-    franja_tutoria,
-    reservas,
-    notificaciones,
-    configuracion_notificaciones,
-    correos,
-    contenidos
+    asistencia
 RESTART IDENTITY CASCADE;
 
 INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido", "apellido2", "correo", "contrasena", "url_foto", "rol", "grupo") VALUES
@@ -238,33 +231,6 @@ SELECT
 FROM rel_alumnos_grupos rag
 JOIN rel_bloques_grupos rbg ON rbg.id_grupo = rag.id_grupo
 JOIN sesiones s ON s.id_bloque = rbg.id_bloque;
-
-
-INSERT INTO "franja_tutoria" ("id", "id_profesor", "id_bloque", "dia_semana", "hora_inicio", "hora_fin", "ubicacion", "disponible") VALUES
-('TUT-001', 'PROF-105', 'BLQ-105', 2, '16:00', '17:00', 'AULA 203', TRUE),
-('TUT-002', 'PROF-104', 'BLQ-104', 3, '17:00', '18:00', 'AULA 202', TRUE),
-('TUT-003', 'PROF-101', 'BLQ-101', 1, '15:00', '16:00', 'AULA 101', TRUE);
-
-INSERT INTO "reservas" ("id", "id_alumno", "id_profesor", "id_franja", "fecha", "notas", "estado", "fecha_creacion") VALUES
-('RES-001', 'jogrhe', 'PROF-105', 'TUT-001', '2026-05-20', 'Revisar el modelo final', 'confirmed', '2026-05-18 10:00:00');
-
-INSERT INTO "notificaciones" ("id", "id_usuario", "tipo", "titulo", "mensaje", "leida", "fecha_creacion") VALUES
-('NOT-001', 'jogrhe', 'grades', 'Nueva nota publicada', 'Ya tienes disponible la nota del notebook de Python.', FALSE, '2026-05-12 09:00:00'),
-('NOT-002', 'daadgi', 'attendance', 'Asistencia actualizada', 'Se ha actualizado tu asistencia de PySpark.', FALSE, '2026-05-13 12:00:00'),
-('NOT-003', 'jomama', 'calendar', 'Nueva entrega', 'Recuerda la entrega de Cloud Run el 19 de mayo.', TRUE, '2026-05-14 08:30:00');
-
-INSERT INTO "configuracion_notificaciones" ("id_usuario", "avisos_calendario", "avisos_notas", "avisos_asistencia")
-SELECT id_alumno, TRUE, TRUE, TRUE
-FROM alumnos;
-
-INSERT INTO "correos" ("id", "id_remitente", "id_destinatario", "asunto", "cuerpo", "leido", "fecha_envio") VALUES
-('MAIL-001', 'PER-001', 'jogrhe', 'Bienvenida al hub', 'Ya puedes acceder al portal y revisar tus bloques.', TRUE, '2026-05-01 09:00:00'),
-('MAIL-002', 'jogrhe', 'PROF-105', 'Duda sobre la práctica', 'Quería revisar la última entrega antes de la tutoría.', FALSE, '2026-05-18 16:30:00');
-
-INSERT INTO "contenidos" ("id", "id_bloque", "id_profesor", "titulo", "descripcion", "tipo", "url", "fecha_subida") VALUES
-('CNT-001', 'BLQ-101', 'PROF-101', 'Guía de Python', 'Material base del bloque de Python.', 'pdf', 'https://example.com/python-guide.pdf', '2026-05-02 08:00:00'),
-('CNT-002', 'BLQ-102', 'PROF-102', 'Slides Cloud Run', 'Presentación del despliegue en GCP.', 'slides', 'https://example.com/cloud-run-slides', '2026-05-03 08:00:00'),
-('CNT-003', 'BLQ-104', 'PROF-104', 'Plantilla de agentes', 'Repositorio base del workshop.', 'repo', 'https://example.com/agents-template', '2026-05-05 08:00:00');
 
 -- Vista para unificar eventos del calendario desde sesiones y tareas
 CREATE VIEW vista_eventos AS
