@@ -857,7 +857,7 @@ def list_block_students(
         .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
         .filter(RelBloquesGrupos.id_bloque == block_id)
         .distinct()
-        .order_by(Alumno.nombre, Alumno.apellido1)
+        .order_by(Alumno.nombre, Alumno.apellido)
         .all()
     )
     return [
@@ -1045,7 +1045,7 @@ def list_session_students(
         .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
         .filter(RelBloquesGrupos.id_bloque == session_row.id_bloque)
         .distinct()
-        .order_by(Alumno.nombre, Alumno.apellido1)
+        .order_by(Alumno.nombre, Alumno.apellido)
         .all()
     )
     return [
@@ -1503,7 +1503,7 @@ def list_group_students(
         db.query(Alumno)
         .join(RelAlumnosGrupos, RelAlumnosGrupos.id_alumno == Alumno.id_alumno)
         .filter(RelAlumnosGrupos.id_grupo == group_id)
-        .order_by(Alumno.nombre, Alumno.apellido1)
+        .order_by(Alumno.nombre, Alumno.apellido)
         .all()
     )
     return [
