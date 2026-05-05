@@ -293,7 +293,21 @@ SELECT
     ROUND((6 + ((ASCII(RIGHT(rag.id_alumno, 1)) % 4) * 0.7) + ((t.id_tarea % 3) * 0.4))::NUMERIC, 2)
 FROM rel_alumnos_grupos rag
 JOIN rel_bloques_grupos rbg ON rbg.id_grupo = rag.id_grupo
-JOIN tareas t ON t.id_bloque = rbg.id_bloque;
+JOIN tareas t ON t.id_bloque = rbg.id_bloque
+WHERE t.fecha <= DATE '2026-05-05'
+  AND UPPER(t.nombre) NOT LIKE '%PPT%'
+  AND UPPER(t.nombre) NOT LIKE '%PPTX%'
+  AND UPPER(t.nombre) NOT LIKE '%TFM%'
+  AND (
+      t.id_tarea IN (7, 13, 18)
+      OR (
+          UPPER(t.nombre) NOT LIKE '%DP1%'
+          AND UPPER(t.nombre) NOT LIKE '%DP2%'
+          AND UPPER(t.nombre) NOT LIKE '%DP3%'
+          AND UPPER(t.nombre) NOT LIKE '%DATA PROJECT%'
+          AND UPPER(t.nombre) NOT LIKE '%HITO%'
+      )
+  );
 
 INSERT INTO "asistencia" ("id_alumno", "id_sesion", "fecha", "presente")
 SELECT
