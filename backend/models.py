@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import (
     Boolean,
@@ -43,34 +42,13 @@ class Alumno(Base):
 
     id_alumno = Column(String, primary_key=True, index=True)
     nombre = Column(String)
-    apellido1 = Column(String)
+    apellido = Column(String)
     apellido2 = Column(String, nullable=True)
     correo = Column(String, nullable=False, unique=True, index=True)
     contrasena = Column(String, nullable=False)
     url_foto = Column(String, nullable=True)
     rol = Column(String, nullable=False, default="Alumno")
     grupo = Column(String, nullable=True)
-
-    @property
-    def apellido(self) -> str:
-        return " ".join(part for part in [self.apellido1, self.apellido2] if part)
-
-    @apellido.setter
-    def apellido(self, value: Optional[str]) -> None:
-        if not value:
-            self.apellido1 = ""
-            self.apellido2 = None
-            return
-
-        normalized = " ".join(value.split())
-        if not normalized:
-            self.apellido1 = ""
-            self.apellido2 = None
-            return
-
-        parts = normalized.split(maxsplit=1)
-        self.apellido1 = parts[0]
-        self.apellido2 = parts[1] if len(parts) > 1 else None
 
 
 class Profesor(Base):
