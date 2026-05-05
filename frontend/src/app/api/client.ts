@@ -86,7 +86,7 @@ export interface GradeOut {
   id_tarea: number;
   nombre_tarea: string;
   id_bloque: string;
-  nota: number;
+  nota: number | null;
   categoria: string;
   peso: number;
 }

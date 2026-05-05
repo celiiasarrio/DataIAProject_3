@@ -290,15 +290,18 @@ INSERT INTO "rel_alumno_tarea" ("id_alumno", "id_tarea", "nota")
 SELECT
     rag.id_alumno,
     t.id_tarea,
-    ROUND(
-        LEAST(
-            9.8,
-            5.4
-            + ((ABS(HASHTEXT(rag.id_alumno || '-' || t.id_tarea::TEXT)) % 38) * 0.10)
-            + ((t.id_tarea % 5) * 0.12)
-        )::NUMERIC,
-        2
-    )
+    CASE
+        WHEN t.id_tarea IN (7, 13, 18) THEN ROUND(
+            LEAST(
+                9.8,
+                5.4
+                + ((ABS(HASHTEXT(rag.id_alumno || '-' || t.id_tarea::TEXT)) % 38) * 0.10)
+                + ((t.id_tarea % 5) * 0.12)
+            )::NUMERIC,
+            2
+        )
+        ELSE 10.00
+    END
 FROM rel_alumnos_grupos rag
 JOIN rel_bloques_grupos rbg ON rbg.id_grupo = rag.id_grupo
 JOIN tareas t ON t.id_bloque = rbg.id_bloque
@@ -318,6 +321,7 @@ WHERE t.fecha <= DATE '2026-05-05'
           AND UPPER(t.nombre) NOT LIKE '%DP3%'
           AND UPPER(t.nombre) NOT LIKE '%DATA PROJECT%'
           AND UPPER(t.nombre) NOT LIKE '%HITO%'
+          AND (ABS(HASHTEXT(rag.id_alumno || '-delivery-' || t.id_tarea::TEXT)) % 5) <> 0
       )
   );
 

@@ -28,7 +28,7 @@ const getGradeLabel = (g: number) => {
 
 const categoryAverage = (grades: GradeOut[]) => {
   if (grades.length === 0) return null;
-  return grades.reduce((acc, grade) => acc + grade.nota, 0) / grades.length;
+  return grades.reduce((acc, grade) => acc + (grade.nota ?? 0), 0) / grades.length;
 };
 
 function GradeWheel({ category }: { category: GradeCategory }) {
@@ -175,7 +175,12 @@ export function GradesScreen() {
                           category.grades.map((grade) => (
                             <div key={grade.id_tarea} className="flex items-center justify-between gap-4">
                               <span className="text-sm text-gray-600">{grade.nombre_tarea}</span>
-                              <span className="text-sm text-gray-800" style={{ fontWeight: 700 }}>{grade.nota.toFixed(1)}</span>
+                              <span
+                                className={`text-sm ${grade.nota == null ? 'text-red-600' : 'text-gray-800'}`}
+                                style={{ fontWeight: 700 }}
+                              >
+                                {grade.nota == null ? 'No entregado' : grade.nota.toFixed(1)}
+                              </span>
                             </div>
                           ))
                         )}

@@ -222,7 +222,7 @@ class GradeOut(BaseModel):
     id_tarea: int
     nombre_tarea: str
     id_bloque: str
-    nota: float
+    nota: Optional[float] = None
     categoria: str
     peso: float
 
@@ -268,7 +268,7 @@ def get_grade_category(task: Tarea) -> str:
     return "entregables"
 
 
-def build_grade_out(task: Tarea, nota: float) -> GradeOut:
+def build_grade_out(task: Tarea, nota: Optional[float]) -> GradeOut:
     category = get_grade_category(task)
     return GradeOut(
         id_tarea=task.id_tarea,
@@ -291,6 +291,25 @@ def attitude_grade_for_student(student_id: str) -> GradeOut:
         categoria="actitud",
         peso=GRADE_CATEGORY_WEIGHTS["actitud"],
     )
+
+
+def is_visible_grade_task(task: Tarea) -> bool:
+    if not task.fecha or task.fecha > date.today():
+        return False
+    normalized = task.nombre.lower()
+    excluded_fragments = [
+        "ppt",
+        "pptx",
+        "tfm",
+        "experiencia internacional",
+        "confirmación experiencia internacional",
+        "confirmaci",
+    ]
+    if any(fragment in normalized for fragment in excluded_fragments):
+        return False
+    if task.id_tarea in {7, 13, 18}:
+        return True
+    return not any(fragment in normalized for fragment in ["dp1", "dp2", "dp3", "data project", "hito"])
 
 
 class AttendanceCreate(BaseModel):
@@ -1189,13 +1208,25 @@ def list_my_grades(
     db: Session = Depends(get_db),
     current_user=Depends(require_student),
 ):
-    rows = (
-        db.query(RelAlumnoTarea, Tarea)
-        .join(Tarea, Tarea.id_tarea == RelAlumnoTarea.id_tarea)
-        .filter(RelAlumnoTarea.id_alumno == current_user.id_alumno)
+    tasks = (
+        db.query(Tarea)
+        .join(RelBloquesGrupos, RelBloquesGrupos.id_bloque == Tarea.id_bloque)
+        .join(RelAlumnosGrupos, RelAlumnosGrupos.id_grupo == RelBloquesGrupos.id_grupo)
+        .filter(RelAlumnosGrupos.id_alumno == current_user.id_alumno)
+        .order_by(Tarea.fecha, Tarea.id_tarea)
         .all()
     )
-    grades = [build_grade_out(task, grade.nota) for grade, task in rows]
+    grade_map = {
+        grade.id_tarea: grade.nota
+        for grade in db.query(RelAlumnoTarea)
+        .filter(RelAlumnoTarea.id_alumno == current_user.id_alumno)
+        .all()
+    }
+    grades = [
+        build_grade_out(task, grade_map.get(task.id_tarea))
+        for task in tasks
+        if is_visible_grade_task(task)
+    ]
     grades.append(attitude_grade_for_student(current_user.id_alumno))
     return grades
 
@@ -1206,13 +1237,23 @@ def list_my_grades_for_block(
     db: Session = Depends(get_db),
     current_user=Depends(require_student),
 ):
-    rows = (
-        db.query(RelAlumnoTarea, Tarea)
-        .join(Tarea, Tarea.id_tarea == RelAlumnoTarea.id_tarea)
-        .filter(RelAlumnoTarea.id_alumno == current_user.id_alumno, Tarea.id_bloque == block_id)
+    tasks = (
+        db.query(Tarea)
+        .filter(Tarea.id_bloque == block_id)
+        .order_by(Tarea.fecha, Tarea.id_tarea)
         .all()
     )
-    grades = [build_grade_out(task, grade.nota) for grade, task in rows]
+    grade_map = {
+        grade.id_tarea: grade.nota
+        for grade in db.query(RelAlumnoTarea)
+        .filter(RelAlumnoTarea.id_alumno == current_user.id_alumno)
+        .all()
+    }
+    grades = [
+        build_grade_out(task, grade_map.get(task.id_tarea))
+        for task in tasks
+        if is_visible_grade_task(task)
+    ]
     if block_id == "ACTITUD":
         grades.append(attitude_grade_for_student(current_user.id_alumno))
     return grades
