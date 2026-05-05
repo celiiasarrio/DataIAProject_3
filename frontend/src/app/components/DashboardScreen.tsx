@@ -84,6 +84,17 @@ export function DashboardScreen() {
             </div>
           </div>
         )}
+
+        {userRole && userRole !== 'student' && (
+          <div
+            className="bg-white rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-4"
+            onClick={() => navigate('/attendance')}
+          >
+            <h3 className="text-[#008899] mb-1" style={{ fontWeight: 600 }}>MI ASISTENCIA</h3>
+            <p className="text-gray-500 text-xs">Registra tu asistencia a clase</p>
+            <p className="text-2xl mt-1" style={{ fontWeight: 800, color: '#008899' }}>📋</p>
+          </div>
+        )}
       </div>
     </div>
   );

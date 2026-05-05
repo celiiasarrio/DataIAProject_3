@@ -157,7 +157,7 @@ export function CalendarScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  const isStaff = userRole === 'admin' || userRole === 'professor';
+  const canManageAttendance = userRole === 'admin';
   const todayKey = getDayKey(new Date());
 
   const eventsByDay = useMemo(() => {
@@ -378,7 +378,7 @@ export function CalendarScreen() {
               )}
             </div>
 
-            {isStaff && selectedEvent.tipo === 'class' && selectedEvent.id_sesion && (
+            {canManageAttendance && selectedEvent.tipo === 'class' && selectedEvent.id_sesion && (
               <button
                 onClick={() => navigate(`/sessions/${selectedEvent.id_sesion}/attendance`)}
                 className="w-full mt-4 bg-[#008899] text-white py-3 rounded-xl text-sm hover:bg-[#007788] transition-colors"

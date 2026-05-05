@@ -327,13 +327,24 @@ WHERE t.fecha <= DATE '2026-05-05'
 
 INSERT INTO "asistencia" ("id_alumno", "id_sesion", "fecha", "presente")
 SELECT
-    rag.id_alumno,
+    usuarios.id_usuario,
     s.id_sesion,
     s.fecha,
-    ((ASCII(RIGHT(rag.id_alumno, 1)) + ASCII(RIGHT(s.id_sesion, 1))) % 5) <> 0
-FROM rel_alumnos_grupos rag
-JOIN rel_bloques_grupos rbg ON rbg.id_grupo = rag.id_grupo
-JOIN sesiones s ON s.id_bloque = rbg.id_bloque;
+    (ABS(HASHTEXT(usuarios.id_usuario || '-attendance-' || s.id_sesion)) % 10) < 8
+FROM (
+    SELECT id_alumno AS id_usuario FROM alumnos
+    UNION ALL
+    SELECT id_profesor AS id_usuario FROM profesores
+    UNION ALL
+    SELECT id_coordinador AS id_usuario FROM coordinadores
+) usuarios
+CROSS JOIN sesiones s
+WHERE s.fecha < DATE '2026-05-05'
+  AND LOWER(s.nombre) NOT LIKE '%tfm%'
+  AND LOWER(s.nombre) NOT LIKE '%visita%'
+  AND LOWER(s.nombre) NOT LIKE '%empleabilidad%'
+  AND LOWER(s.nombre) NOT LIKE '%experiencia internacional%'
+  AND LOWER(s.nombre) NOT LIKE '%foto orla%';
 
 INSERT INTO "eventos" ("id", "tipo", "titulo", "id_bloque", "id_sesion", "aula", "id_profesor", "fecha_inicio", "fecha_fin", "descripcion")
 SELECT

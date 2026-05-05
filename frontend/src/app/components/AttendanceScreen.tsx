@@ -5,6 +5,8 @@ import {
   checkInAttendance,
   getCalendarEvents,
   getMyAttendance,
+  getMyAttendanceMetrics,
+  type AttendanceMetrics,
   type AttendanceRecord,
   type CalendarEvent,
 } from '../api/client';
@@ -14,6 +16,33 @@ interface SessionAttendance {
   attended: number;
   total: number;
 }
+
+const sameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+const formatSessionDate = (value: string) =>
+  new Intl.DateTimeFormat('es-ES', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+
+const normalizeText = (value: string | null | undefined) =>
+  (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+const isMandatoryAttendanceEvent = (event: CalendarEvent) => {
+  const title = normalizeText(event.titulo);
+  return !['tfm', 'visita', 'empleabilidad', 'experiencia internacional', 'foto orla'].some((fragment) =>
+    title.includes(fragment),
+  );
+};
 
 const getStatus = (pct: number) => {
   if (pct >= 90) return { label: 'Excelente',  color: 'text-green-600',  bg: 'bg-green-50',  bar: 'bg-green-500'  };
@@ -48,6 +77,7 @@ export function AttendanceScreen() {
   const navigate = useNavigate();
   const [records, setRecords] = useState<SessionAttendance[]>([]);
   const [classEvents, setClassEvents] = useState<CalendarEvent[]>([]);
+  const [metrics, setMetrics] = useState<AttendanceMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkInMessage, setCheckInMessage] = useState<string | null>(null);
 
@@ -69,12 +99,17 @@ export function AttendanceScreen() {
       })
       .catch(() => setRecords([]))
       .finally(() => setLoading(false));
+    getMyAttendanceMetrics()
+      .then(setMetrics)
+      .catch(() => setMetrics(null));
     getCalendarEvents()
       .then((events) => {
         const now = Date.now();
         setClassEvents(
           events
             .filter((event) => event.tipo === 'class' && Boolean(event.id_sesion))
+            .filter(isMandatoryAttendanceEvent)
+            .filter((event) => new Date(event.fecha_fin).getTime() >= now - 1000 * 60 * 60 * 6)
             .sort((a, b) => Math.abs(new Date(a.fecha_inicio).getTime() - now) - Math.abs(new Date(b.fecha_inicio).getTime() - now))
             .slice(0, 8),
         );
@@ -92,6 +127,7 @@ export function AttendanceScreen() {
       map.set(r.id_sesion, entry);
     }
     setRecords(Array.from(map.entries()).map(([id_sesion, v]) => ({ id_sesion, ...v })));
+    setMetrics(await getMyAttendanceMetrics());
   };
 
   const handleCheckIn = async (sessionId: string) => {
@@ -105,9 +141,17 @@ export function AttendanceScreen() {
     }
   };
 
-  const overallAttended = records.reduce((a, r) => a + r.attended, 0);
-  const overallTotal    = records.reduce((a, r) => a + r.total, 0);
-  const overallPct      = overallTotal > 0 ? Math.round((overallAttended / overallTotal) * 100) : 0;
+  const overallAttended = metrics?.clases_asistidas ?? records.reduce((a, r) => a + r.attended, 0);
+  const overallTotal    = metrics?.total_clases ?? records.reduce((a, r) => a + r.total, 0);
+  const overallPct      = metrics ? Math.round(metrics.porcentaje_asistencia) : overallTotal > 0 ? Math.round((overallAttended / overallTotal) * 100) : 0;
+  const attendedSessionIds = new Set(
+    records
+      .filter((record) => record.attended > 0)
+      .map((record) => record.id_sesion),
+  );
+  const today = new Date();
+  const todaySessions = classEvents.filter((event) => sameDay(new Date(event.fecha_inicio), today));
+  const suggestedSessions = todaySessions.length > 0 ? todaySessions : classEvents.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-[#008899] pb-20">
@@ -137,8 +181,19 @@ export function AttendanceScreen() {
               {overallAttended}/{overallTotal} clases
             </p>
             <p className="text-white/60 text-xs">Curso 2025–26</p>
+            {metrics && (
+              <p className="text-white/60 text-xs">
+                Puedes faltar {metrics.faltas_restantes_80} de {metrics.faltas_permitidas_80} antes del 80%
+              </p>
+            )}
           </div>
         </div>
+        {metrics?.aviso && (
+          <div className="mt-3 rounded-2xl bg-red-500/20 border border-red-200/40 px-4 py-3">
+            <p className="text-white text-sm" style={{ fontWeight: 700 }}>Aviso de asistencia</p>
+            <p className="text-white/80 text-xs mt-0.5">{metrics.aviso}</p>
+          </div>
+        )}
 
         {/* Quick stats */}
         <div className="grid grid-cols-3 gap-2 mt-3">
@@ -163,24 +218,27 @@ export function AttendanceScreen() {
             <CheckCircle size={18} className="text-[#008899]" />
             <h2 className="text-[#008899]" style={{ fontWeight: 700 }}>REGISTRAR ASISTENCIA</h2>
           </div>
-          {classEvents.length === 0 ? (
+          {suggestedSessions.length === 0 ? (
             <p className="text-gray-400 text-sm">No hay sesiones disponibles para registrar.</p>
           ) : (
             <div className="space-y-2">
-              {classEvents.map((event) => (
+              {suggestedSessions.map((event) => {
+                const alreadyCheckedIn = event.id_sesion ? attendedSessionIds.has(event.id_sesion) : false;
+                return (
                 <div key={event.id} className="bg-gray-50 rounded-2xl p-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-gray-800 text-sm truncate" style={{ fontWeight: 600 }}>{event.titulo}</p>
-                    <p className="text-xs text-gray-400">{event.id_sesion}</p>
+                    <p className="text-xs text-gray-400">{formatSessionDate(event.fecha_inicio)} · {event.aula ?? event.id_sesion}</p>
                   </div>
                   <button
                     onClick={() => event.id_sesion && handleCheckIn(event.id_sesion)}
-                    className="bg-[#008899] text-white text-xs px-3 py-2 rounded-lg hover:bg-[#007788] transition-colors"
+                    disabled={alreadyCheckedIn}
+                    className="bg-[#008899] disabled:bg-green-100 disabled:text-green-700 text-white text-xs px-3 py-2 rounded-lg hover:bg-[#007788] transition-colors"
                   >
-                    Confirmar
+                    {alreadyCheckedIn ? 'Registrada' : 'Estoy aquí'}
                   </button>
                 </div>
-              ))}
+              )})}
             </div>
           )}
           {checkInMessage && <p className="mt-3 text-center text-sm text-gray-500">{checkInMessage}</p>}

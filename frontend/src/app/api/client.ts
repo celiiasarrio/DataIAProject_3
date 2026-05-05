@@ -145,6 +145,18 @@ export interface AttendanceRecord {
   presente: boolean;
 }
 
+export interface AttendanceMetrics {
+  total_clases: number;
+  clases_asistidas: number;
+  porcentaje_asistencia: number;
+  faltas: number;
+  faltas_permitidas_80: number;
+  faltas_restantes_80: number;
+  nota_asistencia: number;
+  estado: string;
+  aviso: string | null;
+}
+
 export interface AttendanceRosterRow {
   id_alumno: string;
   nombre: string;
@@ -157,6 +169,10 @@ export interface AttendanceRosterRow {
 
 export async function getMyAttendance(): Promise<AttendanceRecord[]> {
   return apiFetch<AttendanceRecord[]>('/api/v1/attendance/me');
+}
+
+export async function getMyAttendanceMetrics(): Promise<AttendanceMetrics> {
+  return apiFetch<AttendanceMetrics>('/api/v1/attendance/me/metrics');
 }
 
 export async function checkInAttendance(id_sesion: string): Promise<AttendanceRecord> {

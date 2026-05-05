@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS rel_alumno_tarea (
 
 CREATE TABLE IF NOT EXISTS asistencia (
     id_asistencia SERIAL PRIMARY KEY,
-    id_alumno VARCHAR NOT NULL REFERENCES alumnos(id_alumno),
+    id_alumno VARCHAR NOT NULL,
     id_sesion VARCHAR NOT NULL REFERENCES sesiones(id_sesion),
     fecha DATE,
     presente BOOLEAN NOT NULL,

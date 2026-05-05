@@ -1,4 +1,4 @@
-import { ChevronLeft, Save, Check } from 'lucide-react';
+import { ChevronLeft, Save, Check, Users } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router';
 import { useEffect, useState } from 'react';
 import {
@@ -22,7 +22,7 @@ export function ClassAttendanceScreen() {
     getSessionAttendanceRoster(sessionId)
       .then((data) => {
         setStudents(data);
-        setAttendance(Object.fromEntries(data.map((row) => [row.id_alumno, row.presente === true])));
+        setAttendance(Object.fromEntries(data.map((row) => [row.id_alumno, row.presente !== false])));
       })
       .catch(() => {
         setStudents([]);
@@ -36,6 +36,7 @@ export function ClassAttendanceScreen() {
   };
 
   const allPresent = students.length > 0 && students.every((student) => attendance[student.id_alumno]);
+  const absentCount = students.filter((student) => !attendance[student.id_alumno]).length;
 
   const toggleAll = () => {
     setAttendance(Object.fromEntries(students.map((student) => [student.id_alumno, !allPresent])));
@@ -74,9 +75,20 @@ export function ClassAttendanceScreen() {
       </div>
 
       <div className="bg-white rounded-t-3xl px-5 pt-5 pb-6 min-h-[70vh]">
-        <div className="flex justify-end mb-4">
-          <button onClick={toggleAll} className="text-sm text-[#008899]" style={{ fontWeight: 600 }}>
-            {allPresent ? 'Desmarcar todos' : 'Marcar todos como presentes'}
+        <div className="bg-[#008899]/5 rounded-2xl p-4 mb-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#008899] flex items-center justify-center">
+            <Users size={20} className="text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-gray-800 text-sm" style={{ fontWeight: 700 }}>
+              {students.length - absentCount}/{students.length} presentes
+            </p>
+            <p className="text-xs text-gray-500">
+              Por defecto todos aparecen presentes; toca solo las ausencias.
+            </p>
+          </div>
+          <button onClick={toggleAll} className="text-xs text-[#008899]" style={{ fontWeight: 700 }}>
+            {allPresent ? 'Marcar ausencias' : 'Todos presentes'}
           </button>
         </div>
 

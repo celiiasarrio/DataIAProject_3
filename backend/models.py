@@ -130,7 +130,7 @@ class Asistencia(Base):
     )
 
     id_asistencia = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    id_alumno = Column(String, ForeignKey("alumnos.id_alumno"), nullable=False, index=True)
+    id_alumno = Column(String, nullable=False, index=True)
     id_sesion = Column(String, ForeignKey("sesiones.id_sesion"), nullable=False, index=True)
     fecha = Column(Date, nullable=True)
     presente = Column(Boolean, nullable=False, default=True)

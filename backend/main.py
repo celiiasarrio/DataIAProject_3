@@ -293,6 +293,90 @@ def attitude_grade_for_student(student_id: str) -> GradeOut:
     )
 
 
+def is_mandatory_attendance_session(session: Sesion) -> bool:
+    if not session.fecha:
+        return False
+    normalized = session.nombre.lower()
+    excluded_fragments = [
+        "tfm",
+        "visita",
+        "empleabilidad",
+        "experiencia internacional",
+        "foto orla",
+    ]
+    return not any(fragment in normalized for fragment in excluded_fragments)
+
+
+def mandatory_attendance_sessions(db: Session, until: Optional[date] = None) -> List[Sesion]:
+    query = db.query(Sesion).filter(Sesion.fecha.isnot(None))
+    if until:
+        query = query.filter(Sesion.fecha < until)
+    return [
+        session
+        for session in query.order_by(Sesion.fecha, Sesion.hora_inicio, Sesion.id_sesion).all()
+        if is_mandatory_attendance_session(session)
+    ]
+
+
+def build_attendance_metrics(db: Session, user_id: str) -> AttendanceMetricsOut:
+    sessions = mandatory_attendance_sessions(db, date.today())
+    session_ids = [session.id_sesion for session in sessions]
+    records = {
+        record.id_sesion: record
+        for record in db.query(Asistencia)
+        .filter(Asistencia.id_alumno == user_id, Asistencia.id_sesion.in_(session_ids))
+        .all()
+    }
+    total = len(sessions)
+    attended = sum(1 for session_id in session_ids if records.get(session_id) and records[session_id].presente)
+    absences = total - attended
+    percentage = round((attended / total) * 100, 2) if total else 0.0
+    allowed_80 = int(total * 0.2)
+    remaining_80 = max(allowed_80 - absences, 0)
+    if percentage >= 80:
+        grade = 10.0
+        status = "ok"
+    elif percentage >= 50:
+        grade = 5.0
+        status = "warning"
+    else:
+        grade = 0.0
+        status = "critical"
+
+    aviso = None
+    if total:
+        if percentage < 50:
+            aviso = "Has bajado del 50% de asistencia obligatoria."
+        elif percentage < 80:
+            aviso = "Has bajado del 80% de asistencia obligatoria."
+        elif remaining_80 <= 2:
+            aviso = f"Estas rozando el limite del 80%: te quedan {remaining_80} faltas."
+
+    return AttendanceMetricsOut(
+        total_clases=total,
+        clases_asistidas=attended,
+        porcentaje_asistencia=percentage,
+        faltas=absences,
+        faltas_permitidas_80=allowed_80,
+        faltas_restantes_80=remaining_80,
+        nota_asistencia=grade,
+        estado=status,
+        aviso=aviso,
+    )
+
+
+def attendance_grade_for_user(db: Session, user_id: str) -> GradeOut:
+    metrics = build_attendance_metrics(db, user_id)
+    return GradeOut(
+        id_tarea=-2,
+        nombre_tarea="Asistencia",
+        id_bloque="ACTITUD",
+        nota=metrics.nota_asistencia,
+        categoria="actitud",
+        peso=GRADE_CATEGORY_WEIGHTS["actitud"],
+    )
+
+
 def is_visible_grade_task(task: Tarea) -> bool:
     if not task.fecha or task.fecha > date.today():
         return False
@@ -345,6 +429,12 @@ class AttendanceMetricsOut(BaseModel):
     total_clases: int
     clases_asistidas: int
     porcentaje_asistencia: float
+    faltas: int
+    faltas_permitidas_80: int
+    faltas_restantes_80: int
+    nota_asistencia: float
+    estado: str
+    aviso: Optional[str] = None
 
 
 class TutoringSlotCreate(BaseModel):
@@ -1227,6 +1317,7 @@ def list_my_grades(
         for task in tasks
         if is_visible_grade_task(task)
     ]
+    grades.append(attendance_grade_for_user(db, current_user.id_alumno))
     grades.append(attitude_grade_for_student(current_user.id_alumno))
     return grades
 
@@ -1255,6 +1346,7 @@ def list_my_grades_for_block(
         if is_visible_grade_task(task)
     ]
     if block_id == "ACTITUD":
+        grades.append(attendance_grade_for_user(db, current_user.id_alumno))
         grades.append(attitude_grade_for_student(current_user.id_alumno))
     return grades
 
@@ -1349,11 +1441,12 @@ def update_grade(
 @app.get("/api/v1/attendance/me", response_model=List[AttendanceOut], tags=["Asistencia"])
 def list_my_attendance(
     db: Session = Depends(get_db),
-    current_user=Depends(require_student),
+    current_user=Depends(get_current_user),
 ):
+    user_id = get_user_id(current_user)
     return (
         db.query(Asistencia)
-        .filter(Asistencia.id_alumno == current_user.id_alumno)
+        .filter(Asistencia.id_alumno == user_id)
         .order_by(Asistencia.fecha)
         .all()
     )
@@ -1362,24 +1455,34 @@ def list_my_attendance(
 @app.get("/api/v1/attendance/me/metrics", response_model=AttendanceMetricsOut, tags=["Asistencia"])
 def get_my_attendance_metrics(
     db: Session = Depends(get_db),
-    current_user=Depends(require_student),
+    current_user=Depends(get_current_user),
 ):
-    records = db.query(Asistencia).filter(Asistencia.id_alumno == current_user.id_alumno).all()
-    total = len(records)
-    attended = sum(1 for record in records if record.presente)
-    percentage = round((attended / total) * 100, 2) if total else 0.0
-    return AttendanceMetricsOut(
-        total_clases=total,
-        clases_asistidas=attended,
-        porcentaje_asistencia=percentage,
-    )
+    user_id = get_user_id(current_user)
+    metrics = build_attendance_metrics(db, user_id)
+    if metrics.aviso:
+        existing = db.query(Notificacion).filter(
+            Notificacion.id_usuario == user_id,
+            Notificacion.tipo == "attendance",
+            Notificacion.titulo == "Aviso de asistencia",
+            Notificacion.leida == False,  # noqa: E712
+        ).first()
+        if not existing:
+            db.add(Notificacion(
+                id=str(uuid.uuid4()),
+                id_usuario=user_id,
+                tipo="attendance",
+                titulo="Aviso de asistencia",
+                mensaje=metrics.aviso,
+            ))
+            db.commit()
+    return metrics
 
 
 @app.post("/api/v1/attendance", response_model=AttendanceOut, tags=["Asistencia"], status_code=201)
 def upsert_attendance(
     attendance_in: AttendanceCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(require_professor_or_staff),
+    current_user=Depends(require_staff),
 ):
     if not db.query(Alumno).filter(Alumno.id_alumno == attendance_in.id_alumno).first():
         raise HTTPException(status_code=404, detail="Alumno no encontrado")
@@ -1412,27 +1515,41 @@ def upsert_attendance(
 def student_check_in(
     attendance_in: StudentAttendanceCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(require_student),
+    current_user=Depends(get_current_user),
 ):
     session_row = db.query(Sesion).filter(Sesion.id_sesion == attendance_in.id_sesion).first()
     if not session_row:
         raise HTTPException(status_code=404, detail="Sesion no encontrada")
 
-    belongs_to_session_block = (
-        db.query(RelAlumnosGrupos)
-        .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
-        .filter(
-            RelAlumnosGrupos.id_alumno == current_user.id_alumno,
-            RelBloquesGrupos.id_bloque == session_row.id_bloque,
+    if not is_mandatory_attendance_session(session_row):
+        raise HTTPException(status_code=403, detail="Esta sesion no computa para asistencia")
+
+    role = get_user_role(current_user)
+    user_id = get_user_id(current_user)
+    if role == "alumno":
+        belongs_to_session_block = (
+            db.query(RelAlumnosGrupos)
+            .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
+            .filter(
+                RelAlumnosGrupos.id_alumno == user_id,
+                RelBloquesGrupos.id_bloque == session_row.id_bloque,
+            )
+            .first()
         )
-        .first()
-    )
+    elif role == "profesor":
+        belongs_to_session_block = db.query(RelProfesoresBloques).filter(
+            RelProfesoresBloques.id_profesor == user_id,
+            RelProfesoresBloques.id_bloque == session_row.id_bloque,
+        ).first()
+    else:
+        belongs_to_session_block = db.query(RelCoordinadoresGrupos).first()
+
     if not belongs_to_session_block:
         raise HTTPException(status_code=403, detail="No puedes registrar asistencia en esta sesion")
 
     attendance_date = session_row.fecha or date.today()
     record = db.query(Asistencia).filter(
-        Asistencia.id_alumno == current_user.id_alumno,
+        Asistencia.id_alumno == user_id,
         Asistencia.id_sesion == session_row.id_sesion,
     ).first()
     if record:
@@ -1440,7 +1557,7 @@ def student_check_in(
         record.presente = True
     else:
         record = Asistencia(
-            id_alumno=current_user.id_alumno,
+            id_alumno=user_id,
             id_sesion=session_row.id_sesion,
             fecha=attendance_date,
             presente=True,
@@ -1469,7 +1586,7 @@ def list_session_attendance(
 def list_session_attendance_roster(
     session_id: str,
     db: Session = Depends(get_db),
-    current_user=Depends(require_professor_or_staff),
+    current_user=Depends(require_staff),
 ):
     session_row = db.query(Sesion).filter(Sesion.id_sesion == session_id).first()
     if not session_row:
