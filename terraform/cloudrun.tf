@@ -224,10 +224,10 @@ resource "google_cloud_run_v2_service" "agent" {
         value = var.project_id
       }
 
-      env {
-        name  = "FIRESTORE_DATABASE"
-        value = google_firestore_database.database.name
-      }
+      # env {
+      #   name  = "FIRESTORE_DATABASE"
+      #   value = google_firestore_database.database.name
+      # }
     }
   }
 
