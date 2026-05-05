@@ -158,6 +158,7 @@ export function CalendarScreen() {
   }, []);
 
   const isStaff = userRole === 'admin' || userRole === 'professor';
+  const todayKey = getDayKey(new Date());
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
@@ -234,18 +235,31 @@ export function CalendarScreen() {
               const key = getDayKey(day);
               const dayEvents = eventsByDay.get(key) ?? [];
               const inMonth = day.getMonth() === visibleMonth.getMonth();
+              const isToday = key === todayKey;
               const visibleEvents = dayEvents.slice(0, 3);
               const hiddenCount = Math.max(dayEvents.length - visibleEvents.length, 0);
 
               return (
                 <div
                   key={key}
-                  className={`min-h-[104px] border-r border-b border-gray-100 p-1.5 ${
-                    inMonth ? 'bg-white' : 'bg-gray-50'
+                  className={`min-h-[104px] border-r border-b p-1.5 ${
+                    isToday
+                      ? 'bg-gray-100 border-gray-300 ring-1 ring-inset ring-gray-400'
+                      : inMonth
+                        ? 'bg-white border-gray-100'
+                        : 'bg-gray-50 border-gray-100'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs ${inMonth ? 'text-gray-700' : 'text-gray-300'}`}>
+                    <span
+                      className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs ${
+                        isToday
+                          ? 'bg-gray-700 text-white'
+                          : inMonth
+                            ? 'text-gray-700'
+                            : 'text-gray-300'
+                      }`}
+                    >
                       {day.getDate()}
                     </span>
                     {dayEvents.length > 0 && (
