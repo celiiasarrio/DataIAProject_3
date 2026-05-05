@@ -14,7 +14,7 @@ resource "google_sql_database_instance" "edem_db_instance" {
       }
     }
   }
-  deletion_protection = false
+  deletion_protection = true
 }
 
 # Base de datos

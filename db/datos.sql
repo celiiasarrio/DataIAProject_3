@@ -78,11 +78,11 @@ INSERT INTO "perfil_detalles" (
     "linkedin", "github", "portfolio", "preferencia_contacto", "area_interes",
     "stack_tecnologico", "experiencia_actual", "disponibilidad", "preferencia_jornada",
     "idioma_app", "notificaciones_email", "notificaciones_push", "visibilidad_profesional",
-    "permitir_cv_empleabilidad", "permitir_links_profesores", "tema", "estado"
+    "permitir_cv_empleabilidad", "permitir_links_profesores", "tema", "estado", "fecha_actualizacion"
 )
 SELECT id_usuario, '', 'Valencia', 'es', '', '', '', '', 'email',
        'Data & AI', 'Python, SQL, Cloud', '', 'Por definir', 'Por definir',
-       'es', TRUE, TRUE, TRUE, TRUE, TRUE, 'claro', 'Activo'
+       'es', TRUE, TRUE, TRUE, TRUE, TRUE, 'claro', 'Activo', NOW()
 FROM (
     SELECT id_alumno AS id_usuario FROM alumnos
     UNION ALL

@@ -23,24 +23,10 @@ resource "google_project_iam_member" "backend_cloudsql" {
   member  = "serviceAccount:${google_service_account.backend_sa.email}"
 }
 
-# Firestore SA → Firestore access
-resource "google_project_iam_member" "firestore_access" {
-  project = var.project_id
-  role    = "roles/datastore.user"
-  member  = "serviceAccount:${google_service_account.firestore_sa.email}"
-}
-
 # Agent SA → Vertex AI access
 resource "google_project_iam_member" "agent_vertex_ai" {
   project = var.project_id
   role    = "roles/aiplatform.user"
-  member  = "serviceAccount:${google_service_account.agent_sa.email}"
-}
-
-# Agent SA → Firestore access
-resource "google_project_iam_member" "agent_firestore_access" {
-  project = var.project_id
-  role    = "roles/datastore.user"
   member  = "serviceAccount:${google_service_account.agent_sa.email}"
 }
 

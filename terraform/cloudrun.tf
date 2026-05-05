@@ -10,12 +10,6 @@ resource "google_service_account" "backend_sa" {
   display_name = "Service Account para Backend Cloud Run"
 }
 
-# Service Account for Firestore
-resource "google_service_account" "firestore_sa" {
-  account_id   = "${var.app_name}-firestore-sa"
-  display_name = "Service Account para Firestore"
-}
-
 # Service Account for agent
 resource "google_service_account" "agent_sa" {
   account_id   = "${var.app_name}-agent-sa"
