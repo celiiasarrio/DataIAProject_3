@@ -1,0 +1,13 @@
+# Copiar este archivo a terraform.tfvars y reemplazar los valores
+
+project_id       = "project3grupo6"
+app_name         = "project3grupo6"
+region           = "europe-west1"
+db_region        = "europe-southwest1"
+db_instance_name = "project3grupo6-postgres"
+db_name          = "edem_hub_db"
+db_user          = "postgres"
+db_password      = "CAMBIAR_A_CONTRASEÑA_SEGURA"
+jwt_secret       = "CAMBIAR_A_JWT_SECRET_SEGURO"
+cicd_sa_email    = "project3grupo6-backend-sa@project3grupo6.iam.gserviceaccount.com"
+firestore_location = "europe-west1"

@@ -44,37 +44,37 @@ resource "google_project_iam_member" "agent_firestore_access" {
   member  = "serviceAccount:${google_service_account.agent_sa.email}"
 }
 
-# CI/CD SA → Artifact Registry push
-resource "google_project_iam_member" "cicd_artifact_registry" {
-  project = var.project_id
-  role    = "roles/artifactregistry.writer"
-  member  = "serviceAccount:${var.cicd_sa_email}"
-}
+# CI/CD SA → Artifact Registry push (COMENTADO - crear service account manualmente si es necesario)
+# resource "google_project_iam_member" "cicd_artifact_registry" {
+#   project = var.project_id
+#   role    = "roles/artifactregistry.writer"
+#   member  = "serviceAccount:${var.cicd_sa_email}"
+# }
 
-# CI/CD SA → Cloud Run deploy
-resource "google_project_iam_member" "cicd_cloudrun" {
-  project = var.project_id
-  role    = "roles/run.developer"
-  member  = "serviceAccount:${var.cicd_sa_email}"
-}
+# CI/CD SA → Cloud Run deploy (COMENTADO - crear service account manualmente si es necesario)
+# resource "google_project_iam_member" "cicd_cloudrun" {
+#   project = var.project_id
+#   role    = "roles/run.developer"
+#   member  = "serviceAccount:${var.cicd_sa_email}"
+# }
 
-# CI/CD SA → act as backend SA (needed to deploy Cloud Run with that SA)
-resource "google_service_account_iam_member" "cicd_actAs_backend" {
-  service_account_id = google_service_account.backend_sa.name
-  role               = "roles/iam.serviceAccountUser"
-  member             = "serviceAccount:${var.cicd_sa_email}"
-}
+# CI/CD SA → act as backend SA (COMENTADO - crear service account manualmente si es necesario)
+# resource "google_service_account_iam_member" "cicd_actAs_backend" {
+#   service_account_id = google_service_account.backend_sa.name
+#   role               = "roles/iam.serviceAccountUser"
+#   member             = "serviceAccount:${var.cicd_sa_email}"
+# }
 
-# CI/CD SA → act as frontend SA (needed to deploy Cloud Run with that SA)
-resource "google_service_account_iam_member" "cicd_actAs_frontend" {
-  service_account_id = google_service_account.frontend_sa.name
-  role               = "roles/iam.serviceAccountUser"
-  member             = "serviceAccount:${var.cicd_sa_email}"
-}
+# CI/CD SA → act as frontend SA (COMENTADO - crear service account manualmente si es necesario)
+# resource "google_service_account_iam_member" "cicd_actAs_frontend" {
+#   service_account_id = google_service_account.frontend_sa.name
+#   role               = "roles/iam.serviceAccountUser"
+#   member             = "serviceAccount:${var.cicd_sa_email}"
+# }
 
-# CI/CD SA → act as agent SA (needed to deploy Cloud Run with that SA)
-resource "google_service_account_iam_member" "cicd_actAs_agent" {
-  service_account_id = google_service_account.agent_sa.name
-  role               = "roles/iam.serviceAccountUser"
-  member             = "serviceAccount:${var.cicd_sa_email}"
-}
+# CI/CD SA → act as agent SA (COMENTADO - crear service account manualmente si es necesario)
+# resource "google_service_account_iam_member" "cicd_actAs_agent" {
+#   service_account_id = google_service_account.agent_sa.name
+#   role               = "roles/iam.serviceAccountUser"
+#   member             = "serviceAccount:${var.cicd_sa_email}"
+# }

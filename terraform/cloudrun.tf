@@ -36,7 +36,7 @@ resource "google_cloud_run_v2_service" "frontend" {
     }
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker.repository_id}/frontend:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/docker-repo/frontend:latest"
 
       resources {
         limits = {
@@ -92,7 +92,7 @@ resource "google_cloud_run_v2_service" "backend" {
     }
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker.repository_id}/backend:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/docker-repo/backend:latest"
 
       resources {
         limits = {
@@ -176,7 +176,7 @@ resource "google_cloud_run_v2_service" "agent" {
     }
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker.repository_id}/agent:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/docker-repo/agent:latest"
 
       resources {
         limits = {

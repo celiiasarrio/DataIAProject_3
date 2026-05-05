@@ -20,12 +20,11 @@ provider "google" {
   region  = var.region
 }
 
-# Crear la base de datos Firestore (Modo Nativo)
-resource "google_firestore_database" "database" {
-  project     = var.project_id
-  name        = "(default)" # Es el nombre estándar requerido
-  location_id = var.firestore_location
-  type        = "FIRESTORE_NATIVE"
-
-  depends_on = [google_project_service.firestore]
-}
+# Crear la base de datos Firestore (Modo Nativo) - NO USADO EN LA APLICACIÓN
+# resource "google_firestore_database" "database" {
+#   project     = var.project_id
+#   name        = "(default)"
+#   location_id = var.firestore_location
+#   type        = "FIRESTORE_NATIVE"
+#   depends_on = [google_project_service.firestore]
+# }
