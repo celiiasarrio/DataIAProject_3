@@ -6,6 +6,7 @@ import {
   getCalendarEvents,
   getMyAttendance,
   getMyAttendanceMetrics,
+  getMyProfile,
   type AttendanceMetrics,
   type AttendanceRecord,
   type CalendarEvent,
@@ -108,10 +109,16 @@ export function AttendanceScreen() {
         .catch(() => setMetrics(null));
     }
 
-    getCalendarEvents()
+    getMyProfile()
+      .catch(() => null)
+      .then((profile) => getCalendarEvents().then((events) => ({ events, profile })))
       .then((events) => {
         const now = Date.now();
-        const mandatory = events
+        const visibleEvents =
+          storedRole === 'professor' && events.profile
+            ? events.events.filter((event) => event.id_profesor === events.profile?.id)
+            : events.events;
+        const mandatory = visibleEvents
           .filter((event) => event.tipo === 'class' && Boolean(event.id_sesion))
           .filter(isMandatoryAttendanceEvent)
           .sort((a, b) => new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime());
