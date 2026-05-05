@@ -3,7 +3,11 @@ from datetime import date, datetime, time, timedelta
 import hashlib
 import hmac
 import json
+import os
+import re
+import shutil
 import uuid
+from pathlib import Path
 from typing import List, Optional
 
 try:
@@ -12,7 +16,9 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for thin local envs
     bcrypt_lib = None
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
 try:
     from jose import JWTError, jwt
 except ModuleNotFoundError:  # pragma: no cover - fallback for thin local envs
@@ -39,6 +45,8 @@ from models import (
     Grupo,
     Notificacion,
     Coordinador,
+    PerfilDetalle,
+    PerfilDocumento,
     Profesor,
     RelAlumnoTarea,
     RelAlumnosGrupos,
@@ -77,10 +85,15 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+UPLOAD_ROOT = Path(os.getenv("UPLOAD_ROOT", "/app/uploads"))
+PUBLIC_UPLOAD_PREFIX = "/uploads"
+UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+app.mount(PUBLIC_UPLOAD_PREFIX, StaticFiles(directory=str(UPLOAD_ROOT)), name="uploads")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
 
@@ -115,6 +128,120 @@ class UserProfileOut(BaseModel):
     correo: str
     rol: str
     url_foto: Optional[str] = None
+
+
+class ProfilePersonalUpdate(BaseModel):
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    telefono: Optional[str] = None
+    ciudad: Optional[str] = None
+    idioma_preferido: Optional[str] = None
+    contacto_emergencia: Optional[str] = None
+
+
+class ProfileContactUpdate(BaseModel):
+    correo_personal: Optional[str] = None
+    telefono: Optional[str] = None
+    linkedin: Optional[str] = None
+    github: Optional[str] = None
+    portfolio: Optional[str] = None
+    preferencia_contacto: Optional[str] = None
+
+
+class ProfileProfessionalUpdate(BaseModel):
+    area_interes: Optional[str] = None
+    stack_tecnologico: Optional[str] = None
+    experiencia_actual: Optional[str] = None
+    disponibilidad: Optional[str] = None
+    preferencia_jornada: Optional[str] = None
+    linkedin: Optional[str] = None
+    github: Optional[str] = None
+    portfolio: Optional[str] = None
+
+
+class ProfilePreferencesUpdate(BaseModel):
+    idioma_app: Optional[str] = None
+    notificaciones_email: Optional[bool] = None
+    notificaciones_push: Optional[bool] = None
+    visibilidad_profesional: Optional[bool] = None
+    permitir_cv_empleabilidad: Optional[bool] = None
+    permitir_links_profesores: Optional[bool] = None
+    tema: Optional[str] = None
+
+
+class PasswordChangeIn(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class ProfileDocumentOut(BaseModel):
+    id: str
+    nombre: str
+    tipo: str
+    url: str
+    content_type: str
+    estado: str
+    fecha_subida: datetime
+
+
+class ProfileCvOut(BaseModel):
+    nombre: Optional[str] = None
+    url: Optional[str] = None
+    fecha_subida: Optional[datetime] = None
+
+
+class ProfileFullOut(BaseModel):
+    id: str
+    nombre: str
+    apellido: str
+    correo: str
+    rol: str
+    url_foto: Optional[str] = None
+    estado: str
+    programa_area: Optional[str] = None
+    grupo: Optional[str] = None
+    curso_academico: Optional[str] = None
+    promocion: Optional[str] = None
+    campus: Optional[str] = None
+    modalidad: Optional[str] = None
+    coordinador_asignado: Optional[str] = None
+    tutor_academico: Optional[str] = None
+    fecha_inicio: Optional[str] = None
+    fecha_fin_estimada: Optional[str] = None
+    departamento_area: Optional[str] = None
+    asignaturas: List[str] = []
+    especialidad: Optional[str] = None
+    horario_tutorias: Optional[str] = None
+    disponibilidad_contacto: Optional[str] = None
+    programas_coordina: List[str] = []
+    grupos_asignados: List[str] = []
+    area_coordinacion: Optional[str] = None
+    horario_atencion: Optional[str] = None
+    permisos_administrativos: List[str] = []
+    telefono: Optional[str] = None
+    ciudad: Optional[str] = None
+    idioma_preferido: Optional[str] = None
+    contacto_emergencia: Optional[str] = None
+    correo_personal: Optional[str] = None
+    linkedin: Optional[str] = None
+    github: Optional[str] = None
+    portfolio: Optional[str] = None
+    preferencia_contacto: Optional[str] = None
+    area_interes: Optional[str] = None
+    stack_tecnologico: Optional[str] = None
+    experiencia_actual: Optional[str] = None
+    disponibilidad: Optional[str] = None
+    preferencia_jornada: Optional[str] = None
+    cv: ProfileCvOut
+    documentos: List[ProfileDocumentOut]
+    idioma_app: str
+    notificaciones_email: bool
+    notificaciones_push: bool
+    visibilidad_profesional: bool
+    permitir_cv_empleabilidad: bool
+    permitir_links_profesores: bool
+    tema: str
+    ultimo_acceso: Optional[datetime] = None
 
 
 class AlumnoOut(ORMModel):
@@ -196,9 +323,11 @@ class EventOut(ORMModel):
     tipo: str
     titulo: str
     id_bloque: Optional[str] = None
+    bloque_nombre: Optional[str] = None
     id_sesion: Optional[str] = None
     aula: Optional[str] = None
     id_profesor: Optional[str] = None
+    profesor_nombre: Optional[str] = None
     fecha_inicio: datetime
     fecha_fin: datetime
     descripcion: Optional[str] = None
@@ -219,7 +348,178 @@ class GradeOut(BaseModel):
     id_tarea: int
     nombre_tarea: str
     id_bloque: str
-    nota: float
+    nota: Optional[float] = None
+    categoria: str
+    peso: float
+
+
+class TaskOut(ORMModel):
+    id_tarea: int
+    id_bloque: str
+    nombre: str
+    descripcion: Optional[str] = None
+    fecha: Optional[date] = None
+
+
+class GradeRosterRow(BaseModel):
+    id_alumno: str
+    nombre: str
+    apellido: str
+    id_tarea: int
+    nombre_tarea: str
+    id_bloque: str
+    nota: Optional[float] = None
+
+
+GRADE_CATEGORY_WEIGHTS = {
+    "entregables": 20.0,
+    "data_projects": 30.0,
+    "actitud": 10.0,
+    "tfm": 40.0,
+}
+
+
+def clean_grade_task_name(name: str) -> str:
+    cleaned = re.sub(r"^\s*deadline\s+", "", name, flags=re.IGNORECASE)
+    cleaned = re.sub(r"^\s*entrega\s+", "", cleaned, flags=re.IGNORECASE)
+    return " ".join(cleaned.split())
+
+
+def get_grade_category(task: Tarea) -> str:
+    normalized = task.nombre.lower()
+    if "tfm" in normalized:
+        return "tfm"
+    if task.id_tarea in {7, 13, 18} or "dp1" in normalized or "dp2" in normalized or "dp3" in normalized:
+        return "data_projects"
+    return "entregables"
+
+
+def build_grade_out(task: Tarea, nota: Optional[float]) -> GradeOut:
+    category = get_grade_category(task)
+    return GradeOut(
+        id_tarea=task.id_tarea,
+        nombre_tarea=clean_grade_task_name(task.nombre),
+        id_bloque=task.id_bloque,
+        nota=nota,
+        categoria=category,
+        peso=GRADE_CATEGORY_WEIGHTS[category],
+    )
+
+
+def attitude_grade_for_student(student_id: str) -> GradeOut:
+    seed = sum(ord(char) for char in student_id)
+    nota = round(7.4 + ((seed % 9) * 0.2), 2)
+    return GradeOut(
+        id_tarea=-1,
+        nombre_tarea="Actitud y valores",
+        id_bloque="ACTITUD",
+        nota=min(nota, 10.0),
+        categoria="actitud",
+        peso=GRADE_CATEGORY_WEIGHTS["actitud"],
+    )
+
+
+def is_mandatory_attendance_session(session: Sesion) -> bool:
+    if not session.fecha:
+        return False
+    normalized = session.nombre.lower()
+    excluded_fragments = [
+        "tfm",
+        "visita",
+        "empleabilidad",
+        "experiencia internacional",
+        "foto orla",
+    ]
+    return not any(fragment in normalized for fragment in excluded_fragments)
+
+
+def mandatory_attendance_sessions(db: Session, until: Optional[date] = None) -> List[Sesion]:
+    query = db.query(Sesion).filter(Sesion.fecha.isnot(None))
+    if until:
+        query = query.filter(Sesion.fecha < until)
+    return [
+        session
+        for session in query.order_by(Sesion.fecha, Sesion.hora_inicio, Sesion.id_sesion).all()
+        if is_mandatory_attendance_session(session)
+    ]
+
+
+def build_attendance_metrics(db: Session, user_id: str) -> "AttendanceMetricsOut":
+    sessions = mandatory_attendance_sessions(db, date.today())
+    session_ids = [session.id_sesion for session in sessions]
+    records = {
+        record.id_sesion: record
+        for record in db.query(Asistencia)
+        .filter(Asistencia.id_alumno == user_id, Asistencia.id_sesion.in_(session_ids))
+        .all()
+    }
+    total = len(sessions)
+    attended = sum(1 for session_id in session_ids if records.get(session_id) and records[session_id].presente)
+    absences = total - attended
+    percentage = round((attended / total) * 100, 2) if total else 0.0
+    allowed_80 = int(total * 0.2)
+    remaining_80 = max(allowed_80 - absences, 0)
+    if percentage >= 80:
+        grade = 10.0
+        status = "ok"
+    elif percentage >= 50:
+        grade = 5.0
+        status = "warning"
+    else:
+        grade = 0.0
+        status = "critical"
+
+    aviso = None
+    if total:
+        if percentage < 50:
+            aviso = "Has bajado del 50% de asistencia obligatoria."
+        elif percentage < 80:
+            aviso = "Has bajado del 80% de asistencia obligatoria."
+        elif remaining_80 <= 2:
+            aviso = f"Estas rozando el limite del 80%: te quedan {remaining_80} faltas."
+
+    return AttendanceMetricsOut(
+        total_clases=total,
+        clases_asistidas=attended,
+        porcentaje_asistencia=percentage,
+        faltas=absences,
+        faltas_permitidas_80=allowed_80,
+        faltas_restantes_80=remaining_80,
+        nota_asistencia=grade,
+        estado=status,
+        aviso=aviso,
+    )
+
+
+def attendance_grade_for_user(db: Session, user_id: str) -> GradeOut:
+    metrics = build_attendance_metrics(db, user_id)
+    return GradeOut(
+        id_tarea=-2,
+        nombre_tarea="Asistencia",
+        id_bloque="ACTITUD",
+        nota=metrics.nota_asistencia,
+        categoria="actitud",
+        peso=GRADE_CATEGORY_WEIGHTS["actitud"],
+    )
+
+
+def is_visible_grade_task(task: Tarea) -> bool:
+    if not task.fecha or task.fecha > date.today():
+        return False
+    normalized = task.nombre.lower()
+    excluded_fragments = [
+        "ppt",
+        "pptx",
+        "tfm",
+        "experiencia internacional",
+        "confirmación experiencia internacional",
+        "confirmaci",
+    ]
+    if any(fragment in normalized for fragment in excluded_fragments):
+        return False
+    if task.id_tarea in {7, 13, 18}:
+        return True
+    return not any(fragment in normalized for fragment in ["dp1", "dp2", "dp3", "data project", "hito"])
 
 
 class AttendanceCreate(BaseModel):
@@ -227,6 +527,10 @@ class AttendanceCreate(BaseModel):
     id_sesion: str
     fecha: Optional[date] = None
     presente: bool
+
+
+class StudentAttendanceCreate(BaseModel):
+    id_sesion: str
 
 
 class AttendanceOut(ORMModel):
@@ -237,10 +541,26 @@ class AttendanceOut(ORMModel):
     presente: bool
 
 
+class AttendanceRosterRow(BaseModel):
+    id_alumno: str
+    nombre: str
+    apellido: str
+    id_sesion: str
+    fecha: Optional[date] = None
+    presente: Optional[bool] = None
+    id_asistencia: Optional[int] = None
+
+
 class AttendanceMetricsOut(BaseModel):
     total_clases: int
     clases_asistidas: int
     porcentaje_asistencia: float
+    faltas: int
+    faltas_permitidas_80: int
+    faltas_restantes_80: int
+    nota_asistencia: float
+    estado: str
+    aviso: Optional[str] = None
 
 
 class TutoringSlotCreate(BaseModel):
@@ -367,6 +687,13 @@ def verify_password(stored_password: str, provided_password: str) -> bool:
     return stored_password == provided_password
 
 
+def hash_password(password: str) -> str:
+    if bcrypt_lib:
+        salt = bcrypt_lib.gensalt()
+        return bcrypt_lib.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+    return password
+
+
 def _b64url_encode(value: bytes) -> str:
     return base64.urlsafe_b64encode(value).rstrip(b"=").decode("utf-8")
 
@@ -462,6 +789,184 @@ def serialize_profile(user) -> UserProfileOut:
     )
 
 
+def ensure_profile_detail(db: Session, user_id: str) -> PerfilDetalle:
+    detail = db.query(PerfilDetalle).filter(PerfilDetalle.id_usuario == user_id).first()
+    if detail:
+        return detail
+    detail = PerfilDetalle(id_usuario=user_id)
+    db.add(detail)
+    db.commit()
+    db.refresh(detail)
+    return detail
+
+
+def user_upload_dir(user_id: str) -> Path:
+    safe_id = re.sub(r"[^a-zA-Z0-9_.-]", "_", user_id)
+    path = UPLOAD_ROOT / "profiles" / safe_id
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def public_upload_url(path: Path) -> str:
+    relative = path.relative_to(UPLOAD_ROOT).as_posix()
+    return f"{PUBLIC_UPLOAD_PREFIX}/{relative}"
+
+
+def delete_public_upload(url: Optional[str]) -> None:
+    if not url or not url.startswith(f"{PUBLIC_UPLOAD_PREFIX}/"):
+        return
+    target = (UPLOAD_ROOT / url.removeprefix(f"{PUBLIC_UPLOAD_PREFIX}/")).resolve()
+    if UPLOAD_ROOT.resolve() in target.parents and target.exists():
+        target.unlink()
+
+
+def validate_upload(file: UploadFile, allowed_extensions: set[str], allowed_content_types: set[str], max_mb: int) -> str:
+    filename = file.filename or ""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext not in allowed_extensions:
+        raise HTTPException(status_code=422, detail=f"Formato no permitido. Usa: {', '.join(sorted(allowed_extensions))}")
+    if file.content_type not in allowed_content_types:
+        raise HTTPException(status_code=422, detail="Tipo de archivo no permitido.")
+    max_bytes = max_mb * 1024 * 1024
+    file.file.seek(0, os.SEEK_END)
+    size = file.file.tell()
+    file.file.seek(0)
+    if size > max_bytes:
+        raise HTTPException(status_code=413, detail=f"El archivo supera el limite de {max_mb} MB.")
+    return ext
+
+
+def store_upload(user_id: str, file: UploadFile, folder: str, basename: str, ext: str) -> str:
+    target_dir = user_upload_dir(user_id) / folder
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target = target_dir / f"{basename}.{ext}"
+    with target.open("wb") as out:
+        shutil.copyfileobj(file.file, out)
+    return public_upload_url(target)
+
+
+def apply_detail_update(detail: PerfilDetalle, payload: BaseModel, fields: list[str]) -> None:
+    data = model_dump(payload, exclude_unset=True)
+    for field in fields:
+        if field in data:
+            setattr(detail, field, data[field])
+    detail.fecha_actualizacion = datetime.utcnow()
+
+
+def role_display(role: str) -> str:
+    if role == "profesor":
+        return "Profesor"
+    if role == "personal":
+        return "Coordinador"
+    return "Alumno"
+
+
+def serialize_document(document: PerfilDocumento) -> ProfileDocumentOut:
+    return ProfileDocumentOut(
+        id=document.id,
+        nombre=document.nombre,
+        tipo=document.tipo,
+        url=document.url,
+        content_type=document.content_type,
+        estado=document.estado,
+        fecha_subida=document.fecha_subida,
+    )
+
+
+def build_full_profile(db: Session, user) -> ProfileFullOut:
+    user_id = get_user_id(user)
+    role = get_user_role(user)
+    detail = ensure_profile_detail(db, user_id)
+    documents = (
+        db.query(PerfilDocumento)
+        .filter(PerfilDocumento.id_usuario == user_id)
+        .order_by(PerfilDocumento.fecha_subida.desc())
+        .all()
+    )
+
+    common = {
+        "id": user_id,
+        "nombre": user.nombre,
+        "apellido": get_user_last_name(user),
+        "correo": user.correo,
+        "rol": role_display(role),
+        "url_foto": user.url_foto or None,
+        "estado": detail.estado,
+        "telefono": detail.telefono,
+        "ciudad": detail.ciudad,
+        "idioma_preferido": detail.idioma_preferido,
+        "contacto_emergencia": detail.contacto_emergencia,
+        "correo_personal": detail.correo_personal,
+        "linkedin": detail.linkedin,
+        "github": detail.github,
+        "portfolio": detail.portfolio,
+        "preferencia_contacto": detail.preferencia_contacto,
+        "area_interes": detail.area_interes,
+        "stack_tecnologico": detail.stack_tecnologico,
+        "experiencia_actual": detail.experiencia_actual,
+        "disponibilidad": detail.disponibilidad,
+        "preferencia_jornada": detail.preferencia_jornada,
+        "cv": ProfileCvOut(nombre=detail.cv_nombre, url=detail.cv_url, fecha_subida=detail.cv_fecha_subida),
+        "documentos": [serialize_document(document) for document in documents],
+        "idioma_app": detail.idioma_app,
+        "notificaciones_email": detail.notificaciones_email,
+        "notificaciones_push": detail.notificaciones_push,
+        "visibilidad_profesional": detail.visibilidad_profesional,
+        "permitir_cv_empleabilidad": detail.permitir_cv_empleabilidad,
+        "permitir_links_profesores": detail.permitir_links_profesores,
+        "tema": detail.tema,
+        "ultimo_acceso": detail.ultimo_acceso,
+    }
+
+    if role == "alumno":
+        group_names = [rel.id_grupo for rel in db.query(RelAlumnosGrupos).filter(RelAlumnosGrupos.id_alumno == user_id).all()]
+        coordinator = None
+        if group_names:
+            coordinator_link = db.query(RelCoordinadoresGrupos).filter(RelCoordinadoresGrupos.id_grupo == group_names[0]).first()
+            if coordinator_link:
+                coordinator = db.query(Coordinador).filter(Coordinador.id_coordinador == coordinator_link.id_coordinador).first()
+        return ProfileFullOut(
+            **common,
+            programa_area="Master Big Data & Cloud",
+            grupo=user.grupo or (group_names[0] if group_names else None),
+            curso_academico="2025-26",
+            promocion="MDA 2025-26",
+            campus="EDEM Escuela de Empresarios",
+            modalidad="Presencial",
+            coordinador_asignado=f"{coordinator.nombre} {coordinator.apellido}" if coordinator else None,
+            tutor_academico="Pedro Nieto Pelaez",
+            fecha_inicio="2025-09-29",
+            fecha_fin_estimada="17-07-2026",
+        )
+
+    if role == "profesor":
+        block_ids = [rel.id_bloque for rel in db.query(RelProfesoresBloques).filter(RelProfesoresBloques.id_profesor == user_id).all()]
+        blocks = db.query(Bloque).filter(Bloque.id_bloque.in_(block_ids)).all() if block_ids else []
+        slots = db.query(FranjaTutoria).filter(FranjaTutoria.id_profesor == user_id).order_by(FranjaTutoria.dia_semana, FranjaTutoria.hora_inicio).all()
+        schedule = ", ".join(f"Dia {slot.dia_semana} {slot.hora_inicio.strftime('%H:%M')}-{slot.hora_fin.strftime('%H:%M')}" for slot in slots) or None
+        return ProfileFullOut(
+            **common,
+            programa_area="Docencia",
+            departamento_area="Data & AI",
+            asignaturas=[block.nombre for block in blocks],
+            especialidad=detail.area_interes or "Data Analytics",
+            horario_tutorias=schedule,
+            disponibilidad_contacto=detail.preferencia_contacto or "email",
+        )
+
+    group_ids = [rel.id_grupo for rel in db.query(RelCoordinadoresGrupos).filter(RelCoordinadoresGrupos.id_coordinador == user_id).all()]
+    programs = sorted({group.split()[0] for group in group_ids}) if group_ids else []
+    return ProfileFullOut(
+        **common,
+        programa_area="Coordinacion academica",
+        programas_coordina=programs,
+        grupos_asignados=group_ids,
+        area_coordinacion="Programas Data",
+        horario_atencion="Lunes a viernes, 9:00-18:00",
+        permisos_administrativos=["Documentacion", "Asistencia", "Notas", "Calendario"],
+    )
+
+
 def find_user_by_id(db: Session, user_id: str):
     user = db.query(Alumno).filter(Alumno.id_alumno == user_id).first()
     if user:
@@ -505,6 +1010,29 @@ def enrich_event_block(session: Session, event_payload: dict) -> dict:
         if not event_payload.get("aula"):
             event_payload["aula"] = sesion.aula
     return event_payload
+
+
+def serialize_calendar_event(db: Session, event: Evento) -> EventOut:
+    block = db.query(Bloque).filter(Bloque.id_bloque == event.id_bloque).first() if event.id_bloque else None
+    professor = (
+        db.query(Profesor).filter(Profesor.id_profesor == event.id_profesor).first()
+        if event.id_profesor
+        else None
+    )
+    return EventOut(
+        id=event.id,
+        tipo=event.tipo,
+        titulo=event.titulo,
+        id_bloque=event.id_bloque,
+        bloque_nombre=block.nombre if block else None,
+        id_sesion=event.id_sesion,
+        aula=event.aula,
+        id_profesor=event.id_profesor,
+        profesor_nombre=f"{professor.nombre} {professor.apellido}" if professor else None,
+        fecha_inicio=event.fecha_inicio,
+        fecha_fin=event.fecha_fin,
+        descripcion=event.descripcion,
+    )
 
 
 async def get_current_user(
@@ -615,24 +1143,17 @@ def update_my_profile(
     return {"mensaje": "Perfil actualizado correctamente"}
 
 
-GCS_BUCKET = "project3grupo6-photos"
-
 @app.put("/api/v1/users/me/photo", tags=["Perfil y Roles"])
 def upload_my_photo(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    from google.cloud import storage as gcs_client
     user_id = get_user_id(current_user)
-    ext = (file.filename or "jpg").rsplit(".", 1)[-1].lower()
-    blob_name = f"fotos/{user_id}.{ext}"
-    client = gcs_client.Client()
-    bucket = client.bucket(GCS_BUCKET)
-    blob = bucket.blob(blob_name)
-    blob.upload_from_file(file.file, content_type=file.content_type)
-    public_url = f"https://storage.googleapis.com/{GCS_BUCKET}/{blob_name}"
-    current_user.url_foto = public_url
+    ext = validate_upload(file, {"jpg", "jpeg", "png", "webp"}, {"image/jpeg", "image/png", "image/webp"}, 5)
+    delete_public_upload(current_user.url_foto)
+    current_user.url_foto = store_upload(user_id, file, "avatar", "avatar", ext)
+    public_url = current_user.url_foto
     db.commit()
     db.refresh(current_user)
     return {"mensaje": "Foto subida con éxito", "url_foto": public_url}
@@ -642,18 +1163,252 @@ def delete_my_photo(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    if current_user.url_foto:
-        try:
-            from google.cloud import storage as gcs_client
-            client = gcs_client.Client()
-            bucket = client.bucket(GCS_BUCKET)
-            blob_name = current_user.url_foto.split(f"{GCS_BUCKET}/")[-1]
-            bucket.blob(blob_name).delete()
-        except Exception:
-            pass
+    delete_public_upload(current_user.url_foto)
     current_user.url_foto = None
     db.commit()
     return {"mensaje": "Foto eliminada correctamente"}
+
+@app.get("/api/profile/me", response_model=ProfileFullOut, tags=["Perfil"])
+def get_my_full_profile(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    detail = ensure_profile_detail(db, user_id)
+    detail.ultimo_acceso = datetime.utcnow()
+    db.commit()
+    return build_full_profile(db, current_user)
+
+
+@app.put("/api/profile/me/personal", response_model=ProfileFullOut, tags=["Perfil"])
+def update_profile_personal(
+    payload: ProfilePersonalUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    data = model_dump(payload, exclude_unset=True)
+    if "nombre" in data:
+        current_user.nombre = data["nombre"]
+    if "apellido" in data:
+        current_user.apellido = data["apellido"]
+    detail = ensure_profile_detail(db, get_user_id(current_user))
+    apply_detail_update(detail, payload, ["telefono", "ciudad", "idioma_preferido", "contacto_emergencia"])
+    db.commit()
+    db.refresh(current_user)
+    return build_full_profile(db, current_user)
+
+
+@app.put("/api/profile/me/contact", response_model=ProfileFullOut, tags=["Perfil"])
+def update_profile_contact(
+    payload: ProfileContactUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    detail = ensure_profile_detail(db, get_user_id(current_user))
+    apply_detail_update(detail, payload, ["correo_personal", "telefono", "linkedin", "github", "portfolio", "preferencia_contacto"])
+    db.commit()
+    return build_full_profile(db, current_user)
+
+
+@app.put("/api/profile/me/professional", response_model=ProfileFullOut, tags=["Perfil"])
+def update_profile_professional(
+    payload: ProfileProfessionalUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    detail = ensure_profile_detail(db, get_user_id(current_user))
+    apply_detail_update(
+        detail,
+        payload,
+        ["area_interes", "stack_tecnologico", "experiencia_actual", "disponibilidad", "preferencia_jornada", "linkedin", "github", "portfolio"],
+    )
+    db.commit()
+    return build_full_profile(db, current_user)
+
+
+@app.put("/api/profile/me/preferences", response_model=ProfileFullOut, tags=["Perfil"])
+def update_profile_preferences(
+    payload: ProfilePreferencesUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    detail = ensure_profile_detail(db, get_user_id(current_user))
+    apply_detail_update(
+        detail,
+        payload,
+        ["idioma_app", "notificaciones_email", "notificaciones_push", "visibilidad_profesional", "permitir_cv_empleabilidad", "permitir_links_profesores", "tema"],
+    )
+    db.commit()
+    return build_full_profile(db, current_user)
+
+
+@app.post("/api/profile/me/avatar", response_model=UserProfileOut, tags=["Perfil"])
+def upload_profile_avatar(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    ext = validate_upload(file, {"jpg", "jpeg", "png", "webp"}, {"image/jpeg", "image/png", "image/webp"}, 5)
+    delete_public_upload(current_user.url_foto)
+    current_user.url_foto = store_upload(user_id, file, "avatar", "avatar", ext)
+    public_url = current_user.url_foto
+    db.commit()
+    db.refresh(current_user)
+    return serialize_profile(current_user)
+
+
+@app.delete("/api/profile/me/avatar", tags=["Perfil"])
+def delete_profile_avatar(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    delete_public_upload(current_user.url_foto)
+    current_user.url_foto = None
+    db.commit()
+    return {"mensaje": "Foto eliminada correctamente"}
+
+
+@app.post("/api/profile/me/cv", response_model=ProfileFullOut, tags=["Perfil"])
+def upload_my_cv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    detail = ensure_profile_detail(db, user_id)
+    ext = validate_upload(file, {"pdf"}, {"application/pdf"}, 10)
+    delete_public_upload(detail.cv_url)
+    detail.cv_url = store_upload(user_id, file, "cv", "cv", ext)
+    detail.cv_nombre = file.filename or "cv.pdf"
+    detail.cv_fecha_subida = datetime.utcnow()
+    detail.fecha_actualizacion = datetime.utcnow()
+    db.commit()
+    return build_full_profile(db, current_user)
+
+
+@app.delete("/api/profile/me/cv", response_model=ProfileFullOut, tags=["Perfil"])
+def delete_my_cv(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    detail = ensure_profile_detail(db, get_user_id(current_user))
+    delete_public_upload(detail.cv_url)
+    detail.cv_url = None
+    detail.cv_nombre = None
+    detail.cv_fecha_subida = None
+    detail.fecha_actualizacion = datetime.utcnow()
+    db.commit()
+    return build_full_profile(db, current_user)
+
+
+@app.get("/api/profile/me/documents", response_model=List[ProfileDocumentOut], tags=["Perfil"])
+def list_my_documents(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    documents = db.query(PerfilDocumento).filter(PerfilDocumento.id_usuario == user_id).order_by(PerfilDocumento.fecha_subida.desc()).all()
+    return [serialize_document(document) for document in documents]
+
+
+@app.post("/api/profile/me/documents", response_model=ProfileDocumentOut, tags=["Perfil"], status_code=201)
+def upload_my_document(
+    tipo: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    ext = validate_upload(file, {"pdf", "jpg", "jpeg", "png"}, {"application/pdf", "image/jpeg", "image/png"}, 10)
+    document_id = str(uuid.uuid4())
+    document = PerfilDocumento(
+        id=document_id,
+        id_usuario=user_id,
+        nombre=file.filename or f"documento.{ext}",
+        tipo=tipo,
+        url=store_upload(user_id, file, "documents", document_id, ext),
+        content_type=file.content_type or "application/octet-stream",
+        estado="Subido",
+    )
+    db.add(document)
+    db.commit()
+    db.refresh(document)
+    return serialize_document(document)
+
+
+@app.put("/api/profile/me/documents/{document_id}", response_model=ProfileDocumentOut, tags=["Perfil"])
+def replace_my_document(
+    document_id: str,
+    tipo: Optional[str] = None,
+    file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    document = db.query(PerfilDocumento).filter(PerfilDocumento.id == document_id, PerfilDocumento.id_usuario == user_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    if tipo:
+        document.tipo = tipo
+    if file:
+        ext = validate_upload(file, {"pdf", "jpg", "jpeg", "png"}, {"application/pdf", "image/jpeg", "image/png"}, 10)
+        delete_public_upload(document.url)
+        document.url = store_upload(user_id, file, "documents", document.id, ext)
+        document.nombre = file.filename or document.nombre
+        document.content_type = file.content_type or document.content_type
+        document.estado = "Subido"
+        document.fecha_subida = datetime.utcnow()
+    db.commit()
+    db.refresh(document)
+    return serialize_document(document)
+
+
+@app.delete("/api/profile/me/documents/{document_id}", tags=["Perfil"])
+def delete_my_document(
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    document = db.query(PerfilDocumento).filter(PerfilDocumento.id == document_id, PerfilDocumento.id_usuario == user_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    delete_public_upload(document.url)
+    db.delete(document)
+    db.commit()
+    return {"mensaje": "Documento eliminado correctamente"}
+
+
+@app.put("/api/profile/me/security/password", tags=["Perfil"])
+def change_my_password(
+    payload: PasswordChangeIn,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    if not verify_password(current_user.contrasena, payload.current_password):
+        raise HTTPException(status_code=400, detail="La contrasena actual no es correcta")
+    if len(payload.new_password) < 8:
+        raise HTTPException(status_code=422, detail="La nueva contrasena debe tener al menos 8 caracteres")
+    current_user.contrasena = hash_password(payload.new_password)
+    db.commit()
+    return {"mensaje": "Contrasena actualizada correctamente"}
+
+
+@app.get("/api/profile/me/documents/{document_id}/download", tags=["Perfil"])
+def download_my_document(
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    document = db.query(PerfilDocumento).filter(PerfilDocumento.id == document_id, PerfilDocumento.id_usuario == user_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    target = (UPLOAD_ROOT / document.url.removeprefix(f"{PUBLIC_UPLOAD_PREFIX}/")).resolve()
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    return FileResponse(target, media_type=document.content_type, filename=document.nombre)
 
 @app.get("/api/v1/users/{user_id}", response_model=UserProfileOut, tags=["Perfil y Roles"])
 def get_user_profile(
@@ -682,7 +1437,7 @@ def list_events(
         query = query.filter(Evento.id_bloque == id_bloque)
     if id_sesion:
         query = query.filter(Evento.id_sesion == id_sesion)
-    return query.order_by(Evento.fecha_inicio).all()
+    return [serialize_calendar_event(db, event) for event in query.order_by(Evento.fecha_inicio).all()]
 
 
 @app.post("/api/v1/calendar/events", response_model=EventOut, tags=["Calendario"], status_code=201)
@@ -696,7 +1451,7 @@ def create_event(
     db.add(event)
     db.commit()
     db.refresh(event)
-    return event
+    return serialize_calendar_event(db, event)
 
 
 @app.get("/api/v1/calendar/events/{event_id}", response_model=EventOut, tags=["Calendario"])
@@ -708,7 +1463,7 @@ def get_event(
     event = db.query(Evento).filter(Evento.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Evento no encontrado")
-    return event
+    return serialize_calendar_event(db, event)
 
 
 @app.put("/api/v1/calendar/events/{event_id}", response_model=EventOut, tags=["Calendario"])
@@ -1059,26 +1814,50 @@ def list_session_students(
     ]
 
 
+@app.get("/api/v1/blocks/{block_id}/tasks", response_model=List[TaskOut], tags=["Notas"])
+def list_block_tasks(
+    block_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    block = db.query(Bloque).filter(Bloque.id_bloque == block_id).first()
+    if not block:
+        raise HTTPException(status_code=404, detail="Bloque no encontrado")
+    return (
+        db.query(Tarea)
+        .filter(Tarea.id_bloque == block_id)
+        .order_by(Tarea.fecha, Tarea.id_tarea)
+        .all()
+    )
+
+
 @app.get("/api/v1/grades/me", response_model=List[GradeOut], tags=["Notas"])
 def list_my_grades(
     db: Session = Depends(get_db),
     current_user=Depends(require_student),
 ):
-    rows = (
-        db.query(RelAlumnoTarea, Tarea)
-        .join(Tarea, Tarea.id_tarea == RelAlumnoTarea.id_tarea)
-        .filter(RelAlumnoTarea.id_alumno == current_user.id_alumno)
+    tasks = (
+        db.query(Tarea)
+        .join(RelBloquesGrupos, RelBloquesGrupos.id_bloque == Tarea.id_bloque)
+        .join(RelAlumnosGrupos, RelAlumnosGrupos.id_grupo == RelBloquesGrupos.id_grupo)
+        .filter(RelAlumnosGrupos.id_alumno == current_user.id_alumno)
+        .order_by(Tarea.fecha, Tarea.id_tarea)
         .all()
     )
-    return [
-        GradeOut(
-            id_tarea=task.id_tarea,
-            nombre_tarea=task.nombre,
-            id_bloque=task.id_bloque,
-            nota=grade.nota,
-        )
-        for grade, task in rows
+    grade_map = {
+        grade.id_tarea: grade.nota
+        for grade in db.query(RelAlumnoTarea)
+        .filter(RelAlumnoTarea.id_alumno == current_user.id_alumno)
+        .all()
+    }
+    grades = [
+        build_grade_out(task, grade_map.get(task.id_tarea))
+        for task in tasks
+        if is_visible_grade_task(task)
     ]
+    grades.append(attendance_grade_for_user(db, current_user.id_alumno))
+    grades.append(attitude_grade_for_student(current_user.id_alumno))
+    return grades
 
 
 @app.get("/api/v1/grades/me/blocks/{block_id}", response_model=List[GradeOut], tags=["Notas"])
@@ -1087,20 +1866,63 @@ def list_my_grades_for_block(
     db: Session = Depends(get_db),
     current_user=Depends(require_student),
 ):
-    rows = (
-        db.query(RelAlumnoTarea, Tarea)
-        .join(Tarea, Tarea.id_tarea == RelAlumnoTarea.id_tarea)
-        .filter(RelAlumnoTarea.id_alumno == current_user.id_alumno, Tarea.id_bloque == block_id)
+    tasks = (
+        db.query(Tarea)
+        .filter(Tarea.id_bloque == block_id)
+        .order_by(Tarea.fecha, Tarea.id_tarea)
         .all()
     )
+    grade_map = {
+        grade.id_tarea: grade.nota
+        for grade in db.query(RelAlumnoTarea)
+        .filter(RelAlumnoTarea.id_alumno == current_user.id_alumno)
+        .all()
+    }
+    grades = [
+        build_grade_out(task, grade_map.get(task.id_tarea))
+        for task in tasks
+        if is_visible_grade_task(task)
+    ]
+    if block_id == "ACTITUD":
+        grades.append(attendance_grade_for_user(db, current_user.id_alumno))
+        grades.append(attitude_grade_for_student(current_user.id_alumno))
+    return grades
+
+
+@app.get("/api/v1/grades/tasks/{task_id}", response_model=List[GradeRosterRow], tags=["Notas"])
+def list_task_grades(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_professor_or_staff),
+):
+    task = db.query(Tarea).filter(Tarea.id_tarea == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+
+    students = (
+        db.query(Alumno)
+        .join(RelAlumnosGrupos, RelAlumnosGrupos.id_alumno == Alumno.id_alumno)
+        .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
+        .filter(RelBloquesGrupos.id_bloque == task.id_bloque)
+        .distinct()
+        .order_by(Alumno.nombre, Alumno.apellido1)
+        .all()
+    )
+    grades = {
+        grade.id_alumno: grade.nota
+        for grade in db.query(RelAlumnoTarea).filter(RelAlumnoTarea.id_tarea == task_id).all()
+    }
     return [
-        GradeOut(
+        GradeRosterRow(
+            id_alumno=student.id_alumno,
+            nombre=student.nombre,
+            apellido=student.apellido,
             id_tarea=task.id_tarea,
             nombre_tarea=task.nombre,
             id_bloque=task.id_bloque,
-            nota=grade.nota,
+            nota=grades.get(student.id_alumno),
         )
-        for grade, task in rows
+        for student in students
     ]
 
 
@@ -1110,6 +1932,8 @@ def create_grade(
     db: Session = Depends(get_db),
     current_user=Depends(require_professor_or_staff),
 ):
+    if grade_in.nota < 0 or grade_in.nota > 10:
+        raise HTTPException(status_code=422, detail="La nota debe estar entre 0 y 10")
     if not db.query(Alumno).filter(Alumno.id_alumno == grade_in.id_alumno).first():
         raise HTTPException(status_code=404, detail="Alumno no encontrado")
     task = db.query(Tarea).filter(Tarea.id_tarea == grade_in.id_tarea).first()
@@ -1139,6 +1963,8 @@ def update_grade(
     db: Session = Depends(get_db),
     current_user=Depends(require_professor_or_staff),
 ):
+    if grade_in.nota < 0 or grade_in.nota > 10:
+        raise HTTPException(status_code=422, detail="La nota debe estar entre 0 y 10")
     grade = db.query(RelAlumnoTarea).filter(
         RelAlumnoTarea.id_alumno == grade_in.id_alumno,
         RelAlumnoTarea.id_tarea == tarea_id,
@@ -1153,11 +1979,12 @@ def update_grade(
 @app.get("/api/v1/attendance/me", response_model=List[AttendanceOut], tags=["Asistencia"])
 def list_my_attendance(
     db: Session = Depends(get_db),
-    current_user=Depends(require_student),
+    current_user=Depends(get_current_user),
 ):
+    user_id = get_user_id(current_user)
     return (
         db.query(Asistencia)
-        .filter(Asistencia.id_alumno == current_user.id_alumno)
+        .filter(Asistencia.id_alumno == user_id)
         .order_by(Asistencia.fecha)
         .all()
     )
@@ -1166,24 +1993,34 @@ def list_my_attendance(
 @app.get("/api/v1/attendance/me/metrics", response_model=AttendanceMetricsOut, tags=["Asistencia"])
 def get_my_attendance_metrics(
     db: Session = Depends(get_db),
-    current_user=Depends(require_student),
+    current_user=Depends(get_current_user),
 ):
-    records = db.query(Asistencia).filter(Asistencia.id_alumno == current_user.id_alumno).all()
-    total = len(records)
-    attended = sum(1 for record in records if record.presente)
-    percentage = round((attended / total) * 100, 2) if total else 0.0
-    return AttendanceMetricsOut(
-        total_clases=total,
-        clases_asistidas=attended,
-        porcentaje_asistencia=percentage,
-    )
+    user_id = get_user_id(current_user)
+    metrics = build_attendance_metrics(db, user_id)
+    if metrics.aviso:
+        existing = db.query(Notificacion).filter(
+            Notificacion.id_usuario == user_id,
+            Notificacion.tipo == "attendance",
+            Notificacion.titulo == "Aviso de asistencia",
+            Notificacion.leida == False,  # noqa: E712
+        ).first()
+        if not existing:
+            db.add(Notificacion(
+                id=str(uuid.uuid4()),
+                id_usuario=user_id,
+                tipo="attendance",
+                titulo="Aviso de asistencia",
+                mensaje=metrics.aviso,
+            ))
+            db.commit()
+    return metrics
 
 
 @app.post("/api/v1/attendance", response_model=AttendanceOut, tags=["Asistencia"], status_code=201)
 def upsert_attendance(
     attendance_in: AttendanceCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(require_professor_or_staff),
+    current_user=Depends(require_staff),
 ):
     if not db.query(Alumno).filter(Alumno.id_alumno == attendance_in.id_alumno).first():
         raise HTTPException(status_code=404, detail="Alumno no encontrado")
@@ -1212,6 +2049,63 @@ def upsert_attendance(
     return record
 
 
+@app.post("/api/v1/attendance/me/check-in", response_model=AttendanceOut, tags=["Asistencia"], status_code=201)
+def student_check_in(
+    attendance_in: StudentAttendanceCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    session_row = db.query(Sesion).filter(Sesion.id_sesion == attendance_in.id_sesion).first()
+    if not session_row:
+        raise HTTPException(status_code=404, detail="Sesion no encontrada")
+
+    if not is_mandatory_attendance_session(session_row):
+        raise HTTPException(status_code=403, detail="Esta sesion no computa para asistencia")
+
+    role = get_user_role(current_user)
+    user_id = get_user_id(current_user)
+    if role == "alumno":
+        belongs_to_session_block = (
+            db.query(RelAlumnosGrupos)
+            .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
+            .filter(
+                RelAlumnosGrupos.id_alumno == user_id,
+                RelBloquesGrupos.id_bloque == session_row.id_bloque,
+            )
+            .first()
+        )
+    elif role == "profesor":
+        belongs_to_session_block = db.query(RelProfesoresBloques).filter(
+            RelProfesoresBloques.id_profesor == user_id,
+            RelProfesoresBloques.id_bloque == session_row.id_bloque,
+        ).first()
+    else:
+        belongs_to_session_block = db.query(RelCoordinadoresGrupos).first()
+
+    if not belongs_to_session_block:
+        raise HTTPException(status_code=403, detail="No puedes registrar asistencia en esta sesion")
+
+    attendance_date = session_row.fecha or date.today()
+    record = db.query(Asistencia).filter(
+        Asistencia.id_alumno == user_id,
+        Asistencia.id_sesion == session_row.id_sesion,
+    ).first()
+    if record:
+        record.fecha = attendance_date
+        record.presente = True
+    else:
+        record = Asistencia(
+            id_alumno=user_id,
+            id_sesion=session_row.id_sesion,
+            fecha=attendance_date,
+            presente=True,
+        )
+        db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
 @app.get("/api/v1/attendance/sessions/{session_id}", response_model=List[AttendanceOut], tags=["Asistencia"])
 def list_session_attendance(
     session_id: str,
@@ -1224,6 +2118,43 @@ def list_session_attendance(
         .order_by(Asistencia.id_alumno)
         .all()
     )
+
+
+@app.get("/api/v1/attendance/sessions/{session_id}/roster", response_model=List[AttendanceRosterRow], tags=["Asistencia"])
+def list_session_attendance_roster(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_staff),
+):
+    session_row = db.query(Sesion).filter(Sesion.id_sesion == session_id).first()
+    if not session_row:
+        raise HTTPException(status_code=404, detail="Sesion no encontrada")
+
+    students = (
+        db.query(Alumno)
+        .join(RelAlumnosGrupos, RelAlumnosGrupos.id_alumno == Alumno.id_alumno)
+        .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
+        .filter(RelBloquesGrupos.id_bloque == session_row.id_bloque)
+        .distinct()
+        .order_by(Alumno.nombre, Alumno.apellido1)
+        .all()
+    )
+    attendance_records = {
+        record.id_alumno: record
+        for record in db.query(Asistencia).filter(Asistencia.id_sesion == session_id).all()
+    }
+    return [
+        AttendanceRosterRow(
+            id_alumno=student.id_alumno,
+            nombre=student.nombre,
+            apellido=student.apellido,
+            id_sesion=session_id,
+            fecha=attendance_records[student.id_alumno].fecha if student.id_alumno in attendance_records else session_row.fecha,
+            presente=attendance_records[student.id_alumno].presente if student.id_alumno in attendance_records else None,
+            id_asistencia=attendance_records[student.id_alumno].id_asistencia if student.id_alumno in attendance_records else None,
+        )
+        for student in students
+    ]
 
 
 @app.get("/api/v1/tutorings/slots", response_model=List[TutoringSlotOut], tags=["Reservas y Tutorias"])

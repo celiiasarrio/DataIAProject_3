@@ -53,10 +53,10 @@ class Settings(BaseSettings):
             cloud_sql_host = self.CLOUD_SQL_CONNECTION_NAME
             if not cloud_sql_host.startswith("/cloudsql/"):
                 cloud_sql_host = f"/cloudsql/{cloud_sql_host}"
-            return f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PASSWORD}@/{self.DB_NAME}?host={cloud_sql_host}"
-        
+            return f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PASSWORD}@/{self.DB_NAME}?host={cloud_sql_host}&client_encoding=utf8"
+
         # Modo 2: Conexión directa por host/puerto (desarrollo local o IP pública)
-        return f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        return f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?client_encoding=utf8"
 
     @property
     def jwt_secret(self) -> str:

@@ -8,9 +8,13 @@ resource "google_sql_database_instance" "edem_db_instance" {
     tier = "db-f1-micro"
     ip_configuration {
       ipv4_enabled = true
+      authorized_networks {
+        name  = "Allow all"
+        value = "0.0.0.0/0"
+      }
     }
   }
-  deletion_protection = false
+  deletion_protection = true
 }
 
 # Base de datos
@@ -19,9 +23,9 @@ resource "google_sql_database" "edem_database" {
   instance = google_sql_database_instance.edem_db_instance.name
 }
 
-# DB User
-resource "google_sql_user" "edem_db_user" {
-  name     = var.db_user
-  instance = google_sql_database_instance.edem_db_instance.name
-  password = var.db_password
-}
+# DB User - COMENTADO TEMPORALMENTE (crear manualmente después del despliegue)
+# resource "google_sql_user" "edem_db_user" {
+#   name     = var.db_user
+#   instance = google_sql_database_instance.edem_db_instance.name
+#   password = var.db_password
+# }

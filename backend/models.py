@@ -108,7 +108,7 @@ class Asistencia(Base):
     )
 
     id_asistencia = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    id_alumno = Column(String, ForeignKey("alumnos.id_alumno"), nullable=False, index=True)
+    id_alumno = Column(String, nullable=False, index=True)
     id_sesion = Column(String, ForeignKey("sesiones.id_sesion"), nullable=False, index=True)
     fecha = Column(Date, nullable=True)
     presente = Column(Boolean, nullable=False, default=True)
@@ -213,6 +213,52 @@ class ConfiguracionNotificacion(Base):
     avisos_calendario = Column(Boolean, default=True, nullable=False)
     avisos_notas = Column(Boolean, default=True, nullable=False)
     avisos_asistencia = Column(Boolean, default=True, nullable=False)
+
+
+class PerfilDetalle(Base):
+    __tablename__ = "perfil_detalles"
+
+    id_usuario = Column(String, primary_key=True, index=True)
+    telefono = Column(String, nullable=True)
+    ciudad = Column(String, nullable=True)
+    idioma_preferido = Column(String, nullable=True)
+    contacto_emergencia = Column(String, nullable=True)
+    correo_personal = Column(String, nullable=True)
+    linkedin = Column(String, nullable=True)
+    github = Column(String, nullable=True)
+    portfolio = Column(String, nullable=True)
+    preferencia_contacto = Column(String, nullable=True)
+    area_interes = Column(String, nullable=True)
+    stack_tecnologico = Column(Text, nullable=True)
+    experiencia_actual = Column(Text, nullable=True)
+    disponibilidad = Column(String, nullable=True)
+    preferencia_jornada = Column(String, nullable=True)
+    cv_url = Column(String, nullable=True)
+    cv_nombre = Column(String, nullable=True)
+    cv_fecha_subida = Column(DateTime, nullable=True)
+    idioma_app = Column(String, default="es", nullable=False)
+    notificaciones_email = Column(Boolean, default=True, nullable=False)
+    notificaciones_push = Column(Boolean, default=True, nullable=False)
+    visibilidad_profesional = Column(Boolean, default=True, nullable=False)
+    permitir_cv_empleabilidad = Column(Boolean, default=True, nullable=False)
+    permitir_links_profesores = Column(Boolean, default=True, nullable=False)
+    tema = Column(String, default="claro", nullable=False)
+    estado = Column(String, default="Activo", nullable=False)
+    ultimo_acceso = Column(DateTime, nullable=True)
+    fecha_actualizacion = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class PerfilDocumento(Base):
+    __tablename__ = "perfil_documentos"
+
+    id = Column(String, primary_key=True, index=True)
+    id_usuario = Column(String, nullable=False, index=True)
+    nombre = Column(String, nullable=False)
+    tipo = Column(String, nullable=False)
+    url = Column(String, nullable=False)
+    content_type = Column(String, nullable=False)
+    estado = Column(String, default="Subido", nullable=False)
+    fecha_subida = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 class Correo(Base):

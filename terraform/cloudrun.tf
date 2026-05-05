@@ -10,12 +10,6 @@ resource "google_service_account" "backend_sa" {
   display_name = "Service Account para Backend Cloud Run"
 }
 
-# Service Account for Firestore
-resource "google_service_account" "firestore_sa" {
-  account_id   = "${var.app_name}-firestore-sa"
-  display_name = "Service Account para Firestore"
-}
-
 # Service Account for agent
 resource "google_service_account" "agent_sa" {
   account_id   = "${var.app_name}-agent-sa"
@@ -36,7 +30,7 @@ resource "google_cloud_run_v2_service" "frontend" {
     }
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker.repository_id}/frontend:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/docker-repo/frontend:latest"
 
       resources {
         limits = {
@@ -92,7 +86,7 @@ resource "google_cloud_run_v2_service" "backend" {
     }
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker.repository_id}/backend:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/docker-repo/backend:latest"
 
       resources {
         limits = {
@@ -135,6 +129,16 @@ resource "google_cloud_run_v2_service" "backend" {
         value = "/cloudsql/${google_sql_database_instance.edem_db_instance.connection_name}"
       }
 
+      env {
+        name  = "UPLOAD_ROOT"
+        value = "gs://${google_storage_bucket.uploads.name}/uploads"
+      }
+
+      env {
+        name  = "PUBLIC_UPLOAD_PREFIX"
+        value = "https://storage.googleapis.com/${google_storage_bucket.uploads.name}/uploads"
+      }
+
       volume_mounts {
         name       = "cloudsql"
         mount_path = "/cloudsql"
@@ -166,7 +170,7 @@ resource "google_cloud_run_v2_service" "agent" {
     }
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker.repository_id}/agent:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/docker-repo/agent:latest"
 
       resources {
         limits = {
@@ -214,10 +218,10 @@ resource "google_cloud_run_v2_service" "agent" {
         value = var.project_id
       }
 
-      env {
-        name  = "FIRESTORE_DATABASE"
-        value = google_firestore_database.database.name
-      }
+      # env {
+      #   name  = "FIRESTORE_DATABASE"
+      #   value = google_firestore_database.database.name
+      # }
     }
   }
 

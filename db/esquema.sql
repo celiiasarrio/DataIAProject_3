@@ -1,11 +1,11 @@
--- Esquema canónico del backend FastAPI.
--- Bloque = módulo docente amplio.
+-- Esquema canonico del backend FastAPI.
+-- Bloque = modulo docente amplio.
 -- Sesion = clase concreta con fecha, hora y aula.
 
 CREATE TABLE IF NOT EXISTS alumnos (
     id_alumno VARCHAR PRIMARY KEY,
     nombre VARCHAR,
-    apellido VARCHAR,
+    apellido1 VARCHAR,
     apellido2 VARCHAR,
     correo VARCHAR NOT NULL UNIQUE,
     contrasena VARCHAR NOT NULL,
@@ -69,7 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_sesiones_fecha ON sesiones(fecha);
 CREATE TABLE IF NOT EXISTS ubicaciones (
     id_ubicacion VARCHAR PRIMARY KEY,
     descripcion TEXT NOT NULL,
-    planta VARCHAR,
+    planta INT,
     aula VARCHAR
 );
 
@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS tareas (
     id_tarea SERIAL PRIMARY KEY,
     id_bloque VARCHAR NOT NULL REFERENCES bloques(id_bloque),
     nombre VARCHAR NOT NULL,
+    descripcion TEXT,
     fecha DATE
 );
 
@@ -115,7 +116,7 @@ CREATE TABLE IF NOT EXISTS rel_alumno_tarea (
 
 CREATE TABLE IF NOT EXISTS asistencia (
     id_asistencia SERIAL PRIMARY KEY,
-    id_alumno VARCHAR NOT NULL REFERENCES alumnos(id_alumno),
+    id_alumno VARCHAR NOT NULL,
     id_sesion VARCHAR NOT NULL REFERENCES sesiones(id_sesion),
     fecha DATE,
     presente BOOLEAN NOT NULL,
@@ -179,6 +180,49 @@ CREATE TABLE IF NOT EXISTS configuracion_notificaciones (
     avisos_notas BOOLEAN NOT NULL DEFAULT TRUE,
     avisos_asistencia BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+CREATE TABLE IF NOT EXISTS perfil_detalles (
+    id_usuario VARCHAR PRIMARY KEY,
+    telefono VARCHAR,
+    ciudad VARCHAR,
+    idioma_preferido VARCHAR,
+    contacto_emergencia VARCHAR,
+    correo_personal VARCHAR,
+    linkedin VARCHAR,
+    github VARCHAR,
+    portfolio VARCHAR,
+    preferencia_contacto VARCHAR,
+    area_interes VARCHAR,
+    stack_tecnologico TEXT,
+    experiencia_actual TEXT,
+    disponibilidad VARCHAR,
+    preferencia_jornada VARCHAR,
+    cv_url VARCHAR,
+    cv_nombre VARCHAR,
+    cv_fecha_subida TIMESTAMP,
+    idioma_app VARCHAR NOT NULL DEFAULT 'es',
+    notificaciones_email BOOLEAN NOT NULL DEFAULT TRUE,
+    notificaciones_push BOOLEAN NOT NULL DEFAULT TRUE,
+    visibilidad_profesional BOOLEAN NOT NULL DEFAULT TRUE,
+    permitir_cv_empleabilidad BOOLEAN NOT NULL DEFAULT TRUE,
+    permitir_links_profesores BOOLEAN NOT NULL DEFAULT TRUE,
+    tema VARCHAR NOT NULL DEFAULT 'claro',
+    estado VARCHAR NOT NULL DEFAULT 'Activo',
+    ultimo_acceso TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS perfil_documentos (
+    id VARCHAR PRIMARY KEY,
+    id_usuario VARCHAR NOT NULL,
+    nombre VARCHAR NOT NULL,
+    tipo VARCHAR NOT NULL,
+    url VARCHAR NOT NULL,
+    content_type VARCHAR NOT NULL,
+    estado VARCHAR NOT NULL DEFAULT 'Subido',
+    fecha_subida TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS ix_perfil_documentos_id_usuario ON perfil_documentos(id_usuario);
 
 CREATE TABLE IF NOT EXISTS correos (
     id VARCHAR PRIMARY KEY,

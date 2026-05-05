@@ -1,50 +1,67 @@
-import { ChevronLeft, Save, Check } from 'lucide-react';
+import { ChevronLeft, Save, Check, Users } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router';
-import { useState } from 'react';
-
-// Re-using mock data from GradingScreen for consistency
-const mockStudents = [
-  { id: '101', name: 'Elena García' },
-  { id: '102', name: 'Marcos Alonso' },
-  { id: '103', name: 'Sofía Navarro' },
-  { id: '104', name: 'Javier Ortiz' },
-  { id: '105', name: 'Lucía Jiménez' },
-  { id: '106', name: 'Paco Pérez' },
-];
-
-// Re-using session names from other screens
-const sessionNames: Record<string, string> = {
-  'bda-301': 'Big Data & Analytics',
-  'mkt-201': 'Marketing Digital',
-  'fin-302': 'Finanzas Corporativas',
-  'est-401': 'Estrategia Empresarial',
-};
+import { useEffect, useState } from 'react';
+import {
+  getSessionAttendanceRoster,
+  saveAttendance,
+  type AttendanceRosterRow,
+} from '../api/client';
 
 export function ClassAttendanceScreen() {
   const navigate = useNavigate();
   const { sessionId } = useParams<{ sessionId: string }>();
-  // State to hold attendance. Key is studentId, value is boolean (present or not)
+  const [students, setStudents] = useState<AttendanceRosterRow[]>([]);
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
-  const sessionName = sessionId ? sessionNames[sessionId] || 'Sesión' : 'Sesión';
+  useEffect(() => {
+    if (!sessionId) return;
+    setLoading(true);
+    getSessionAttendanceRoster(sessionId)
+      .then((data) => {
+        setStudents(data);
+        setAttendance(Object.fromEntries(data.map((row) => [row.id_alumno, row.presente !== false])));
+      })
+      .catch(() => {
+        setStudents([]);
+        setAttendance({});
+      })
+      .finally(() => setLoading(false));
+  }, [sessionId]);
 
   const handleAttendanceChange = (studentId: string) => {
-    setAttendance(prev => ({ ...prev, [studentId]: !prev[studentId] }));
+    setAttendance((prev) => ({ ...prev, [studentId]: !prev[studentId] }));
   };
 
-  const allPresent = mockStudents.every(student => attendance[student.id]);
+  const allPresent = students.length > 0 && students.every((student) => attendance[student.id_alumno]);
+  const absentCount = students.filter((student) => !attendance[student.id_alumno]).length;
 
   const toggleAll = () => {
-    const newAttendance = mockStudents.reduce((acc, student) => {
-      acc[student.id] = !allPresent;
-      return acc;
-    }, {} as Record<string, boolean>);
-    setAttendance(newAttendance);
+    setAttendance(Object.fromEntries(students.map((student) => [student.id_alumno, !allPresent])));
+  };
+
+  const handleSave = async () => {
+    if (!sessionId) return;
+    setSaving(true);
+    setMessage(null);
+    try {
+      await Promise.all(
+        students.map((student) =>
+          saveAttendance(student.id_alumno, sessionId, attendance[student.id_alumno] === true, student.fecha),
+        ),
+      );
+      setMessage('Asistencia guardada');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'No se ha podido guardar la asistencia');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#008899] pb-20">
-      {/* Header */}
       <div className="px-5 pt-12 pb-6">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-1">
@@ -52,31 +69,66 @@ export function ClassAttendanceScreen() {
           </button>
           <div>
             <h1 className="text-white text-xl" style={{ fontWeight: 600 }}>Pasar Asistencia</h1>
-            <p className="text-white text-xs opacity-80">{sessionName}</p>
+            <p className="text-white text-xs opacity-80">{sessionId ?? 'Sesión'}</p>
           </div>
         </div>
       </div>
 
-      {/* Content */}
       <div className="bg-white rounded-t-3xl px-5 pt-5 pb-6 min-h-[70vh]">
-        <div className="flex justify-end mb-4">
-            <button onClick={toggleAll} className="text-sm text-[#008899]" style={{fontWeight: 600}}>
-                {allPresent ? 'Desmarcar todos' : 'Marcar todos como presentes'}
-            </button>
+        <div className="bg-[#008899]/5 rounded-2xl p-4 mb-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#008899] flex items-center justify-center">
+            <Users size={20} className="text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-gray-800 text-sm" style={{ fontWeight: 700 }}>
+              {students.length - absentCount}/{students.length} presentes
+            </p>
+            <p className="text-xs text-gray-500">
+              Por defecto todos aparecen presentes; toca solo las ausencias.
+            </p>
+          </div>
+          <button onClick={toggleAll} className="text-xs text-[#008899]" style={{ fontWeight: 700 }}>
+            {allPresent ? 'Marcar ausencias' : 'Todos presentes'}
+          </button>
         </div>
-        <div className="space-y-3 mb-6">
-          {mockStudents.map((student) => (
-            <div key={student.id} onClick={() => handleAttendanceChange(student.id)} className={`flex items-center justify-between gap-4 rounded-2xl p-4 transition-colors cursor-pointer ${attendance[student.id] ? 'bg-green-50' : 'bg-gray-50'}`}>
-              <p className={`flex-1 transition-colors ${attendance[student.id] ? 'text-gray-800' : 'text-gray-500'}`}>{student.name}</p>
-              <div className={`w-6 h-6 rounded-md flex items-center justify-center border-2 transition-all ${attendance[student.id] ? 'bg-[#008899] border-[#008899]' : 'border-gray-300'}`}>
-                {attendance[student.id] && <Check size={16} className="text-white" />}
-              </div>
-            </div>
-          ))}
-        </div>
-        <button className="w-full bg-[#008899] text-white py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-[#007788] transition-colors">
+
+        {loading ? (
+          <p className="text-gray-400 text-sm text-center py-8">Cargando alumnos...</p>
+        ) : students.length === 0 ? (
+          <p className="text-gray-400 text-sm text-center py-8">No hay alumnos para esta sesión.</p>
+        ) : (
+          <div className="space-y-3 mb-6">
+            {students.map((student) => {
+              const present = attendance[student.id_alumno] === true;
+              return (
+                <button
+                  key={student.id_alumno}
+                  onClick={() => handleAttendanceChange(student.id_alumno)}
+                  className={`w-full flex items-center justify-between gap-4 rounded-2xl p-4 transition-colors text-left ${present ? 'bg-green-50' : 'bg-gray-50'}`}
+                >
+                  <div className="min-w-0">
+                    <p className={`transition-colors truncate ${present ? 'text-gray-800' : 'text-gray-500'}`}>
+                      {student.nombre} {student.apellido}
+                    </p>
+                    <p className="text-xs text-gray-400">{student.id_alumno}</p>
+                  </div>
+                  <div className={`w-6 h-6 rounded-md flex items-center justify-center border-2 transition-all ${present ? 'bg-[#008899] border-[#008899]' : 'border-gray-300'}`}>
+                    {present && <Check size={16} className="text-white" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {message && <p className="mb-4 text-center text-sm text-gray-500">{message}</p>}
+        <button
+          onClick={handleSave}
+          disabled={!sessionId || saving || students.length === 0}
+          className="w-full bg-[#008899] disabled:bg-gray-300 text-white py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-[#007788] transition-colors"
+        >
           <Save size={16} />
-          Guardar Asistencia
+          {saving ? 'Guardando...' : 'Guardar Asistencia'}
         </button>
       </div>
     </div>
