@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Award, BookOpen, ChevronDown, ChevronLeft, ChevronUp, TrendingUp } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronLeft, ChevronUp, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { getMyGrades, type GradeOut } from '../api/client';
 
@@ -85,9 +85,6 @@ export function GradesScreen() {
   const weightedAverage = availableWeight > 0
     ? gradedCategories.reduce((acc, category) => acc + (category.average ?? 0) * category.weight, 0) / availableWeight
     : 0;
-  const bestPublishedGrade = gradedCategories.length > 0
-    ? Math.max(...gradedCategories.map((category) => category.average ?? 0)).toFixed(1)
-    : '-';
   const { label: avgLabel } = getGradeLabel(weightedAverage);
 
   return (
@@ -187,21 +184,6 @@ export function GradesScreen() {
                   </div>
                 );
               })}
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 mt-5">
-              {[
-                { icon: Award, label: 'Mejor grupo', value: bestPublishedGrade, sub: 'Publicado' },
-                { icon: TrendingUp, label: 'Media', value: availableWeight > 0 ? weightedAverage.toFixed(2) : '-', sub: 'Actual' },
-                { icon: BookOpen, label: 'Evaluado', value: `${availableWeight}%`, sub: 'Curso' },
-              ].map(({ icon: Icon, label, value, sub }, i) => (
-                <div key={i} className="bg-[#008899]/5 rounded-2xl p-3 text-center">
-                  <Icon size={18} className="text-[#008899] mx-auto mb-1" />
-                  <p className="text-[#008899] text-base" style={{ fontWeight: 800 }}>{value}</p>
-                  <p className="text-gray-500 text-xs">{label}</p>
-                  <p className="text-gray-400 text-xs">{sub}</p>
-                </div>
-              ))}
             </div>
           </>
         )}

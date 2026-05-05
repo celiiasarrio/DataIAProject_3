@@ -290,14 +290,26 @@ INSERT INTO "rel_alumno_tarea" ("id_alumno", "id_tarea", "nota")
 SELECT
     rag.id_alumno,
     t.id_tarea,
-    ROUND((6 + ((ASCII(RIGHT(rag.id_alumno, 1)) % 4) * 0.7) + ((t.id_tarea % 3) * 0.4))::NUMERIC, 2)
+    ROUND(
+        LEAST(
+            9.8,
+            5.4
+            + ((ABS(HASHTEXT(rag.id_alumno || '-' || t.id_tarea::TEXT)) % 38) * 0.10)
+            + ((t.id_tarea % 5) * 0.12)
+        )::NUMERIC,
+        2
+    )
 FROM rel_alumnos_grupos rag
 JOIN rel_bloques_grupos rbg ON rbg.id_grupo = rag.id_grupo
 JOIN tareas t ON t.id_bloque = rbg.id_bloque
 WHERE t.fecha <= DATE '2026-05-05'
+  AND t.id_tarea NOT IN (11, 12)
   AND UPPER(t.nombre) NOT LIKE '%PPT%'
   AND UPPER(t.nombre) NOT LIKE '%PPTX%'
   AND UPPER(t.nombre) NOT LIKE '%TFM%'
+  AND UPPER(t.nombre) NOT LIKE '%EXPERIENCIA INTERNACIONAL%'
+  AND UPPER(t.nombre) NOT LIKE '%CONFIRMACIÓN EXPERIENCIA INTERNACIONAL%'
+  AND UPPER(t.nombre) NOT LIKE '%CONFIRMACIÃ³N EXPERIENCIA INTERNACIONAL%'
   AND (
       t.id_tarea IN (7, 13, 18)
       OR (
