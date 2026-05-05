@@ -116,6 +116,7 @@ const getEventMeta = (event: CalendarEvent) => {
 
 const getEventPrefix = (event: CalendarEvent) => {
   if (event.tipo === 'international') return '';
+  if (event.tipo === 'delivery') return '';
   if (event.tipo === 'class') return formatTime(event.fecha_inicio);
   return getEventMeta(event).label;
 };
