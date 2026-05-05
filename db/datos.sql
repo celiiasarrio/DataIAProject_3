@@ -22,6 +22,8 @@ TRUNCATE TABLE
     reservas,
     notificaciones,
     configuracion_notificaciones,
+    perfil_detalles,
+    perfil_documentos,
     correos,
     contenidos
 RESTART IDENTITY CASCADE;
@@ -70,6 +72,24 @@ INSERT INTO "profesores" ("id_profesor", "nombre", "apellido", "apellido2", "cor
 
 INSERT INTO "coordinadores" ("id_coordinador", "nombre", "apellido", "correo", "contrasena", "url_foto", "rol") VALUES
 ('m.herrera', 'Miguel', 'Herrera', 'm.herrera@edem.es', 'MiHe2026!', '', 'Coordinador');
+
+INSERT INTO "perfil_detalles" (
+    "id_usuario", "telefono", "ciudad", "idioma_preferido", "correo_personal",
+    "linkedin", "github", "portfolio", "preferencia_contacto", "area_interes",
+    "stack_tecnologico", "experiencia_actual", "disponibilidad", "preferencia_jornada",
+    "idioma_app", "notificaciones_email", "notificaciones_push", "visibilidad_profesional",
+    "permitir_cv_empleabilidad", "permitir_links_profesores", "tema", "estado"
+)
+SELECT id_usuario, '', 'Valencia', 'es', '', '', '', '', 'email',
+       'Data & AI', 'Python, SQL, Cloud', '', 'Por definir', 'Por definir',
+       'es', TRUE, TRUE, TRUE, TRUE, TRUE, 'claro', 'Activo'
+FROM (
+    SELECT id_alumno AS id_usuario FROM alumnos
+    UNION ALL
+    SELECT id_profesor AS id_usuario FROM profesores
+    UNION ALL
+    SELECT id_coordinador AS id_usuario FROM coordinadores
+) usuarios;
 
 INSERT INTO "grupos" ("id_grupo", "nombre") VALUES
 ('MDA A 2526', 'MDA A 2526'),

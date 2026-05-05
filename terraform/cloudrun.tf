@@ -135,6 +135,16 @@ resource "google_cloud_run_v2_service" "backend" {
         value = "/cloudsql/${google_sql_database_instance.edem_db_instance.connection_name}"
       }
 
+      env {
+        name  = "UPLOAD_ROOT"
+        value = "gs://${google_storage_bucket.uploads.name}/uploads"
+      }
+
+      env {
+        name  = "PUBLIC_UPLOAD_PREFIX"
+        value = "https://storage.googleapis.com/${google_storage_bucket.uploads.name}/uploads"
+      }
+
       volume_mounts {
         name       = "cloudsql"
         mount_path = "/cloudsql"

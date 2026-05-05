@@ -181,6 +181,49 @@ CREATE TABLE IF NOT EXISTS configuracion_notificaciones (
     avisos_asistencia BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+CREATE TABLE IF NOT EXISTS perfil_detalles (
+    id_usuario VARCHAR PRIMARY KEY,
+    telefono VARCHAR,
+    ciudad VARCHAR,
+    idioma_preferido VARCHAR,
+    contacto_emergencia VARCHAR,
+    correo_personal VARCHAR,
+    linkedin VARCHAR,
+    github VARCHAR,
+    portfolio VARCHAR,
+    preferencia_contacto VARCHAR,
+    area_interes VARCHAR,
+    stack_tecnologico TEXT,
+    experiencia_actual TEXT,
+    disponibilidad VARCHAR,
+    preferencia_jornada VARCHAR,
+    cv_url VARCHAR,
+    cv_nombre VARCHAR,
+    cv_fecha_subida TIMESTAMP,
+    idioma_app VARCHAR NOT NULL DEFAULT 'es',
+    notificaciones_email BOOLEAN NOT NULL DEFAULT TRUE,
+    notificaciones_push BOOLEAN NOT NULL DEFAULT TRUE,
+    visibilidad_profesional BOOLEAN NOT NULL DEFAULT TRUE,
+    permitir_cv_empleabilidad BOOLEAN NOT NULL DEFAULT TRUE,
+    permitir_links_profesores BOOLEAN NOT NULL DEFAULT TRUE,
+    tema VARCHAR NOT NULL DEFAULT 'claro',
+    estado VARCHAR NOT NULL DEFAULT 'Activo',
+    ultimo_acceso TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS perfil_documentos (
+    id VARCHAR PRIMARY KEY,
+    id_usuario VARCHAR NOT NULL,
+    nombre VARCHAR NOT NULL,
+    tipo VARCHAR NOT NULL,
+    url VARCHAR NOT NULL,
+    content_type VARCHAR NOT NULL,
+    estado VARCHAR NOT NULL DEFAULT 'Subido',
+    fecha_subida TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS ix_perfil_documentos_id_usuario ON perfil_documentos(id_usuario);
+
 CREATE TABLE IF NOT EXISTS correos (
     id VARCHAR PRIMARY KEY,
     id_remitente VARCHAR NOT NULL,

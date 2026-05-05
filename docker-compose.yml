@@ -5,6 +5,7 @@ services:
       POSTGRES_DB: edem_hub_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "-c client_encoding=UTF8 -c default_text_search_config=spanish"
     ports:
       - "5432:5432"
     volumes:
@@ -31,6 +32,8 @@ services:
       PORT: 8080
     ports:
       - "8080:8080"
+    volumes:
+      - backend_uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -62,3 +65,4 @@ services:
 
 volumes:
   postgres_data:
+  backend_uploads:

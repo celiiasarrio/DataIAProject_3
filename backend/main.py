@@ -3,8 +3,11 @@ from datetime import date, datetime, time, timedelta
 import hashlib
 import hmac
 import json
+import os
 import re
+import shutil
 import uuid
+from pathlib import Path
 from typing import List, Optional
 
 try:
@@ -13,7 +16,9 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for thin local envs
     bcrypt_lib = None
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
 try:
     from jose import JWTError, jwt
 except ModuleNotFoundError:  # pragma: no cover - fallback for thin local envs
@@ -40,6 +45,8 @@ from models import (
     Grupo,
     Notificacion,
     Coordinador,
+    PerfilDetalle,
+    PerfilDocumento,
     Profesor,
     RelAlumnoTarea,
     RelAlumnosGrupos,
@@ -83,6 +90,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+UPLOAD_ROOT = Path(os.getenv("UPLOAD_ROOT", "/app/uploads"))
+PUBLIC_UPLOAD_PREFIX = "/uploads"
+UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+app.mount(PUBLIC_UPLOAD_PREFIX, StaticFiles(directory=str(UPLOAD_ROOT)), name="uploads")
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
 
 
@@ -116,6 +128,120 @@ class UserProfileOut(BaseModel):
     correo: str
     rol: str
     url_foto: Optional[str] = None
+
+
+class ProfilePersonalUpdate(BaseModel):
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    telefono: Optional[str] = None
+    ciudad: Optional[str] = None
+    idioma_preferido: Optional[str] = None
+    contacto_emergencia: Optional[str] = None
+
+
+class ProfileContactUpdate(BaseModel):
+    correo_personal: Optional[str] = None
+    telefono: Optional[str] = None
+    linkedin: Optional[str] = None
+    github: Optional[str] = None
+    portfolio: Optional[str] = None
+    preferencia_contacto: Optional[str] = None
+
+
+class ProfileProfessionalUpdate(BaseModel):
+    area_interes: Optional[str] = None
+    stack_tecnologico: Optional[str] = None
+    experiencia_actual: Optional[str] = None
+    disponibilidad: Optional[str] = None
+    preferencia_jornada: Optional[str] = None
+    linkedin: Optional[str] = None
+    github: Optional[str] = None
+    portfolio: Optional[str] = None
+
+
+class ProfilePreferencesUpdate(BaseModel):
+    idioma_app: Optional[str] = None
+    notificaciones_email: Optional[bool] = None
+    notificaciones_push: Optional[bool] = None
+    visibilidad_profesional: Optional[bool] = None
+    permitir_cv_empleabilidad: Optional[bool] = None
+    permitir_links_profesores: Optional[bool] = None
+    tema: Optional[str] = None
+
+
+class PasswordChangeIn(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class ProfileDocumentOut(BaseModel):
+    id: str
+    nombre: str
+    tipo: str
+    url: str
+    content_type: str
+    estado: str
+    fecha_subida: datetime
+
+
+class ProfileCvOut(BaseModel):
+    nombre: Optional[str] = None
+    url: Optional[str] = None
+    fecha_subida: Optional[datetime] = None
+
+
+class ProfileFullOut(BaseModel):
+    id: str
+    nombre: str
+    apellido: str
+    correo: str
+    rol: str
+    url_foto: Optional[str] = None
+    estado: str
+    programa_area: Optional[str] = None
+    grupo: Optional[str] = None
+    curso_academico: Optional[str] = None
+    promocion: Optional[str] = None
+    campus: Optional[str] = None
+    modalidad: Optional[str] = None
+    coordinador_asignado: Optional[str] = None
+    tutor_academico: Optional[str] = None
+    fecha_inicio: Optional[str] = None
+    fecha_fin_estimada: Optional[str] = None
+    departamento_area: Optional[str] = None
+    asignaturas: List[str] = []
+    especialidad: Optional[str] = None
+    horario_tutorias: Optional[str] = None
+    disponibilidad_contacto: Optional[str] = None
+    programas_coordina: List[str] = []
+    grupos_asignados: List[str] = []
+    area_coordinacion: Optional[str] = None
+    horario_atencion: Optional[str] = None
+    permisos_administrativos: List[str] = []
+    telefono: Optional[str] = None
+    ciudad: Optional[str] = None
+    idioma_preferido: Optional[str] = None
+    contacto_emergencia: Optional[str] = None
+    correo_personal: Optional[str] = None
+    linkedin: Optional[str] = None
+    github: Optional[str] = None
+    portfolio: Optional[str] = None
+    preferencia_contacto: Optional[str] = None
+    area_interes: Optional[str] = None
+    stack_tecnologico: Optional[str] = None
+    experiencia_actual: Optional[str] = None
+    disponibilidad: Optional[str] = None
+    preferencia_jornada: Optional[str] = None
+    cv: ProfileCvOut
+    documentos: List[ProfileDocumentOut]
+    idioma_app: str
+    notificaciones_email: bool
+    notificaciones_push: bool
+    visibilidad_profesional: bool
+    permitir_cv_empleabilidad: bool
+    permitir_links_profesores: bool
+    tema: str
+    ultimo_acceso: Optional[datetime] = None
 
 
 class AlumnoOut(ORMModel):
@@ -561,6 +687,13 @@ def verify_password(stored_password: str, provided_password: str) -> bool:
     return stored_password == provided_password
 
 
+def hash_password(password: str) -> str:
+    if bcrypt_lib:
+        salt = bcrypt_lib.gensalt()
+        return bcrypt_lib.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+    return password
+
+
 def _b64url_encode(value: bytes) -> str:
     return base64.urlsafe_b64encode(value).rstrip(b"=").decode("utf-8")
 
@@ -653,6 +786,184 @@ def serialize_profile(user) -> UserProfileOut:
         correo=user.correo,
         rol=get_user_role(user),
         url_foto=user.url_foto,
+    )
+
+
+def ensure_profile_detail(db: Session, user_id: str) -> PerfilDetalle:
+    detail = db.query(PerfilDetalle).filter(PerfilDetalle.id_usuario == user_id).first()
+    if detail:
+        return detail
+    detail = PerfilDetalle(id_usuario=user_id)
+    db.add(detail)
+    db.commit()
+    db.refresh(detail)
+    return detail
+
+
+def user_upload_dir(user_id: str) -> Path:
+    safe_id = re.sub(r"[^a-zA-Z0-9_.-]", "_", user_id)
+    path = UPLOAD_ROOT / "profiles" / safe_id
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def public_upload_url(path: Path) -> str:
+    relative = path.relative_to(UPLOAD_ROOT).as_posix()
+    return f"{PUBLIC_UPLOAD_PREFIX}/{relative}"
+
+
+def delete_public_upload(url: Optional[str]) -> None:
+    if not url or not url.startswith(f"{PUBLIC_UPLOAD_PREFIX}/"):
+        return
+    target = (UPLOAD_ROOT / url.removeprefix(f"{PUBLIC_UPLOAD_PREFIX}/")).resolve()
+    if UPLOAD_ROOT.resolve() in target.parents and target.exists():
+        target.unlink()
+
+
+def validate_upload(file: UploadFile, allowed_extensions: set[str], allowed_content_types: set[str], max_mb: int) -> str:
+    filename = file.filename or ""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext not in allowed_extensions:
+        raise HTTPException(status_code=422, detail=f"Formato no permitido. Usa: {', '.join(sorted(allowed_extensions))}")
+    if file.content_type not in allowed_content_types:
+        raise HTTPException(status_code=422, detail="Tipo de archivo no permitido.")
+    max_bytes = max_mb * 1024 * 1024
+    file.file.seek(0, os.SEEK_END)
+    size = file.file.tell()
+    file.file.seek(0)
+    if size > max_bytes:
+        raise HTTPException(status_code=413, detail=f"El archivo supera el limite de {max_mb} MB.")
+    return ext
+
+
+def store_upload(user_id: str, file: UploadFile, folder: str, basename: str, ext: str) -> str:
+    target_dir = user_upload_dir(user_id) / folder
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target = target_dir / f"{basename}.{ext}"
+    with target.open("wb") as out:
+        shutil.copyfileobj(file.file, out)
+    return public_upload_url(target)
+
+
+def apply_detail_update(detail: PerfilDetalle, payload: BaseModel, fields: list[str]) -> None:
+    data = model_dump(payload, exclude_unset=True)
+    for field in fields:
+        if field in data:
+            setattr(detail, field, data[field])
+    detail.fecha_actualizacion = datetime.utcnow()
+
+
+def role_display(role: str) -> str:
+    if role == "profesor":
+        return "Profesor"
+    if role == "personal":
+        return "Coordinador"
+    return "Alumno"
+
+
+def serialize_document(document: PerfilDocumento) -> ProfileDocumentOut:
+    return ProfileDocumentOut(
+        id=document.id,
+        nombre=document.nombre,
+        tipo=document.tipo,
+        url=document.url,
+        content_type=document.content_type,
+        estado=document.estado,
+        fecha_subida=document.fecha_subida,
+    )
+
+
+def build_full_profile(db: Session, user) -> ProfileFullOut:
+    user_id = get_user_id(user)
+    role = get_user_role(user)
+    detail = ensure_profile_detail(db, user_id)
+    documents = (
+        db.query(PerfilDocumento)
+        .filter(PerfilDocumento.id_usuario == user_id)
+        .order_by(PerfilDocumento.fecha_subida.desc())
+        .all()
+    )
+
+    common = {
+        "id": user_id,
+        "nombre": user.nombre,
+        "apellido": get_user_last_name(user),
+        "correo": user.correo,
+        "rol": role_display(role),
+        "url_foto": user.url_foto or None,
+        "estado": detail.estado,
+        "telefono": detail.telefono,
+        "ciudad": detail.ciudad,
+        "idioma_preferido": detail.idioma_preferido,
+        "contacto_emergencia": detail.contacto_emergencia,
+        "correo_personal": detail.correo_personal,
+        "linkedin": detail.linkedin,
+        "github": detail.github,
+        "portfolio": detail.portfolio,
+        "preferencia_contacto": detail.preferencia_contacto,
+        "area_interes": detail.area_interes,
+        "stack_tecnologico": detail.stack_tecnologico,
+        "experiencia_actual": detail.experiencia_actual,
+        "disponibilidad": detail.disponibilidad,
+        "preferencia_jornada": detail.preferencia_jornada,
+        "cv": ProfileCvOut(nombre=detail.cv_nombre, url=detail.cv_url, fecha_subida=detail.cv_fecha_subida),
+        "documentos": [serialize_document(document) for document in documents],
+        "idioma_app": detail.idioma_app,
+        "notificaciones_email": detail.notificaciones_email,
+        "notificaciones_push": detail.notificaciones_push,
+        "visibilidad_profesional": detail.visibilidad_profesional,
+        "permitir_cv_empleabilidad": detail.permitir_cv_empleabilidad,
+        "permitir_links_profesores": detail.permitir_links_profesores,
+        "tema": detail.tema,
+        "ultimo_acceso": detail.ultimo_acceso,
+    }
+
+    if role == "alumno":
+        group_names = [rel.id_grupo for rel in db.query(RelAlumnosGrupos).filter(RelAlumnosGrupos.id_alumno == user_id).all()]
+        coordinator = None
+        if group_names:
+            coordinator_link = db.query(RelCoordinadoresGrupos).filter(RelCoordinadoresGrupos.id_grupo == group_names[0]).first()
+            if coordinator_link:
+                coordinator = db.query(Coordinador).filter(Coordinador.id_coordinador == coordinator_link.id_coordinador).first()
+        return ProfileFullOut(
+            **common,
+            programa_area="Master Big Data & Cloud",
+            grupo=user.grupo or (group_names[0] if group_names else None),
+            curso_academico="2025-26",
+            promocion="MDA 2025-26",
+            campus="EDEM Escuela de Empresarios",
+            modalidad="Presencial",
+            coordinador_asignado=f"{coordinator.nombre} {coordinator.apellido}" if coordinator else None,
+            tutor_academico="Pedro Nieto Pelaez",
+            fecha_inicio="2025-09-29",
+            fecha_fin_estimada="17-07-2026",
+        )
+
+    if role == "profesor":
+        block_ids = [rel.id_bloque for rel in db.query(RelProfesoresBloques).filter(RelProfesoresBloques.id_profesor == user_id).all()]
+        blocks = db.query(Bloque).filter(Bloque.id_bloque.in_(block_ids)).all() if block_ids else []
+        slots = db.query(FranjaTutoria).filter(FranjaTutoria.id_profesor == user_id).order_by(FranjaTutoria.dia_semana, FranjaTutoria.hora_inicio).all()
+        schedule = ", ".join(f"Dia {slot.dia_semana} {slot.hora_inicio.strftime('%H:%M')}-{slot.hora_fin.strftime('%H:%M')}" for slot in slots) or None
+        return ProfileFullOut(
+            **common,
+            programa_area="Docencia",
+            departamento_area="Data & AI",
+            asignaturas=[block.nombre for block in blocks],
+            especialidad=detail.area_interes or "Data Analytics",
+            horario_tutorias=schedule,
+            disponibilidad_contacto=detail.preferencia_contacto or "email",
+        )
+
+    group_ids = [rel.id_grupo for rel in db.query(RelCoordinadoresGrupos).filter(RelCoordinadoresGrupos.id_coordinador == user_id).all()]
+    programs = sorted({group.split()[0] for group in group_ids}) if group_ids else []
+    return ProfileFullOut(
+        **common,
+        programa_area="Coordinacion academica",
+        programas_coordina=programs,
+        grupos_asignados=group_ids,
+        area_coordinacion="Programas Data",
+        horario_atencion="Lunes a viernes, 9:00-18:00",
+        permisos_administrativos=["Documentacion", "Asistencia", "Notas", "Calendario"],
     )
 
 
@@ -832,24 +1143,17 @@ def update_my_profile(
     return {"mensaje": "Perfil actualizado correctamente"}
 
 
-GCS_BUCKET = "project3grupo6-photos"
-
 @app.put("/api/v1/users/me/photo", tags=["Perfil y Roles"])
 def upload_my_photo(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    from google.cloud import storage as gcs_client
     user_id = get_user_id(current_user)
-    ext = (file.filename or "jpg").rsplit(".", 1)[-1].lower()
-    blob_name = f"fotos/{user_id}.{ext}"
-    client = gcs_client.Client()
-    bucket = client.bucket(GCS_BUCKET)
-    blob = bucket.blob(blob_name)
-    blob.upload_from_file(file.file, content_type=file.content_type)
-    public_url = f"https://storage.googleapis.com/{GCS_BUCKET}/{blob_name}"
-    current_user.url_foto = public_url
+    ext = validate_upload(file, {"jpg", "jpeg", "png", "webp"}, {"image/jpeg", "image/png", "image/webp"}, 5)
+    delete_public_upload(current_user.url_foto)
+    current_user.url_foto = store_upload(user_id, file, "avatar", "avatar", ext)
+    public_url = current_user.url_foto
     db.commit()
     db.refresh(current_user)
     return {"mensaje": "Foto subida con éxito", "url_foto": public_url}
@@ -859,18 +1163,252 @@ def delete_my_photo(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    if current_user.url_foto:
-        try:
-            from google.cloud import storage as gcs_client
-            client = gcs_client.Client()
-            bucket = client.bucket(GCS_BUCKET)
-            blob_name = current_user.url_foto.split(f"{GCS_BUCKET}/")[-1]
-            bucket.blob(blob_name).delete()
-        except Exception:
-            pass
+    delete_public_upload(current_user.url_foto)
     current_user.url_foto = None
     db.commit()
     return {"mensaje": "Foto eliminada correctamente"}
+
+@app.get("/api/profile/me", response_model=ProfileFullOut, tags=["Perfil"])
+def get_my_full_profile(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    detail = ensure_profile_detail(db, user_id)
+    detail.ultimo_acceso = datetime.utcnow()
+    db.commit()
+    return build_full_profile(db, current_user)
+
+
+@app.put("/api/profile/me/personal", response_model=ProfileFullOut, tags=["Perfil"])
+def update_profile_personal(
+    payload: ProfilePersonalUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    data = model_dump(payload, exclude_unset=True)
+    if "nombre" in data:
+        current_user.nombre = data["nombre"]
+    if "apellido" in data:
+        current_user.apellido = data["apellido"]
+    detail = ensure_profile_detail(db, get_user_id(current_user))
+    apply_detail_update(detail, payload, ["telefono", "ciudad", "idioma_preferido", "contacto_emergencia"])
+    db.commit()
+    db.refresh(current_user)
+    return build_full_profile(db, current_user)
+
+
+@app.put("/api/profile/me/contact", response_model=ProfileFullOut, tags=["Perfil"])
+def update_profile_contact(
+    payload: ProfileContactUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    detail = ensure_profile_detail(db, get_user_id(current_user))
+    apply_detail_update(detail, payload, ["correo_personal", "telefono", "linkedin", "github", "portfolio", "preferencia_contacto"])
+    db.commit()
+    return build_full_profile(db, current_user)
+
+
+@app.put("/api/profile/me/professional", response_model=ProfileFullOut, tags=["Perfil"])
+def update_profile_professional(
+    payload: ProfileProfessionalUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    detail = ensure_profile_detail(db, get_user_id(current_user))
+    apply_detail_update(
+        detail,
+        payload,
+        ["area_interes", "stack_tecnologico", "experiencia_actual", "disponibilidad", "preferencia_jornada", "linkedin", "github", "portfolio"],
+    )
+    db.commit()
+    return build_full_profile(db, current_user)
+
+
+@app.put("/api/profile/me/preferences", response_model=ProfileFullOut, tags=["Perfil"])
+def update_profile_preferences(
+    payload: ProfilePreferencesUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    detail = ensure_profile_detail(db, get_user_id(current_user))
+    apply_detail_update(
+        detail,
+        payload,
+        ["idioma_app", "notificaciones_email", "notificaciones_push", "visibilidad_profesional", "permitir_cv_empleabilidad", "permitir_links_profesores", "tema"],
+    )
+    db.commit()
+    return build_full_profile(db, current_user)
+
+
+@app.post("/api/profile/me/avatar", response_model=UserProfileOut, tags=["Perfil"])
+def upload_profile_avatar(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    ext = validate_upload(file, {"jpg", "jpeg", "png", "webp"}, {"image/jpeg", "image/png", "image/webp"}, 5)
+    delete_public_upload(current_user.url_foto)
+    current_user.url_foto = store_upload(user_id, file, "avatar", "avatar", ext)
+    public_url = current_user.url_foto
+    db.commit()
+    db.refresh(current_user)
+    return serialize_profile(current_user)
+
+
+@app.delete("/api/profile/me/avatar", tags=["Perfil"])
+def delete_profile_avatar(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    delete_public_upload(current_user.url_foto)
+    current_user.url_foto = None
+    db.commit()
+    return {"mensaje": "Foto eliminada correctamente"}
+
+
+@app.post("/api/profile/me/cv", response_model=ProfileFullOut, tags=["Perfil"])
+def upload_my_cv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    detail = ensure_profile_detail(db, user_id)
+    ext = validate_upload(file, {"pdf"}, {"application/pdf"}, 10)
+    delete_public_upload(detail.cv_url)
+    detail.cv_url = store_upload(user_id, file, "cv", "cv", ext)
+    detail.cv_nombre = file.filename or "cv.pdf"
+    detail.cv_fecha_subida = datetime.utcnow()
+    detail.fecha_actualizacion = datetime.utcnow()
+    db.commit()
+    return build_full_profile(db, current_user)
+
+
+@app.delete("/api/profile/me/cv", response_model=ProfileFullOut, tags=["Perfil"])
+def delete_my_cv(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    detail = ensure_profile_detail(db, get_user_id(current_user))
+    delete_public_upload(detail.cv_url)
+    detail.cv_url = None
+    detail.cv_nombre = None
+    detail.cv_fecha_subida = None
+    detail.fecha_actualizacion = datetime.utcnow()
+    db.commit()
+    return build_full_profile(db, current_user)
+
+
+@app.get("/api/profile/me/documents", response_model=List[ProfileDocumentOut], tags=["Perfil"])
+def list_my_documents(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    documents = db.query(PerfilDocumento).filter(PerfilDocumento.id_usuario == user_id).order_by(PerfilDocumento.fecha_subida.desc()).all()
+    return [serialize_document(document) for document in documents]
+
+
+@app.post("/api/profile/me/documents", response_model=ProfileDocumentOut, tags=["Perfil"], status_code=201)
+def upload_my_document(
+    tipo: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    ext = validate_upload(file, {"pdf", "jpg", "jpeg", "png"}, {"application/pdf", "image/jpeg", "image/png"}, 10)
+    document_id = str(uuid.uuid4())
+    document = PerfilDocumento(
+        id=document_id,
+        id_usuario=user_id,
+        nombre=file.filename or f"documento.{ext}",
+        tipo=tipo,
+        url=store_upload(user_id, file, "documents", document_id, ext),
+        content_type=file.content_type or "application/octet-stream",
+        estado="Subido",
+    )
+    db.add(document)
+    db.commit()
+    db.refresh(document)
+    return serialize_document(document)
+
+
+@app.put("/api/profile/me/documents/{document_id}", response_model=ProfileDocumentOut, tags=["Perfil"])
+def replace_my_document(
+    document_id: str,
+    tipo: Optional[str] = None,
+    file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    document = db.query(PerfilDocumento).filter(PerfilDocumento.id == document_id, PerfilDocumento.id_usuario == user_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    if tipo:
+        document.tipo = tipo
+    if file:
+        ext = validate_upload(file, {"pdf", "jpg", "jpeg", "png"}, {"application/pdf", "image/jpeg", "image/png"}, 10)
+        delete_public_upload(document.url)
+        document.url = store_upload(user_id, file, "documents", document.id, ext)
+        document.nombre = file.filename or document.nombre
+        document.content_type = file.content_type or document.content_type
+        document.estado = "Subido"
+        document.fecha_subida = datetime.utcnow()
+    db.commit()
+    db.refresh(document)
+    return serialize_document(document)
+
+
+@app.delete("/api/profile/me/documents/{document_id}", tags=["Perfil"])
+def delete_my_document(
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    document = db.query(PerfilDocumento).filter(PerfilDocumento.id == document_id, PerfilDocumento.id_usuario == user_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    delete_public_upload(document.url)
+    db.delete(document)
+    db.commit()
+    return {"mensaje": "Documento eliminado correctamente"}
+
+
+@app.put("/api/profile/me/security/password", tags=["Perfil"])
+def change_my_password(
+    payload: PasswordChangeIn,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    if not verify_password(current_user.contrasena, payload.current_password):
+        raise HTTPException(status_code=400, detail="La contrasena actual no es correcta")
+    if len(payload.new_password) < 8:
+        raise HTTPException(status_code=422, detail="La nueva contrasena debe tener al menos 8 caracteres")
+    current_user.contrasena = hash_password(payload.new_password)
+    db.commit()
+    return {"mensaje": "Contrasena actualizada correctamente"}
+
+
+@app.get("/api/profile/me/documents/{document_id}/download", tags=["Perfil"])
+def download_my_document(
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    document = db.query(PerfilDocumento).filter(PerfilDocumento.id == document_id, PerfilDocumento.id_usuario == user_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    target = (UPLOAD_ROOT / document.url.removeprefix(f"{PUBLIC_UPLOAD_PREFIX}/")).resolve()
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    return FileResponse(target, media_type=document.content_type, filename=document.nombre)
 
 @app.get("/api/v1/users/{user_id}", response_model=UserProfileOut, tags=["Perfil y Roles"])
 def get_user_profile(

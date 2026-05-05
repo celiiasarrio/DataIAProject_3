@@ -1,0 +1,41 @@
+# docker-compose.prod.yml
+# Configuración para simular el ambiente de producción en GCP de forma local
+# Usar con: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+
+services:
+  db:
+    environment:
+      POSTGRES_PASSWORD: prod_postgres_password_change_me
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+
+  backend:
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: edem_hub_db
+      DB_USER: postgres
+      DB_PASSWORD: prod_postgres_password_change_me
+      JWT_SECRET: prod_jwt_secret_change_me_production_only
+      ENVIRONMENT: production
+      PORT: 8080
+      UPLOAD_ROOT: /app/uploads
+      PUBLIC_UPLOAD_PREFIX: /uploads
+    volumes:
+      - backend_uploads_prod:/app/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_BACKEND_URL: http://localhost:8080
+        VITE_AGENT_URL: http://localhost:8081
+
+  agent:
+    environment:
+      GOOGLE_GENAI_USE_VERTEXAI: "true"
+      BACKEND_BASE_URL: http://backend:8080
+
+volumes:
+  postgres_prod_data:
+  backend_uploads_prod:
