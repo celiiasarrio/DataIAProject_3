@@ -218,41 +218,6 @@ export function CalendarScreen() {
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-x-5 gap-y-2 mb-4 px-1">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-            <span className="text-xs text-gray-500">Sesiones</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-            <span className="text-xs text-gray-500">Entregas</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-lime-500" />
-            <span className="text-xs text-gray-500">Internacional</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-            <span className="text-xs text-gray-500">Soft skills</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-violet-500" />
-            <span className="text-xs text-gray-500">TFM</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-            <span className="text-xs text-gray-500">Hackatones</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-sky-500" />
-            <span className="text-xs text-gray-500">Visitas</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-teal-500" />
-            <span className="text-xs text-gray-500">Empleabilidad</span>
-          </div>
-        </div>
-
         <div className="grid grid-cols-7 mb-1">
           {WEEK_DAYS.map((day) => (
             <div key={day} className="text-center text-xs text-gray-400 py-2">
