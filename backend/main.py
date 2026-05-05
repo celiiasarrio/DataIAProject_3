@@ -318,7 +318,7 @@ def mandatory_attendance_sessions(db: Session, until: Optional[date] = None) -> 
     ]
 
 
-def build_attendance_metrics(db: Session, user_id: str) -> AttendanceMetricsOut:
+def build_attendance_metrics(db: Session, user_id: str) -> "AttendanceMetricsOut":
     sessions = mandatory_attendance_sessions(db, date.today())
     session_ids = [session.id_sesion for session in sessions]
     records = {
