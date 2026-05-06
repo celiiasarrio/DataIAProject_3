@@ -20,6 +20,7 @@ class AgentSettings(BaseSettings):
     BACKEND_BASE_URL: str = "http://localhost:8080"
     MODEL: str = "gemini-2.5-flash"
     HTTP_TIMEOUT_SECONDS: float = 15.0
+    AGENT_TIMEZONE: str = "Europe/Madrid"
 
     GOOGLE_GENAI_USE_VERTEXAI: bool = True
     GOOGLE_CLOUD_PROJECT: str = ""
