@@ -200,20 +200,20 @@ export function CalendarScreen() {
         )}
       </div>
 
-      <div className="bg-white rounded-t-3xl px-4 pt-5 pb-6 min-h-[70vh]">
+      <div className="bg-white dark:bg-gray-900 rounded-t-3xl px-4 pt-5 pb-6 min-h-[70vh]">
         <div className="flex items-center justify-between mb-4 px-1">
           <button
             onClick={() => setVisibleMonth((current) => addMonths(current, -1))}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
           >
             <ChevronLeft size={18} />
           </button>
-          <h2 className="text-[#008899] capitalize" style={{ fontWeight: 800 }}>
+          <h2 className="text-[#008899] dark:text-cyan-300 capitalize" style={{ fontWeight: 800 }}>
             {formatMonth(visibleMonth)}
           </h2>
           <button
             onClick={() => setVisibleMonth((current) => addMonths(current, 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
           >
             <ChevronRight size={18} />
           </button>
@@ -221,16 +221,16 @@ export function CalendarScreen() {
 
         <div className="grid grid-cols-7 mb-1">
           {WEEK_DAYS.map((day) => (
-            <div key={day} className="text-center text-xs text-gray-400 py-2">
+            <div key={day} className="text-center text-xs text-gray-400 dark:text-gray-500 py-2">
               {day}
             </div>
           ))}
         </div>
 
         {loading ? (
-          <p className="text-gray-400 text-sm text-center py-8">Cargando calendario...</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">Cargando calendario...</p>
         ) : (
-          <div className="grid grid-cols-7 border-t border-l border-gray-100 rounded-xl overflow-hidden">
+          <div className="grid grid-cols-7 border-t border-l border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
             {monthDays.map((day) => {
               const key = getDayKey(day);
               const dayEvents = eventsByDay.get(key) ?? [];
@@ -244,26 +244,26 @@ export function CalendarScreen() {
                   key={key}
                   className={`min-h-[104px] border-r border-b p-1.5 ${
                     isToday
-                      ? 'bg-gray-100 border-gray-300 ring-1 ring-inset ring-gray-400'
+                      ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 ring-1 ring-inset ring-gray-400 dark:ring-gray-600'
                       : inMonth
-                        ? 'bg-white border-gray-100'
-                        : 'bg-gray-50 border-gray-100'
+                        ? 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800'
+                        : 'bg-gray-50 dark:bg-gray-950 border-gray-100 dark:border-gray-800'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span
                       className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs ${
                         isToday
-                          ? 'bg-gray-700 text-white'
+                          ? 'bg-gray-700 dark:bg-gray-200 text-white dark:text-gray-900'
                           : inMonth
-                            ? 'text-gray-700'
-                            : 'text-gray-300'
+                            ? 'text-gray-700 dark:text-gray-200'
+                            : 'text-gray-300 dark:text-gray-600'
                       }`}
                     >
                       {day.getDate()}
                     </span>
                     {dayEvents.length > 0 && (
-                      <CalendarDays size={11} className="text-gray-300" />
+                      <CalendarDays size={11} className="text-gray-300 dark:text-gray-600" />
                     )}
                   </div>
 
@@ -307,7 +307,7 @@ export function CalendarScreen() {
           onClick={() => setSelectedEvent(null)}
         >
           <div
-            className="bg-white rounded-2xl p-5 w-full max-w-md shadow-xl"
+            className="bg-white dark:bg-gray-900 rounded-2xl p-5 w-full max-w-md shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 mb-4">
@@ -322,58 +322,58 @@ export function CalendarScreen() {
                   );
                 })()}
                 <div className="min-w-0">
-                  <p className="text-xs text-gray-400 uppercase" style={{ fontWeight: 800 }}>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 uppercase" style={{ fontWeight: 800 }}>
                     {getEventMeta(selectedEvent).label}
                   </p>
-                  <h3 className="text-lg text-gray-900 leading-tight" style={{ fontWeight: 800 }}>
+                  <h3 className="text-lg text-gray-900 dark:text-gray-100 leading-tight" style={{ fontWeight: 800 }}>
                     {selectedEvent.titulo}
                   </h3>
                 </div>
               </div>
-              <button onClick={() => setSelectedEvent(null)} className="p-1 text-gray-400">
+              <button onClick={() => setSelectedEvent(null)} className="p-1 text-gray-400 dark:text-gray-500">
                 <X size={20} />
               </button>
             </div>
 
-            <div className="space-y-3 bg-gray-50 rounded-2xl p-4">
+            <div className="space-y-3 bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
               <div>
-                <p className="text-xs text-gray-400">Asignatura / bloque</p>
-                <p className="text-sm text-gray-800" style={{ fontWeight: 700 }}>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Asignatura / bloque</p>
+                <p className="text-sm text-gray-800 dark:text-gray-100" style={{ fontWeight: 700 }}>
                   {selectedEvent.bloque_nombre ?? selectedEvent.id_bloque ?? 'Sin bloque'}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs text-gray-400">Fecha</p>
-                  <p className="text-sm text-gray-800 capitalize">{formatLongDate(selectedEvent.fecha_inicio)}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Fecha</p>
+                  <p className="text-sm text-gray-800 dark:text-gray-100 capitalize">{formatLongDate(selectedEvent.fecha_inicio)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Hora</p>
-                  <p className="text-sm text-gray-800">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Hora</p>
+                  <p className="text-sm text-gray-800 dark:text-gray-100">
                     {formatTime(selectedEvent.fecha_inicio)} - {formatTime(selectedEvent.fecha_fin)}
                   </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-start gap-2">
-                  <UserRound size={15} className="text-gray-400 mt-0.5" />
+                  <UserRound size={15} className="text-gray-400 dark:text-gray-500 mt-0.5" />
                   <div>
-                    <p className="text-xs text-gray-400">Profesor</p>
-                    <p className="text-sm text-gray-800">{selectedEvent.profesor_nombre ?? 'Profesor pendiente'}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Profesor</p>
+                    <p className="text-sm text-gray-800 dark:text-gray-100">{selectedEvent.profesor_nombre ?? 'Profesor pendiente'}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <MapPin size={15} className="text-gray-400 mt-0.5" />
+                  <MapPin size={15} className="text-gray-400 dark:text-gray-500 mt-0.5" />
                   <div>
-                    <p className="text-xs text-gray-400">Aula</p>
-                    <p className="text-sm text-gray-800">{selectedEvent.aula ?? 'Aula pendiente'}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Aula</p>
+                    <p className="text-sm text-gray-800 dark:text-gray-100">{selectedEvent.aula ?? 'Aula pendiente'}</p>
                   </div>
                 </div>
               </div>
               {selectedEvent.descripcion && (
                 <div>
-                  <p className="text-xs text-gray-400">Descripción</p>
-                  <p className="text-sm text-gray-700">{selectedEvent.descripcion}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Descripción</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{selectedEvent.descripcion}</p>
                 </div>
               )}
             </div>
@@ -397,19 +397,19 @@ export function CalendarScreen() {
           onClick={() => setSelectedDayEvents(null)}
         >
           <div
-            className="bg-white rounded-2xl p-5 w-full max-w-md shadow-xl max-h-[80vh] overflow-y-auto"
+            className="bg-white dark:bg-gray-900 rounded-2xl p-5 w-full max-w-md shadow-xl max-h-[80vh] overflow-y-auto"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-xs text-gray-400 uppercase" style={{ fontWeight: 800 }}>
+                <p className="text-xs text-gray-400 dark:text-gray-500 uppercase" style={{ fontWeight: 800 }}>
                   Eventos del día
                 </p>
-                <h3 className="text-lg text-gray-900 capitalize" style={{ fontWeight: 800 }}>
+                <h3 className="text-lg text-gray-900 dark:text-gray-100 capitalize" style={{ fontWeight: 800 }}>
                   {formatLongDate(selectedDayEvents[0].fecha_inicio)}
                 </h3>
               </div>
-              <button onClick={() => setSelectedDayEvents(null)} className="p-1 text-gray-400">
+              <button onClick={() => setSelectedDayEvents(null)} className="p-1 text-gray-400 dark:text-gray-500">
                 <X size={20} />
               </button>
             </div>
@@ -429,7 +429,7 @@ export function CalendarScreen() {
                     <p className={`text-sm ${meta.text}`} style={{ fontWeight: 800 }}>
                       {getEventDisplayTitle(event)}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-600 mt-1">
                       {[event.profesor_nombre, event.aula].filter(Boolean).join(' · ')}
                     </p>
                   </button>

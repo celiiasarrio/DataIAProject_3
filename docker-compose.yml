@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_INITDB_ARGS: "-c client_encoding=UTF8 -c default_text_search_config=spanish"
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/esquema.sql:/docker-entrypoint-initdb.d/01-esquema.sql:ro

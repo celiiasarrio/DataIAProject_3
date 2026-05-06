@@ -1905,7 +1905,7 @@ def list_task_grades(
         .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
         .filter(RelBloquesGrupos.id_bloque == task.id_bloque)
         .distinct()
-        .order_by(Alumno.nombre, Alumno.apellido1)
+        .order_by(Alumno.nombre, Alumno.apellido)
         .all()
     )
     grades = {
@@ -2136,7 +2136,7 @@ def list_session_attendance_roster(
         .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
         .filter(RelBloquesGrupos.id_bloque == session_row.id_bloque)
         .distinct()
-        .order_by(Alumno.nombre, Alumno.apellido1)
+        .order_by(Alumno.nombre, Alumno.apellido)
         .all()
     )
     attendance_records = {

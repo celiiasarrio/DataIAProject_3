@@ -28,7 +28,7 @@ TRUNCATE TABLE
     contenidos
 RESTART IDENTITY CASCADE;
 
-INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido1", "apellido2", "correo", "contrasena", "url_foto", "rol", "grupo") VALUES
+INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido", "apellido2", "correo", "contrasena", "url_foto", "rol", "grupo") VALUES
 ('daadgi', 'Daniel', 'Adam', 'Giménez', 'daadgi@edem.es', 'Da7!kLm92Q', '', 'Alumno', 'MDA A 2526'),
 ('joallu', 'Jorge', 'Albalat', 'Luengo', 'joallu@edem.es', 'Jo4#vRt81P', '', 'Alumno', 'MDA A 2526'),
 ('gebaad', 'Gemma', 'Balaguer', 'Adell', 'gebaad@edem.es', 'Ge9$uNx34L', '', 'Alumno', 'MDA A 2526'),

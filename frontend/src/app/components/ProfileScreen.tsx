@@ -39,6 +39,7 @@ import {
   type ProfileFull,
 } from '../api/client';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { useTheme, type Theme } from '../theme/ThemeContext';
 
 const DOC_TYPES = ['DNI/NIE', 'Matricula', 'Certificado', 'Convenio practicas', 'Autorizacion', 'Otro'];
 
@@ -249,8 +250,11 @@ function SelectInput({
   );
 }
 
+const capitalize = (value: string) => (value ? value.charAt(0).toUpperCase() + value.slice(1) : value);
+
 export function ProfileScreen() {
   const navigate = useNavigate();
+  const { setTheme } = useTheme();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const cvInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -276,7 +280,6 @@ export function ProfileScreen() {
   const isStudent = profile?.rol === 'Alumno';
   const isProfessor = profile?.rol === 'Profesor';
   const fullName = `${profile?.nombre ?? ''} ${profile?.apellido ?? ''}`.trim();
-  const isDark = profile?.tema === 'oscuro';
   const locale = profile?.idioma_app === 'en' ? 'en-GB' : profile?.idioma_app === 'ca' ? 'ca-ES' : 'es-ES';
   const t = TRANSLATIONS[(profile?.idioma_app as keyof typeof TRANSLATIONS) || 'es'] ?? TRANSLATIONS.es;
   const formatDate = (value: string | null) => {
@@ -368,7 +371,9 @@ export function ProfileScreen() {
       const payload = Object.fromEntries(fieldsBySection[editing].map((key) => [key, form[key]]));
       const updatedProfile = await updateProfileSection(editing, payload);
       setProfile(updatedProfile);
-      localStorage.setItem('profileTheme', updatedProfile.tema);
+      if (updatedProfile.tema === 'oscuro' || updatedProfile.tema === 'claro') {
+        setTheme(updatedProfile.tema as Theme);
+      }
       localStorage.setItem('profileLanguage', updatedProfile.idioma_app);
       setMessage(t.saveOk);
       setEditing(null);
@@ -460,7 +465,6 @@ export function ProfileScreen() {
   }
 
   return (
-    <div className={isDark ? 'dark' : ''}>
     <div className="min-h-screen bg-[#f5f5f5] dark:bg-gray-950 pb-24">
       <div className="bg-[#008899] px-5 pt-12 pb-24 rounded-b-3xl">
         <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-1 text-white/90 text-sm">
@@ -702,7 +706,7 @@ export function ProfileScreen() {
             <InfoGrid
               items={[
                 ['Idioma app', profile.idioma_app],
-                ['Tema', profile.tema],
+                ['Tema', capitalize(profile.tema)],
                 ['Email', profile.notificaciones_email ? 'Activado' : 'Desactivado'],
                 ['Push', profile.notificaciones_push ? 'Activado' : 'Desactivado'],
                 ['Perfil profesional', profile.visibilidad_profesional ? 'Visible' : 'Privado'],
@@ -754,7 +758,6 @@ export function ProfileScreen() {
           </button>
         </Card>
       </main>
-    </div>
     </div>
   );
 }
