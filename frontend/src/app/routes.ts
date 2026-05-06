@@ -13,6 +13,7 @@ import { CourseDetailScreen } from './components/CourseDetailScreen';
 import { GradingScreen } from './components/GradingScreen';
 import { TeacherGradesScreen } from './components/TeacherGradesScreen';
 import { ClassAttendanceScreen } from './components/ClassAttendanceScreen';
+import { TasksScreen } from './components/TasksScreen';
 import { Layout } from './components/Layout';
 
 
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
       { path: 'chat',                                         Component: ChatScreen           },
       { path: 'grades',                                       Component: GradesScreen         },
       { path: 'attendance',                                   Component: AttendanceScreen     },
+      { path: 'deliveries',                                   Component: TasksScreen          },
       { path: 'notifications',                                Component: NotificationsScreen  },
       { path: 'courses',                                      Component: CoursesScreen        },
       { path: 'courses/:courseId',                            Component: CourseDetailScreen   },
