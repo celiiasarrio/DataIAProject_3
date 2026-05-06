@@ -33,6 +33,7 @@ agent/
 ├── service.py            # API FastAPI para Cloud Run (/health, /api/v1/agent/chat)
 ├── firestore_session_service.py  # Persistencia opcional de sesiones en Firestore
 ├── tools/
+│   ├── system.py         # fecha/hora actual del agente para referencias relativas
 │   ├── http_client.py    # httpx client con JWT desde session state
 │   ├── profile.py
 │   ├── academic.py       # notas, asistencia, asignaturas
@@ -192,6 +193,7 @@ python3 smoke_test_agent.py \
 
 | Tool | Endpoint | Roles |
 |---|---|---|
+| `get_current_datetime` | local (sin backend) | todos |
 | `get_my_profile` | `GET /users/me` | todos |
 | `update_my_profile` | `PUT /users/me` | todos |
 | `get_user_by_id` | `GET /users/{id}` | todos |
