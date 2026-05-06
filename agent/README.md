@@ -33,6 +33,7 @@ agent/
 ├── service.py            # API FastAPI para Cloud Run (/health, /api/v1/agent/chat)
 ├── firestore_session_service.py  # Persistencia opcional de sesiones en Firestore
 ├── tools/
+│   ├── system.py         # fecha/hora actual del agente para referencias relativas
 │   ├── http_client.py    # httpx client con JWT desde session state
 │   ├── profile.py
 │   ├── academic.py       # notas, asistencia, asignaturas
@@ -62,11 +63,11 @@ gcloud config set project project3grupo6
 
 Y en el `.env` del agente:
 ```
-GOOGLE_GENAI_USE_VERTEXAI=TRUE
+GOOGLE_GENAI_USE_VERTEXAI=true
 GOOGLE_CLOUD_PROJECT=project3grupo6
 GOOGLE_CLOUD_LOCATION=europe-west1
 FIRESTORE_PROJECT=project3grupo6
-FIRESTORE_DATABASE=(default)
+FIRESTORE_DATABASE="(default)"
 ```
 
 **Opción B — Gemini API** (más rápido para arrancar, sólo para local):
@@ -98,6 +99,79 @@ libre. Escribe `salir` para terminar.
 Si llamas al servicio HTTP, `POST /api/v1/agent/chat` acepta `session_id`
 opcional y devuelve siempre `reply` + `session_id` para reanudar el hilo.
 
+## Despliegue manual en GCP
+
+Si queréis desplegar **solo el agente** sin tocar Terraform del resto del stack:
+
+1. Preparad la configuración:
+
+```bash
+cp agent/.env.cloudrun.example agent/.env.cloudrun
+```
+
+2. Editad `agent/.env.cloudrun` con estos valores reales:
+
+- `BACKEND_BASE_URL`: URL pública del backend ya desplegado.
+- `AGENT_SERVICE_ACCOUNT`: cuenta de servicio del agente en Cloud Run.
+- `PROJECT_ID`, `REGION`, `REPOSITORY`, `SERVICE_NAME`: nombres reales en GCP.
+- `PLATFORM`: dejadlo en `linux/amd64` para Cloud Run.
+
+3. Verificad permisos mínimos de la service account del agente:
+
+- `roles/aiplatform.user`
+- `roles/datastore.user`
+
+4. Lanzad el despliegue:
+
+```bash
+bash agent/deploy_cloud_run.sh
+```
+
+El script:
+
+- construye la imagen Docker del agente,
+- la sube a Artifact Registry,
+- despliega un servicio de Cloud Run con las variables de entorno que usa el código.
+
+### Variables que necesita Cloud Run
+
+Estas son las variables que luego el equipo de data tendrá que reflejar en Terraform:
+
+- `BACKEND_BASE_URL`
+- `GOOGLE_GENAI_USE_VERTEXAI`
+- `GOOGLE_CLOUD_PROJECT`
+- `GOOGLE_CLOUD_LOCATION`
+- `MODEL`
+- `HTTP_TIMEOUT_SECONDS`
+- `FIRESTORE_PROJECT`
+- `FIRESTORE_DATABASE`
+
+### Nota de acceso
+
+El frontend actual llama al agente **directamente** y le pasa el JWT del usuario.
+Por eso, si el tráfico va navegador -> Cloud Run, el servicio del agente debe estar
+invocable públicamente y la autenticación real la sigue haciendo el backend con el JWT.
+
+### Verificación
+
+Una vez desplegado:
+
+```bash
+AGENT_URL="https://tu-agent-url"
+curl "${AGENT_URL}/health"
+```
+
+Y para probar el flujo completo con un usuario real:
+
+```bash
+python3 smoke_test_agent.py \
+  --backend-url https://tu-backend-url \
+  --agent-url "${AGENT_URL}" \
+  --expect-session-backend firestore \
+  --username ahsoka.tano@edem.es \
+  --password demo123
+```
+
 ## Ejemplos de conversación
 
 **Alumno:**
@@ -119,6 +193,7 @@ opcional y devuelve siempre `reply` + `session_id` para reanudar el hilo.
 
 | Tool | Endpoint | Roles |
 |---|---|---|
+| `get_current_datetime` | local (sin backend) | todos |
 | `get_my_profile` | `GET /users/me` | todos |
 | `update_my_profile` | `PUT /users/me` | todos |
 | `get_user_by_id` | `GET /users/{id}` | todos |

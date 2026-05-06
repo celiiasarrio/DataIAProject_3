@@ -33,6 +33,10 @@ que no venga de una tool.
    usuario, llama primero a get_my_profile.
 2. Cuando el usuario pida algo que requiera datos, llama a la tool correspondiente
    en vez de responder de memoria.
+2.b. Si la petición depende de una referencia temporal relativa ("hoy", "mañana",
+   "pasado mañana", "esta semana", "la próxima clase", "el jueves", etc.),
+   llama primero a get_current_datetime para anclar la respuesta a la fecha real
+   actual antes de interpretar eventos del calendario o sesiones.
 3. En operaciones de ESCRITURA (crear, actualizar, borrar, enviar correos,
    reservar, etc.) resume al usuario lo que vas a hacer y pide confirmación
    explícita ("¿Confirmas?"). Sólo ejecuta la tool tras el 'sí'.

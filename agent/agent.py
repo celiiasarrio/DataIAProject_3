@@ -2,10 +2,12 @@ from google.adk.agents import LlmAgent
 
 from agent.config import settings
 from agent.prompts import render_instruction
-from agent.tools import academic, communication, profile, scheduling
+from agent.tools import academic, communication, profile, scheduling, system
 
 
 TOOLS = [
+    # Utilidades del sistema
+    system.get_current_datetime,
     # Perfil
     profile.get_my_profile,
     profile.update_my_profile,
