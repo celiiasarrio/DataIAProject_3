@@ -1,15 +1,41 @@
-import { Home, Calendar, User } from 'lucide-react';
+import { Home, Calendar, User, BookOpen } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const userRole = localStorage.getItem('userRole') || 'student';
 
-  const navItems = [
-    { icon: Home, path: '/dashboard', label: 'Inicio' },
-    { icon: Calendar, path: '/calendar', label: 'Calendario' },
-    { icon: User, path: '/profile', label: 'Perfil' },
-  ];
+  const getNavItems = () => {
+    const baseItems = [
+      { icon: Home, path: '/dashboard', label: 'Inicio' },
+    ];
+
+    if (userRole === 'student') {
+      return [
+        ...baseItems,
+        { icon: Calendar, path: '/calendar', label: 'Calendario' },
+        { icon: User, path: '/profile', label: 'Perfil' },
+      ];
+    } else if (userRole === 'professor') {
+      return [
+        ...baseItems,
+        { icon: Calendar, path: '/calendar', label: 'Mis Clases' },
+        { icon: BookOpen, path: '/teacher/grades', label: 'Notas' },
+        { icon: User, path: '/profile', label: 'Perfil' },
+      ];
+    } else {
+      // admin/coordinator
+      return [
+        ...baseItems,
+        { icon: Calendar, path: '/calendar', label: 'Calendario' },
+        { icon: BookOpen, path: '/teacher/grades', label: 'Notas' },
+        { icon: User, path: '/profile', label: 'Perfil' },
+      ];
+    }
+  };
+
+  const navItems = getNavItems();
 
   // Don't show on login page
   if (location.pathname === '/') {
