@@ -9,6 +9,7 @@ import shutil
 import uuid
 from pathlib import Path
 from typing import List, Optional
+from urllib.parse import urlparse
 
 try:
     import bcrypt as bcrypt_lib
@@ -16,9 +17,11 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for thin local envs
     bcrypt_lib = None
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
+from google.api_core.exceptions import NotFound
+from google.cloud import storage
 try:
     from jose import JWTError, jwt
 except ModuleNotFoundError:  # pragma: no cover - fallback for thin local envs
@@ -90,10 +93,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-UPLOAD_ROOT = Path(os.getenv("UPLOAD_ROOT", "/app/uploads"))
-PUBLIC_UPLOAD_PREFIX = "/uploads"
-UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
-app.mount(PUBLIC_UPLOAD_PREFIX, StaticFiles(directory=str(UPLOAD_ROOT)), name="uploads")
+UPLOAD_ROOT_RAW = os.getenv("UPLOAD_ROOT", "/app/uploads")
+PUBLIC_UPLOAD_PREFIX = os.getenv("PUBLIC_UPLOAD_PREFIX", "/uploads").rstrip("/")
+GCS_UPLOAD_BUCKET: Optional[str] = None
+GCS_UPLOAD_PREFIX = ""
+UPLOAD_ROOT: Optional[Path] = None
+
+if UPLOAD_ROOT_RAW.startswith("gs://"):
+    parsed_upload_root = urlparse(UPLOAD_ROOT_RAW)
+    GCS_UPLOAD_BUCKET = parsed_upload_root.netloc
+    GCS_UPLOAD_PREFIX = parsed_upload_root.path.strip("/")
+    if not GCS_UPLOAD_BUCKET:
+        raise ValueError("UPLOAD_ROOT gs:// debe incluir un bucket")
+else:
+    UPLOAD_ROOT = Path(UPLOAD_ROOT_RAW)
+    UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+    app.mount(PUBLIC_UPLOAD_PREFIX, StaticFiles(directory=str(UPLOAD_ROOT)), name="uploads")
+
+
+def gcs_client() -> storage.Client:
+    return storage.Client()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
 
@@ -800,7 +819,13 @@ def ensure_profile_detail(db: Session, user_id: str) -> PerfilDetalle:
     return detail
 
 
+def safe_upload_user_id(user_id: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9_.-]", "_", user_id)
+
+
 def user_upload_dir(user_id: str) -> Path:
+    if UPLOAD_ROOT is None:
+        raise RuntimeError("user_upload_dir solo se usa con almacenamiento local")
     safe_id = re.sub(r"[^a-zA-Z0-9_.-]", "_", user_id)
     path = UPLOAD_ROOT / "profiles" / safe_id
     path.mkdir(parents=True, exist_ok=True)
@@ -808,12 +833,32 @@ def user_upload_dir(user_id: str) -> Path:
 
 
 def public_upload_url(path: Path) -> str:
+    if UPLOAD_ROOT is None:
+        raise RuntimeError("public_upload_url solo se usa con almacenamiento local")
     relative = path.relative_to(UPLOAD_ROOT).as_posix()
     return f"{PUBLIC_UPLOAD_PREFIX}/{relative}"
 
 
+def gcs_object_name(relative_path: str) -> str:
+    return "/".join(part for part in [GCS_UPLOAD_PREFIX, relative_path.strip("/")] if part)
+
+
+def public_gcs_upload_url(relative_path: str) -> str:
+    return f"{PUBLIC_UPLOAD_PREFIX}/{relative_path.strip('/')}"
+
+
 def delete_public_upload(url: Optional[str]) -> None:
     if not url or not url.startswith(f"{PUBLIC_UPLOAD_PREFIX}/"):
+        return
+    relative = url.removeprefix(f"{PUBLIC_UPLOAD_PREFIX}/")
+    if GCS_UPLOAD_BUCKET:
+        bucket = gcs_client().bucket(GCS_UPLOAD_BUCKET)
+        try:
+            bucket.blob(gcs_object_name(relative)).delete(if_generation_match=None)
+        except NotFound:
+            pass
+        return
+    if UPLOAD_ROOT is None:
         return
     target = (UPLOAD_ROOT / url.removeprefix(f"{PUBLIC_UPLOAD_PREFIX}/")).resolve()
     if UPLOAD_ROOT.resolve() in target.parents and target.exists():
@@ -837,6 +882,14 @@ def validate_upload(file: UploadFile, allowed_extensions: set[str], allowed_cont
 
 
 def store_upload(user_id: str, file: UploadFile, folder: str, basename: str, ext: str) -> str:
+    if GCS_UPLOAD_BUCKET:
+        relative = f"profiles/{safe_upload_user_id(user_id)}/{folder}/{basename}.{ext}"
+        bucket = gcs_client().bucket(GCS_UPLOAD_BUCKET)
+        blob = bucket.blob(gcs_object_name(relative))
+        file.file.seek(0)
+        blob.upload_from_file(file.file, content_type=file.content_type)
+        return public_gcs_upload_url(relative)
+
     target_dir = user_upload_dir(user_id) / folder
     target_dir.mkdir(parents=True, exist_ok=True)
     target = target_dir / f"{basename}.{ext}"
@@ -1405,6 +1458,10 @@ def download_my_document(
     document = db.query(PerfilDocumento).filter(PerfilDocumento.id == document_id, PerfilDocumento.id_usuario == user_id).first()
     if not document:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
+    if GCS_UPLOAD_BUCKET:
+        return RedirectResponse(document.url)
+    if UPLOAD_ROOT is None:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
     target = (UPLOAD_ROOT / document.url.removeprefix(f"{PUBLIC_UPLOAD_PREFIX}/")).resolve()
     if not target.exists():
         raise HTTPException(status_code=404, detail="Archivo no encontrado")

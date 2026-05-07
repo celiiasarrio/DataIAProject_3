@@ -350,7 +350,7 @@ SELECT
     usuarios.id_usuario,
     s.id_sesion,
     s.fecha,
-    (ABS(HASHTEXT(usuarios.id_usuario || '-attendance-' || s.id_sesion)) % 10) < 8
+    (ABS(CAST(('x' || SUBSTRING(MD5(usuarios.id_usuario || '-attendance-' || s.id_sesion), 1, 16)) AS BIT(64))::BIGINT) % 10) < 8
 FROM (
     SELECT id_alumno AS id_usuario FROM alumnos
     UNION ALL

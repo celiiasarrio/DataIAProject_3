@@ -12,7 +12,7 @@ on:
 env:
   PROJECT_ID: project3grupo6
   REGION: europe-west1
-  REGISTRY: europe-west1-docker.pkg.dev/project3grupo6/project3grupo6
+  REGISTRY: europe-west1-docker.pkg.dev/project3grupo6/docker-repo
 
 jobs:
   deploy-backend:
@@ -45,14 +45,16 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+          BACKEND_SERVICE_ACCOUNT: project3grupo6-backend-sa@project3grupo6.iam.gserviceaccount.com
         run: |
           gcloud run deploy project3grupo6-backend \
             --image "$REGISTRY/backend:$IMAGE_TAG" \
             --region "$REGION" \
             --platform managed \
             --allow-unauthenticated \
+            --service-account "$BACKEND_SERVICE_ACCOUNT" \
             --add-cloudsql-instances "$CLOUD_SQL_CONNECTION_NAME" \
-            --set-env-vars "DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_NAME=$DB_NAME,CLOUD_SQL_CONNECTION_NAME=$CLOUD_SQL_CONNECTION_NAME,JWT_SECRET=$JWT_SECRET,ENVIRONMENT=production"
+            --set-env-vars "DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_NAME=$DB_NAME,CLOUD_SQL_CONNECTION_NAME=$CLOUD_SQL_CONNECTION_NAME,JWT_SECRET=$JWT_SECRET,ENVIRONMENT=production,UPLOAD_ROOT=gs://project3grupo6-uploads/uploads,PUBLIC_UPLOAD_PREFIX=https://storage.googleapis.com/project3grupo6-uploads/uploads"
 
   deploy-agent:
     runs-on: ubuntu-latest

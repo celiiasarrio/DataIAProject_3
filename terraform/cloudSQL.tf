@@ -5,7 +5,7 @@ resource "google_sql_database_instance" "edem_db_instance" {
   region           = var.db_region
 
   settings {
-    tier = "db-f1-micro"
+    tier = var.db_tier
     ip_configuration {
       ipv4_enabled = true
       authorized_networks {
@@ -15,6 +15,8 @@ resource "google_sql_database_instance" "edem_db_instance" {
     }
   }
   deletion_protection = false
+
+  depends_on = [google_project_service.sqladmin]
 }
 
 # Base de datos
@@ -25,7 +27,8 @@ resource "google_sql_database" "edem_database" {
 
 # DB User
 resource "google_sql_user" "edem_db_user" {
-  name     = var.db_user
-  instance = google_sql_database_instance.edem_db_instance.name
-  password = var.db_password
+  name            = var.db_user
+  instance        = google_sql_database_instance.edem_db_instance.name
+  password        = var.db_password
+  deletion_policy = "ABANDON"
 }

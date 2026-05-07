@@ -79,6 +79,8 @@ class Sesion(Base):
     fecha = Column(Date, nullable=True, index=True)
     hora_inicio = Column(Time, nullable=True)
     hora_fin = Column(Time, nullable=True)
+    edificio = Column(String, nullable=True)
+    planta = Column(String, nullable=True)
     aula = Column(String, nullable=True)
 
 
