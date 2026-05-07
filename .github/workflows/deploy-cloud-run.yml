@@ -96,6 +96,13 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
 
+      - name: Enable bootstrap Google APIs
+        run: |
+          gcloud services enable \
+            cloudresourcemanager.googleapis.com \
+            serviceusage.googleapis.com \
+            --project "${PROJECT_ID}"
+
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
