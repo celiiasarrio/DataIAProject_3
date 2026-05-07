@@ -58,7 +58,3 @@ output "agent_sa_email" {
   value       = google_service_account.agent_sa.email
 }
 
-output "firestore_sa_email" {
-  description = "Firestore service account email"
-  value       = google_service_account.firestore_sa.email
-}

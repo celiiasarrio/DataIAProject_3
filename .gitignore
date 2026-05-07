@@ -35,6 +35,11 @@ logs/
 spa-datajuniorsprogram-sdb-001-899009cc32ac.json
 *.json.bak
 
+# Database scripts with credentials
+load_datos*.py
+load_data*.py
+fix_datos*.py
+
 # Terraform
 .terraform/
 *.tfstate

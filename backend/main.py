@@ -774,8 +774,8 @@ def get_user_role(user) -> str:
 
 def get_user_last_name(user) -> str:
     if getattr(user, "id_alumno", None):
-        return user.apellido
-    return user.apellido
+        return user.apellido1
+    return user.apellido1
 
 
 def serialize_profile(user) -> UserProfileOut:
@@ -1135,9 +1135,9 @@ def update_my_profile(
         current_user.correo = data["correo"]
     if "apellido" in data:
         if get_user_role(current_user) == "alumno":
-            current_user.apellido = data["apellido"]
+            current_user.apellido1 = data["apellido"]
         else:
-            current_user.apellido = data["apellido"]
+            current_user.apellido1 = data["apellido"]
     db.commit()
     db.refresh(current_user)
     return {"mensaje": "Perfil actualizado correctamente"}
@@ -1190,7 +1190,7 @@ def update_profile_personal(
     if "nombre" in data:
         current_user.nombre = data["nombre"]
     if "apellido" in data:
-        current_user.apellido = data["apellido"]
+        current_user.apellido1 = data["apellido"]
     detail = ensure_profile_detail(db, get_user_id(current_user))
     apply_detail_update(detail, payload, ["telefono", "ciudad", "idioma_preferido", "contacto_emergencia"])
     db.commit()
@@ -1612,14 +1612,14 @@ def list_block_students(
         .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
         .filter(RelBloquesGrupos.id_bloque == block_id)
         .distinct()
-        .order_by(Alumno.nombre, Alumno.apellido)
+        .order_by(Alumno.nombre, Alumno.apellido1)
         .all()
     )
     return [
         AlumnoOut(
             id_alumno=student.id_alumno,
             nombre=student.nombre,
-            apellido=student.apellido,
+            apellido=student.apellido1,
             correo=student.correo,
         )
         for student in students
@@ -1800,14 +1800,14 @@ def list_session_students(
         .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
         .filter(RelBloquesGrupos.id_bloque == session_row.id_bloque)
         .distinct()
-        .order_by(Alumno.nombre, Alumno.apellido)
+        .order_by(Alumno.nombre, Alumno.apellido1)
         .all()
     )
     return [
         AlumnoOut(
             id_alumno=student.id_alumno,
             nombre=student.nombre,
-            apellido=student.apellido,
+            apellido=student.apellido1,
             correo=student.correo,
         )
         for student in students
@@ -1916,7 +1916,7 @@ def list_task_grades(
         GradeRosterRow(
             id_alumno=student.id_alumno,
             nombre=student.nombre,
-            apellido=student.apellido,
+            apellido=student.apellido1,
             id_tarea=task.id_tarea,
             nombre_tarea=task.nombre,
             id_bloque=task.id_bloque,
@@ -2147,7 +2147,7 @@ def list_session_attendance_roster(
         AttendanceRosterRow(
             id_alumno=student.id_alumno,
             nombre=student.nombre,
-            apellido=student.apellido,
+            apellido=student.apellido1,
             id_sesion=session_id,
             fecha=attendance_records[student.id_alumno].fecha if student.id_alumno in attendance_records else session_row.fecha,
             presente=attendance_records[student.id_alumno].presente if student.id_alumno in attendance_records else None,
@@ -2434,14 +2434,14 @@ def list_group_students(
         db.query(Alumno)
         .join(RelAlumnosGrupos, RelAlumnosGrupos.id_alumno == Alumno.id_alumno)
         .filter(RelAlumnosGrupos.id_grupo == group_id)
-        .order_by(Alumno.nombre, Alumno.apellido)
+        .order_by(Alumno.nombre, Alumno.apellido1)
         .all()
     )
     return [
         AlumnoOut(
             id_alumno=student.id_alumno,
             nombre=student.nombre,
-            apellido=student.apellido,
+            apellido=student.apellido1,
             correo=student.correo,
         )
         for student in students

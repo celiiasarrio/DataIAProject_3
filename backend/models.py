@@ -42,7 +42,7 @@ class Alumno(Base):
 
     id_alumno = Column(String, primary_key=True, index=True)
     nombre = Column(String)
-    apellido = Column(String)
+    apellido1 = Column(String)
     apellido2 = Column(String, nullable=True)
     correo = Column(String, nullable=False, unique=True, index=True)
     contrasena = Column(String, nullable=False)

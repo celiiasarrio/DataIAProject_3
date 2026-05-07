@@ -126,7 +126,7 @@ resource "google_cloud_run_v2_service" "backend" {
 
       env {
         name  = "CLOUD_SQL_CONNECTION_NAME"
-        value = "/cloudsql/${google_sql_database_instance.edem_db_instance.connection_name}"
+        value = google_sql_database_instance.edem_db_instance.connection_name
       }
 
       env {

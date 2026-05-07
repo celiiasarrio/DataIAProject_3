@@ -1,4 +1,4 @@
-import { Bell, BookOpen, CheckCircle, Calendar, DoorOpen, User, Clock, FileText, Trophy } from 'lucide-react';
+import { Bell, BookOpen, CheckCircle, DoorOpen, Users, Clock, FileText, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
@@ -130,16 +130,6 @@ export function DashboardScreen() {
           <Bell className="text-white cursor-pointer" size={24} onClick={() => navigate('/notifications')} />
         </div>
         <p className="text-white text-lg mb-2">Hola{userName ? `, ${userName.split(' ')[0]}` : ''}</p>
-        {profile && (
-          <div className="flex gap-2 flex-wrap">
-            {profile.programa_area && (
-              <span className="bg-white bg-opacity-30 text-white text-xs px-3 py-1 rounded-full">{profile.programa_area}</span>
-            )}
-            {profile.grupo && (
-              <span className="bg-white bg-opacity-30 text-white text-xs px-3 py-1 rounded-full">{profile.grupo}</span>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Content */}
@@ -150,13 +140,12 @@ export function DashboardScreen() {
             {[
               { icon: BookOpen, label: 'Notas', route: '/grades' },
               { icon: CheckCircle, label: 'Asistencia', route: '/attendance' },
-              { icon: Calendar, label: 'Calendario', route: '/calendar' },
               { icon: DoorOpen, label: 'Salas', route: '/rooms' },
-              { icon: User, label: 'Perfil', route: '/profile' },
+              { icon: Users, label: 'Tutorías', route: null },
             ].map((item) => (
               <button
-                key={item.route}
-                onClick={() => navigate(item.route)}
+                key={item.label}
+                onClick={() => item.route && navigate(item.route)}
                 className="flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg hover:bg-[#f5f5f5] transition-colors"
               >
                 <item.icon size={20} className="text-[#008899]" />
@@ -286,15 +275,6 @@ export function DashboardScreen() {
           >
             Pedir tutoría
           </button>
-        </div>
-
-        {/* Notifications/Alerts */}
-        <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[#008899]" style={{ fontWeight: 600 }}>AVISOS</h3>
-            <span className="bg-[#008899] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
-          </div>
-          <p className="text-sm text-gray-500">No tienes avisos nuevos.</p>
         </div>
 
         {/* Recent Content */}
