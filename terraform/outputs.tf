@@ -15,17 +15,17 @@ output "artifact_registry" {
 
 output "frontend_url" {
   description = "Frontend Cloud Run URL"
-  value       = google_cloud_run_v2_service.frontend.uri
+  value       = var.deploy_services && var.deploy_frontend ? google_cloud_run_v2_service.frontend[0].uri : null
 }
 
 output "backend_url" {
   description = "Backend Cloud Run URL"
-  value       = google_cloud_run_v2_service.backend.uri
+  value       = var.deploy_services && var.deploy_backend ? google_cloud_run_v2_service.backend[0].uri : null
 }
 
 output "agent_url" {
   description = "Agent Cloud Run URL"
-  value       = google_cloud_run_v2_service.agent.uri
+  value       = var.deploy_services && var.deploy_agent ? google_cloud_run_v2_service.agent[0].uri : null
 }
 
 output "database_connection" {
@@ -58,7 +58,3 @@ output "agent_sa_email" {
   value       = google_service_account.agent_sa.email
 }
 
-output "firestore_sa_email" {
-  description = "Firestore service account email"
-  value       = google_service_account.firestore_sa.email
-}

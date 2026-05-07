@@ -17,6 +17,8 @@ resource "google_service_account" "agent_sa" {
 }
 
 resource "google_cloud_run_v2_service" "frontend" {
+  count = var.deploy_services && var.deploy_frontend ? 1 : 0
+
   name     = "${var.app_name}-frontend"
   location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
@@ -25,12 +27,12 @@ resource "google_cloud_run_v2_service" "frontend" {
     service_account = google_service_account.frontend_sa.email
 
     scaling {
-      min_instance_count = 0
+      min_instance_count = var.frontend_min_instances
       max_instance_count = 1
     }
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/docker-repo/frontend:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/docker-repo/frontend:${var.frontend_image_tag}"
 
       resources {
         limits = {
@@ -45,12 +47,17 @@ resource "google_cloud_run_v2_service" "frontend" {
     }
   }
 
-  depends_on = [google_artifact_registry_repository.docker]
+  depends_on = [
+    google_artifact_registry_repository.docker,
+    google_project_service.run,
+  ]
 }
 
 # Frontend is publicly accessible
 resource "google_cloud_run_v2_service_iam_member" "frontend_public" {
-  name     = google_cloud_run_v2_service.frontend.name
+  count = var.deploy_services && var.deploy_frontend ? 1 : 0
+
+  name     = google_cloud_run_v2_service.frontend[0].name
   location = var.region
   role     = "roles/run.invoker"
   member   = "allUsers"
@@ -58,7 +65,9 @@ resource "google_cloud_run_v2_service_iam_member" "frontend_public" {
 
 # Backend is publicly accessible
 resource "google_cloud_run_v2_service_iam_member" "backend_public" {
-  name     = google_cloud_run_v2_service.backend.name
+  count = var.deploy_services && var.deploy_backend ? 1 : 0
+
+  name     = google_cloud_run_v2_service.backend[0].name
   location = var.region
   role     = "roles/run.invoker"
   member   = "allUsers"
@@ -66,13 +75,17 @@ resource "google_cloud_run_v2_service_iam_member" "backend_public" {
 
 # Agent is publicly accessible (auth real via JWT del backend)
 resource "google_cloud_run_v2_service_iam_member" "agent_public" {
-  name     = google_cloud_run_v2_service.agent.name
+  count = var.deploy_services && var.deploy_agent ? 1 : 0
+
+  name     = google_cloud_run_v2_service.agent[0].name
   location = var.region
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
 
 resource "google_cloud_run_v2_service" "backend" {
+  count = var.deploy_services && var.deploy_backend ? 1 : 0
+
   name     = "${var.app_name}-backend"
   location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
@@ -81,12 +94,12 @@ resource "google_cloud_run_v2_service" "backend" {
     service_account = google_service_account.backend_sa.email
 
     scaling {
-      min_instance_count = 0
+      min_instance_count = var.backend_min_instances
       max_instance_count = 1
     }
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/docker-repo/backend:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/docker-repo/backend:${var.backend_image_tag}"
 
       resources {
         limits = {
@@ -126,7 +139,7 @@ resource "google_cloud_run_v2_service" "backend" {
 
       env {
         name  = "CLOUD_SQL_CONNECTION_NAME"
-        value = "/cloudsql/${google_sql_database_instance.edem_db_instance.connection_name}"
+        value = google_sql_database_instance.edem_db_instance.connection_name
       }
 
       env {
@@ -153,10 +166,17 @@ resource "google_cloud_run_v2_service" "backend" {
     }
   }
 
-  depends_on = [google_artifact_registry_repository.docker]
+  depends_on = [
+    google_artifact_registry_repository.docker,
+    google_project_iam_member.backend_cloudsql,
+    google_storage_bucket_iam_member.backend_write,
+    google_project_service.run,
+  ]
 }
 
 resource "google_cloud_run_v2_service" "agent" {
+  count = var.deploy_services && var.deploy_agent ? 1 : 0
+
   name     = "${var.app_name}-agent"
   location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
@@ -165,12 +185,12 @@ resource "google_cloud_run_v2_service" "agent" {
     service_account = google_service_account.agent_sa.email
 
     scaling {
-      min_instance_count = 0
+      min_instance_count = var.agent_min_instances
       max_instance_count = 1
     }
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/docker-repo/agent:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/docker-repo/agent:${var.agent_image_tag}"
 
       resources {
         limits = {
@@ -185,7 +205,7 @@ resource "google_cloud_run_v2_service" "agent" {
 
       env {
         name  = "BACKEND_BASE_URL"
-        value = google_cloud_run_v2_service.backend.uri
+        value = google_cloud_run_v2_service.backend[0].uri
       }
 
       env {
@@ -218,12 +238,18 @@ resource "google_cloud_run_v2_service" "agent" {
         value = var.project_id
       }
 
-      # env {
-      #   name  = "FIRESTORE_DATABASE"
-      #   value = google_firestore_database.database.name
-      # }
+      env {
+        name  = "FIRESTORE_DATABASE"
+        value = "(default)"
+      }
     }
   }
 
-  depends_on = [google_artifact_registry_repository.docker]
+  depends_on = [
+    google_artifact_registry_repository.docker,
+    google_cloud_run_v2_service.backend,
+    google_project_iam_member.agent_vertex_ai,
+    google_project_iam_member.agent_firestore,
+    google_project_service.run,
+  ]
 }

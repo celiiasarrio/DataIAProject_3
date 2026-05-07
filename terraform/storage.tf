@@ -2,7 +2,7 @@
 resource "google_storage_bucket" "uploads" {
   name          = "${var.app_name}-uploads"
   location      = var.region
-  force_destroy = false
+  force_destroy = true
 
   uniform_bucket_level_access = false
 
@@ -18,6 +18,8 @@ resource "google_storage_bucket" "uploads" {
       age = 90 # Eliminar archivos después de 90 días
     }
   }
+
+  depends_on = [google_project_service.storage]
 }
 
 # Hacer el bucket públicamente legible (para acceder a uploads vía URL)

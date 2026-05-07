@@ -4,16 +4,26 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ID="project3grupo6"
 REGION="europe-west1"
-REGISTRY="${REGION}-docker.pkg.dev/${PROJECT_ID}/${PROJECT_ID}"
+REGISTRY="${REGION}-docker.pkg.dev/${PROJECT_ID}/docker-repo"
 BACKEND_SERVICE="${PROJECT_ID}-backend"
 AGENT_SERVICE="${PROJECT_ID}-agent"
+TERRAFORM_BIN="${TERRAFORM_BIN:-terraform}"
+
+if ! command -v "${TERRAFORM_BIN}" >/dev/null 2>&1; then
+  if [ -x "${SCRIPT_DIR}/terraform/terraform.exe" ]; then
+    TERRAFORM_BIN="${SCRIPT_DIR}/terraform/terraform.exe"
+  else
+    echo "Terraform no esta en el PATH y no encuentro terraform/terraform.exe" >&2
+    exit 1
+  fi
+fi
 
 echo "==> Configuring Docker for Artifact Registry..."
 gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
 
 echo "==> Creating Artifact Registry (if not exists)..."
-terraform -chdir="${SCRIPT_DIR}/terraform" init
-terraform -chdir="${SCRIPT_DIR}/terraform" apply -target=google_artifact_registry_repository.docker -auto-approve
+"${TERRAFORM_BIN}" -chdir="${SCRIPT_DIR}/terraform" init
+"${TERRAFORM_BIN}" -chdir="${SCRIPT_DIR}/terraform" apply -target=google_artifact_registry_repository.docker -auto-approve
 
 echo "==> Building backend image..."
 docker build -t "${REGISTRY}/backend:latest" "${SCRIPT_DIR}/backend"
@@ -34,7 +44,7 @@ echo "==> Pushing frontend image..."
 docker push "${REGISTRY}/frontend:latest"
 
 echo "==> Deploying infrastructure..."
-terraform -chdir="${SCRIPT_DIR}/terraform" apply -auto-approve
+"${TERRAFORM_BIN}" -chdir="${SCRIPT_DIR}/terraform" apply -auto-approve
 
 echo "==> Resolving deployed service URLs..."
 BACKEND_URL=$(gcloud run services describe "${BACKEND_SERVICE}" --region "${REGION}" --format 'value(status.url)')
@@ -51,7 +61,7 @@ echo "==> Pushing rebuilt frontend image..."
 docker push "${REGISTRY}/frontend:latest"
 
 echo "==> Refreshing infrastructure with the final frontend image..."
-terraform -chdir="${SCRIPT_DIR}/terraform" apply -auto-approve
+"${TERRAFORM_BIN}" -chdir="${SCRIPT_DIR}/terraform" apply -auto-approve
 
 echo "==> Done!"
-terraform -chdir="${SCRIPT_DIR}/terraform" output frontend_url
+"${TERRAFORM_BIN}" -chdir="${SCRIPT_DIR}/terraform" output frontend_url

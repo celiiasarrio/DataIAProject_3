@@ -1,13 +1,15 @@
-# Copiar este archivo a terraform.tfvars y reemplazar los valores
+# Example configuration for GCP Terraform deployment
+# Copy this file to terraform.tfvars and fill in the actual values
+# IMPORTANT: terraform.tfvars is in .gitignore and should NOT be committed
 
-project_id       = "project3grupo6"
-app_name         = "project3grupo6"
+project_id       = "your-gcp-project-id"
+app_name         = "your-app-name"
 region           = "europe-west1"
 db_region        = "europe-southwest1"
-db_instance_name = "project3grupo6-postgres"
+db_instance_name = "your-db-instance-name"
 db_name          = "edem_hub_db"
 db_user          = "postgres"
-db_password      = "CAMBIAR_A_CONTRASEÑA_SEGURA"
-jwt_secret       = "CAMBIAR_A_JWT_SECRET_SEGURO"
-cicd_sa_email    = "project3grupo6-backend-sa@project3grupo6.iam.gserviceaccount.com"
+db_password      = "your-secure-password-here"
+jwt_secret       = "your-jwt-secret-key-change-in-production"
+cicd_sa_email    = "your-ci-cd-service-account@your-project.iam.gserviceaccount.com"
 firestore_location = "europe-west1"

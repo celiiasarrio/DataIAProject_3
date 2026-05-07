@@ -4,6 +4,24 @@ resource "google_project_service" "sqladmin" {
   disable_on_destroy = false
 }
 
+# Enable Cloud Run API
+resource "google_project_service" "run" {
+  service            = "run.googleapis.com"
+  disable_on_destroy = false
+}
+
+# Enable Artifact Registry API
+resource "google_project_service" "artifactregistry" {
+  service            = "artifactregistry.googleapis.com"
+  disable_on_destroy = false
+}
+
+# Enable Cloud Storage API
+resource "google_project_service" "storage" {
+  service            = "storage.googleapis.com"
+  disable_on_destroy = false
+}
+
 # Enable Firestore API
 resource "google_project_service" "firestore" {
   service            = "firestore.googleapis.com"
@@ -27,6 +45,13 @@ resource "google_project_iam_member" "backend_cloudsql" {
 resource "google_project_iam_member" "agent_vertex_ai" {
   project = var.project_id
   role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${google_service_account.agent_sa.email}"
+}
+
+# Agent SA -> Firestore session and memory persistence
+resource "google_project_iam_member" "agent_firestore" {
+  project = var.project_id
+  role    = "roles/datastore.user"
   member  = "serviceAccount:${google_service_account.agent_sa.email}"
 }
 

@@ -42,7 +42,7 @@ class Alumno(Base):
 
     id_alumno = Column(String, primary_key=True, index=True)
     nombre = Column(String)
-    apellido = Column(String)
+    apellido1 = Column(String)
     apellido2 = Column(String, nullable=True)
     correo = Column(String, nullable=False, unique=True, index=True)
     contrasena = Column(String, nullable=False)
@@ -79,6 +79,8 @@ class Sesion(Base):
     fecha = Column(Date, nullable=True, index=True)
     hora_inicio = Column(Time, nullable=True)
     hora_fin = Column(Time, nullable=True)
+    edificio = Column(String, nullable=True)
+    planta = Column(String, nullable=True)
     aula = Column(String, nullable=True)
 
 
