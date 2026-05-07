@@ -46,6 +46,65 @@ def get_my_grades(tool_context: ToolContext) -> list:
     return api_get("/api/v1/grades/me", tool_context)
 
 
+def get_my_grade_summary(tool_context: ToolContext) -> dict:
+    """Devuelve un resumen calculado de las notas del alumno autenticado.
+
+    Usa esta tool cuando el usuario pregunte por media, promedio, cómo va de
+    notas o resumen académico. Calcula la media simple y la media ponderada con
+    los mismos pesos que usa el dashboard del frontend.
+    """
+    grades = api_get("/api/v1/grades/me", tool_context)
+    if isinstance(grades, dict) and grades.get("error"):
+        return grades
+    if not isinstance(grades, list):
+        return {"error": True, "detail": "Respuesta inesperada del backend al consultar notas."}
+
+    graded = [grade for grade in grades if grade.get("nota") is not None]
+    if not graded:
+        return {
+            "total_calificaciones": 0,
+            "media_simple": None,
+            "media_ponderada": None,
+            "por_categoria": {},
+            "notas": grades,
+        }
+
+    category_weights = {
+        "entregables": 20.0,
+        "data_projects": 30.0,
+        "actitud": 10.0,
+        "tfm": 40.0,
+    }
+    by_category: dict[str, list[float]] = {}
+    for grade in graded:
+        category = grade.get("categoria") or "sin_categoria"
+        by_category.setdefault(category, []).append(float(grade["nota"]))
+
+    simple_average = sum(float(grade["nota"]) for grade in graded) / len(graded)
+    weighted_total = 0.0
+    weight_total = 0.0
+    category_summary = {}
+    for category, values in by_category.items():
+        average = sum(values) / len(values)
+        weight = category_weights.get(category, 0.0)
+        category_summary[category] = {
+            "media": round(average, 2),
+            "peso": weight,
+            "num_calificaciones": len(values),
+        }
+        if weight > 0:
+            weighted_total += average * weight
+            weight_total += weight
+
+    return {
+        "total_calificaciones": len(graded),
+        "media_simple": round(simple_average, 2),
+        "media_ponderada": round(weighted_total / weight_total, 2) if weight_total else None,
+        "por_categoria": category_summary,
+        "notas": grades,
+    }
+
+
 def get_my_grades_for_block(tool_context: ToolContext, block_id: str) -> list:
     """Devuelve las notas del alumno autenticado filtradas por bloque.
 

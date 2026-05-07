@@ -2,11 +2,7 @@ import { Bell, BookOpen, CheckCircle, DoorOpen, Users, Clock, FileText, Trophy }
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  getFullProfile,
-  getMyGrades,
-  getMyAttendanceMetrics,
-  getCalendarEvents,
-  type ProfileFull,
+  getDashboard,
   type GradeOut,
   type AttendanceMetrics,
   type CalendarEvent,
@@ -38,7 +34,6 @@ const formatEventDate = (dateStr: string): string => {
 
 export function DashboardScreen() {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<ProfileFull | null>(null);
   const [grades, setGrades] = useState<GradeOut[]>([]);
   const [attendance, setAttendance] = useState<AttendanceMetrics | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -48,18 +43,13 @@ export function DashboardScreen() {
   useEffect(() => {
     setUserName(localStorage.getItem('userName') || '');
 
-    Promise.allSettled([
-      getFullProfile(),
-      getMyGrades(),
-      getMyAttendanceMetrics(),
-      getCalendarEvents(),
-    ]).then(([profileResult, gradesResult, attendanceResult, eventsResult]) => {
-      if (profileResult.status === 'fulfilled') setProfile(profileResult.value);
-      if (gradesResult.status === 'fulfilled') setGrades(gradesResult.value);
-      if (attendanceResult.status === 'fulfilled') setAttendance(attendanceResult.value);
-      if (eventsResult.status === 'fulfilled') setEvents(eventsResult.value);
-      setLoading(false);
-    });
+    getDashboard()
+      .then((data) => {
+        setGrades(data.grades);
+        setAttendance(data.attendance);
+        setEvents(data.events);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const userRole = localStorage.getItem('userRole') || 'student';

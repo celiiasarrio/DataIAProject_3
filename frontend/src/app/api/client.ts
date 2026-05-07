@@ -1,5 +1,7 @@
 const BASE_URL = (import.meta.env.VITE_BACKEND_URL as string) || '';
 const AGENT_URL = (import.meta.env.VITE_AGENT_URL as string) || BASE_URL;
+const GET_CACHE_TTL_MS = 30_000;
+const getCache = new Map<string, { expiresAt: number; value: unknown }>();
 
 function getToken(): string | null {
   return localStorage.getItem('token');
@@ -11,6 +13,13 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 
 async function authenticatedFetch<T>(baseUrl: string, path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
+  const method = (options.method || 'GET').toUpperCase();
+  const cacheKey = method === 'GET' ? `${baseUrl}${path}:${token || ''}` : '';
+  if (cacheKey) {
+    const cached = getCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.value as T;
+  }
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -32,7 +41,13 @@ async function authenticatedFetch<T>(baseUrl: string, path: string, options: Req
     throw new Error((err as { detail?: string }).detail || `HTTP ${res.status}`);
   }
   if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+  const data = await res.json() as T;
+  if (cacheKey) {
+    getCache.set(cacheKey, { expiresAt: Date.now() + GET_CACHE_TTL_MS, value: data });
+  } else if (method !== 'GET') {
+    getCache.clear();
+  }
+  return data;
 }
 
 export async function login(email: string, password: string): Promise<{ access_token: string; token_type: string }> {
@@ -152,6 +167,16 @@ export interface ProfileFull extends UserProfile {
 
 export async function getFullProfile(): Promise<ProfileFull> {
   return apiFetch<ProfileFull>('/api/profile/me');
+}
+
+export interface DashboardData {
+  grades: GradeOut[];
+  attendance: AttendanceMetrics | null;
+  events: CalendarEvent[];
+}
+
+export async function getDashboard(): Promise<DashboardData> {
+  return apiFetch<DashboardData>('/api/v1/dashboard/me');
 }
 
 export async function updateProfileSection(section: 'personal' | 'contact' | 'professional' | 'preferences', data: Record<string, unknown>): Promise<ProfileFull> {
