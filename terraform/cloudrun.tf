@@ -17,7 +17,7 @@ resource "google_service_account" "agent_sa" {
 }
 
 resource "google_cloud_run_v2_service" "frontend" {
-  count = var.deploy_services ? 1 : 0
+  count = var.deploy_services && var.deploy_frontend ? 1 : 0
 
   name     = "${var.app_name}-frontend"
   location = var.region
@@ -55,7 +55,7 @@ resource "google_cloud_run_v2_service" "frontend" {
 
 # Frontend is publicly accessible
 resource "google_cloud_run_v2_service_iam_member" "frontend_public" {
-  count = var.deploy_services ? 1 : 0
+  count = var.deploy_services && var.deploy_frontend ? 1 : 0
 
   name     = google_cloud_run_v2_service.frontend[0].name
   location = var.region
@@ -65,7 +65,7 @@ resource "google_cloud_run_v2_service_iam_member" "frontend_public" {
 
 # Backend is publicly accessible
 resource "google_cloud_run_v2_service_iam_member" "backend_public" {
-  count = var.deploy_services ? 1 : 0
+  count = var.deploy_services && var.deploy_backend ? 1 : 0
 
   name     = google_cloud_run_v2_service.backend[0].name
   location = var.region
@@ -75,7 +75,7 @@ resource "google_cloud_run_v2_service_iam_member" "backend_public" {
 
 # Agent is publicly accessible (auth real via JWT del backend)
 resource "google_cloud_run_v2_service_iam_member" "agent_public" {
-  count = var.deploy_services ? 1 : 0
+  count = var.deploy_services && var.deploy_agent ? 1 : 0
 
   name     = google_cloud_run_v2_service.agent[0].name
   location = var.region
@@ -84,7 +84,7 @@ resource "google_cloud_run_v2_service_iam_member" "agent_public" {
 }
 
 resource "google_cloud_run_v2_service" "backend" {
-  count = var.deploy_services ? 1 : 0
+  count = var.deploy_services && var.deploy_backend ? 1 : 0
 
   name     = "${var.app_name}-backend"
   location = var.region
@@ -175,7 +175,7 @@ resource "google_cloud_run_v2_service" "backend" {
 }
 
 resource "google_cloud_run_v2_service" "agent" {
-  count = var.deploy_services ? 1 : 0
+  count = var.deploy_services && var.deploy_agent ? 1 : 0
 
   name     = "${var.app_name}-agent"
   location = var.region
@@ -247,6 +247,7 @@ resource "google_cloud_run_v2_service" "agent" {
 
   depends_on = [
     google_artifact_registry_repository.docker,
+    google_cloud_run_v2_service.backend,
     google_project_iam_member.agent_vertex_ai,
     google_project_iam_member.agent_firestore,
     google_project_service.run,

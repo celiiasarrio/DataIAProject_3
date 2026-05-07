@@ -68,6 +68,24 @@ variable "deploy_services" {
   default     = true
 }
 
+variable "deploy_backend" {
+  description = "Whether Terraform should create/update the backend Cloud Run service"
+  type        = bool
+  default     = true
+}
+
+variable "deploy_frontend" {
+  description = "Whether Terraform should create/update the frontend Cloud Run service"
+  type        = bool
+  default     = true
+}
+
+variable "deploy_agent" {
+  description = "Whether Terraform should create/update the agent Cloud Run service"
+  type        = bool
+  default     = true
+}
+
 variable "backend_image_tag" {
   description = "Docker image tag for the backend Cloud Run service"
   type        = string
