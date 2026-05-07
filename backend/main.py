@@ -802,8 +802,8 @@ def get_user_role(user) -> str:
 
 def get_user_last_name(user) -> str:
     if getattr(user, "id_alumno", None):
-        return user.apellido1
-    return user.apellido1
+        return user.apellido1 or ""
+    return user.apellido or ""
 
 
 def serialize_profile(user) -> UserProfileOut:
