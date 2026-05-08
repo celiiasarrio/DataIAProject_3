@@ -1,4 +1,5 @@
 from functools import lru_cache
+import asyncio
 from typing import List, Literal, Optional
 import uuid
 
@@ -210,9 +211,23 @@ async def run_agent(
     )
     content = types.Content(role="user", parts=[types.Part(text=message)])
     output_parts: List[str] = []
-    async for event in runner.run_async(user_id=user_id, session_id=session.id, new_message=content):
-        if event.is_final_response() and event.content and event.content.parts:
-            output_parts.append("".join(part.text or "" for part in event.content.parts))
+    for attempt in range(3):
+        try:
+            async for event in runner.run_async(user_id=user_id, session_id=session.id, new_message=content):
+                if event.is_final_response() and event.content and event.content.parts:
+                    output_parts.append("".join(part.text or "" for part in event.content.parts))
+            break
+        except Exception as exc:
+            detail = str(exc)
+            if "RESOURCE_EXHAUSTED" not in detail and "429" not in detail:
+                raise
+            if attempt < 2:
+                await asyncio.sleep(1.5 * (attempt + 1))
+                continue
+            raise HTTPException(
+                status_code=429,
+                detail="Vertex AI esta saturado o sin cuota temporalmente. Intentalo de nuevo en unos segundos.",
+            ) from exc
 
     reply = "\n".join(part for part in output_parts if part).strip()
     if not reply:

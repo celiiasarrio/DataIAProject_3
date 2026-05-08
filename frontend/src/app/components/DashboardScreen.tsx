@@ -1,12 +1,8 @@
-import { Bell, BookOpen, CheckCircle, DoorOpen, Users, Clock, FileText, Trophy } from 'lucide-react';
+import { Bell, BookOpen, CheckCircle, Calendar, DoorOpen, Users, Clock, FileText, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  getFullProfile,
-  getMyGrades,
-  getMyAttendanceMetrics,
-  getCalendarEvents,
-  type ProfileFull,
+  getDashboard,
   type GradeOut,
   type AttendanceMetrics,
   type CalendarEvent,
@@ -38,7 +34,6 @@ const formatEventDate = (dateStr: string): string => {
 
 export function DashboardScreen() {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<ProfileFull | null>(null);
   const [grades, setGrades] = useState<GradeOut[]>([]);
   const [attendance, setAttendance] = useState<AttendanceMetrics | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -48,18 +43,13 @@ export function DashboardScreen() {
   useEffect(() => {
     setUserName(localStorage.getItem('userName') || '');
 
-    Promise.allSettled([
-      getFullProfile(),
-      getMyGrades(),
-      getMyAttendanceMetrics(),
-      getCalendarEvents(),
-    ]).then(([profileResult, gradesResult, attendanceResult, eventsResult]) => {
-      if (profileResult.status === 'fulfilled') setProfile(profileResult.value);
-      if (gradesResult.status === 'fulfilled') setGrades(gradesResult.value);
-      if (attendanceResult.status === 'fulfilled') setAttendance(attendanceResult.value);
-      if (eventsResult.status === 'fulfilled') setEvents(eventsResult.value);
-      setLoading(false);
-    });
+    getDashboard()
+      .then((data) => {
+        setGrades(data.grades);
+        setAttendance(data.attendance);
+        setEvents(data.events);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const userRole = localStorage.getItem('userRole') || 'student';
@@ -137,11 +127,39 @@ export function DashboardScreen() {
         {/* Quick Access */}
         <div className="bg-white rounded-xl p-4 mb-4 shadow-sm overflow-x-auto">
           <div className="flex gap-3 min-w-min">
-            {[
+            {userRole === 'student' && [
               { icon: BookOpen, label: 'Notas', route: '/grades' },
               { icon: CheckCircle, label: 'Asistencia', route: '/attendance' },
               { icon: DoorOpen, label: 'Salas', route: '/rooms' },
               { icon: Users, label: 'Tutorías', route: null },
+            ].map((item) => (
+              <button
+                key={item.label}
+                onClick={() => item.route && navigate(item.route)}
+                className="flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg hover:bg-[#f5f5f5] transition-colors"
+              >
+                <item.icon size={20} className="text-[#008899]" />
+                <span className="text-xs text-gray-700 text-center">{item.label}</span>
+              </button>
+            ))}
+            {userRole === 'professor' && [
+              { icon: Calendar, label: 'Mis Clases', route: '/calendar' },
+              { icon: BookOpen, label: 'Notas Alumnos', route: '/teacher/grades' },
+              { icon: CheckCircle, label: 'Pase de Lista', route: '/calendar' },
+            ].map((item) => (
+              <button
+                key={item.label}
+                onClick={() => item.route && navigate(item.route)}
+                className="flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg hover:bg-[#f5f5f5] transition-colors"
+              >
+                <item.icon size={20} className="text-[#008899]" />
+                <span className="text-xs text-gray-700 text-center">{item.label}</span>
+              </button>
+            ))}
+            {userRole !== 'student' && userRole !== 'professor' && [
+              { icon: Calendar, label: 'Calendario', route: '/calendar' },
+              { icon: BookOpen, label: 'Notas Alumnos', route: '/teacher/grades' },
+              { icon: CheckCircle, label: 'Asistencia', route: '/calendar' },
             ].map((item) => (
               <button
                 key={item.label}
@@ -250,32 +268,36 @@ export function DashboardScreen() {
           </div>
         )}
 
-        {/* Room Booking */}
-        <div className="bg-[#008899] rounded-xl p-4 mb-4 shadow-sm">
-          <h3 className="text-white mb-2" style={{ fontWeight: 600 }}>RESERVA DE SALAS</h3>
-          <p className="text-white text-xs opacity-90 mb-3">Encuentra un espacio para estudiar, reunirte o trabajar en equipo</p>
-          <button
-            onClick={() => navigate('/rooms')}
-            className="bg-white text-[#008899] px-4 py-2 rounded-lg text-sm w-full hover:bg-gray-50 transition-colors"
-            style={{ fontWeight: 500 }}
-          >
-            Reservar sala
-          </button>
-        </div>
+        {userRole === 'student' && (
+          <>
+            {/* Room Booking */}
+            <div className="bg-[#008899] rounded-xl p-4 mb-4 shadow-sm">
+              <h3 className="text-white mb-2" style={{ fontWeight: 600 }}>RESERVA DE SALAS</h3>
+              <p className="text-white text-xs opacity-90 mb-3">Encuentra un espacio para estudiar, reunirte o trabajar en equipo</p>
+              <button
+                onClick={() => navigate('/rooms')}
+                className="bg-white text-[#008899] px-4 py-2 rounded-lg text-sm w-full hover:bg-gray-50 transition-colors"
+                style={{ fontWeight: 500 }}
+              >
+                Reservar sala
+              </button>
+            </div>
 
-        {/* Tutoring */}
-        <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-          <h3 className="text-[#008899] mb-2" style={{ fontWeight: 600 }}>TUTORÍAS</h3>
-          <p className="text-gray-500 text-xs mb-3">Reserva una tutoría con tu profesor o tutor académico</p>
-          <p className="text-sm text-gray-500 mb-3">No tienes tutorías programadas.</p>
-          <button
-            disabled
-            className="bg-gray-200 text-gray-500 px-4 py-2 rounded-lg text-sm w-full opacity-60"
-            style={{ fontWeight: 500 }}
-          >
-            Pedir tutoría
-          </button>
-        </div>
+            {/* Tutoring */}
+            <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
+              <h3 className="text-[#008899] mb-2" style={{ fontWeight: 600 }}>TUTORÍAS</h3>
+              <p className="text-gray-500 text-xs mb-3">Reserva una tutoría con tu profesor o tutor académico</p>
+              <p className="text-sm text-gray-500 mb-3">No tienes tutorías programadas.</p>
+              <button
+                disabled
+                className="bg-gray-200 text-gray-500 px-4 py-2 rounded-lg text-sm w-full opacity-60"
+                style={{ fontWeight: 500 }}
+              >
+                Pedir tutoría
+              </button>
+            </div>
+          </>
+        )}
 
         {/* Recent Content */}
         <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">

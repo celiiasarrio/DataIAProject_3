@@ -6,6 +6,7 @@ import json
 import os
 import re
 import shutil
+import time as time_module
 import uuid
 from pathlib import Path
 from typing import List, Optional
@@ -17,6 +18,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for thin local envs
     bcrypt_lib = None
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
@@ -30,7 +32,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for thin local envs
 
     jwt = None
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import create_engine, or_
+from sqlalchemy import and_, create_engine, or_
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool
 
@@ -92,6 +94,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 UPLOAD_ROOT_RAW = os.getenv("UPLOAD_ROOT", "/app/uploads")
 PUBLIC_UPLOAD_PREFIX = os.getenv("PUBLIC_UPLOAD_PREFIX", "/uploads").rstrip("/")
@@ -582,6 +585,12 @@ class AttendanceMetricsOut(BaseModel):
     aviso: Optional[str] = None
 
 
+class DashboardOut(BaseModel):
+    grades: List[GradeOut]
+    attendance: Optional[AttendanceMetricsOut] = None
+    events: List[EventOut]
+
+
 class TutoringSlotCreate(BaseModel):
     id_profesor: Optional[str] = None
     id_bloque: Optional[str] = None
@@ -793,8 +802,8 @@ def get_user_role(user) -> str:
 
 def get_user_last_name(user) -> str:
     if getattr(user, "id_alumno", None):
-        return user.apellido1
-    return user.apellido1
+        return user.apellido1 or ""
+    return user.apellido or ""
 
 
 def serialize_profile(user) -> UserProfileOut:
@@ -1065,13 +1074,23 @@ def enrich_event_block(session: Session, event_payload: dict) -> dict:
     return event_payload
 
 
-def serialize_calendar_event(db: Session, event: Evento) -> EventOut:
-    block = db.query(Bloque).filter(Bloque.id_bloque == event.id_bloque).first() if event.id_bloque else None
-    professor = (
-        db.query(Profesor).filter(Profesor.id_profesor == event.id_profesor).first()
-        if event.id_profesor
-        else None
-    )
+def serialize_calendar_event(
+    db: Session,
+    event: Evento,
+    block_map: Optional[dict[str, Bloque]] = None,
+    professor_map: Optional[dict[str, Profesor]] = None,
+) -> EventOut:
+    block = None
+    if event.id_bloque:
+        block = block_map.get(event.id_bloque) if block_map is not None else db.query(Bloque).filter(Bloque.id_bloque == event.id_bloque).first()
+
+    professor = None
+    if event.id_profesor:
+        professor = (
+            professor_map.get(event.id_profesor)
+            if professor_map is not None
+            else db.query(Profesor).filter(Profesor.id_profesor == event.id_profesor).first()
+        )
     return EventOut(
         id=event.id,
         tipo=event.tipo,
@@ -1086,6 +1105,103 @@ def serialize_calendar_event(db: Session, event: Evento) -> EventOut:
         fecha_fin=event.fecha_fin,
         descripcion=event.descripcion,
     )
+
+
+def serialize_calendar_events(db: Session, events: List[Evento]) -> List[EventOut]:
+    block_ids = sorted({event.id_bloque for event in events if event.id_bloque})
+    professor_ids = sorted({event.id_profesor for event in events if event.id_profesor})
+    block_map = {
+        block.id_bloque: block
+        for block in db.query(Bloque).filter(Bloque.id_bloque.in_(block_ids)).all()
+    } if block_ids else {}
+    professor_map = {
+        professor.id_profesor: professor
+        for professor in db.query(Profesor).filter(Profesor.id_profesor.in_(professor_ids)).all()
+    } if professor_ids else {}
+    return [serialize_calendar_event(db, event, block_map, professor_map) for event in events]
+
+
+CALENDAR_CACHE_TTL_SECONDS = 60
+_calendar_events_cache: dict[str, object] = {"expires_at": 0.0, "events": None}
+_dashboard_events_cache: dict[str, object] = {"expires_at": 0.0, "events": None}
+
+
+def invalidate_calendar_cache() -> None:
+    _calendar_events_cache["events"] = None
+    _calendar_events_cache["expires_at"] = 0.0
+    _dashboard_events_cache["events"] = None
+    _dashboard_events_cache["expires_at"] = 0.0
+
+
+def cached_calendar_events(db: Session) -> List[EventOut]:
+    now = time_module.monotonic()
+    cached = _calendar_events_cache.get("events")
+    if cached is not None and float(_calendar_events_cache.get("expires_at", 0.0)) > now:
+        return cached  # type: ignore[return-value]
+
+    events = db.query(Evento).order_by(Evento.fecha_inicio).all()
+    serialized = serialize_calendar_events(db, events)
+    _calendar_events_cache["events"] = serialized
+    _calendar_events_cache["expires_at"] = now + CALENDAR_CACHE_TTL_SECONDS
+    return serialized
+
+
+def cached_dashboard_events(db: Session) -> List[EventOut]:
+    now = time_module.monotonic()
+    cached = _dashboard_events_cache.get("events")
+    if cached is not None and float(_dashboard_events_cache.get("expires_at", 0.0)) > now:
+        return cached  # type: ignore[return-value]
+
+    current_time = datetime.now()
+    day_window_start = datetime.combine(date.today() - timedelta(days=1), time.min)
+    day_window_end = datetime.combine(date.today() + timedelta(days=1), time.max)
+    deliveries_end = current_time + timedelta(days=14)
+    events = (
+        db.query(Evento)
+        .filter(
+            or_(
+                and_(Evento.fecha_inicio <= day_window_end, Evento.fecha_fin >= day_window_start),
+                and_(
+                    Evento.tipo == "delivery",
+                    Evento.fecha_inicio > current_time,
+                    Evento.fecha_inicio < deliveries_end,
+                ),
+            )
+        )
+        .order_by(Evento.fecha_inicio)
+        .all()
+    )
+    serialized = serialize_calendar_events(db, events)
+    _dashboard_events_cache["events"] = serialized
+    _dashboard_events_cache["expires_at"] = now + CALENDAR_CACHE_TTL_SECONDS
+    return serialized
+
+
+def build_my_grades(db: Session, current_user) -> List[GradeOut]:
+    if get_user_role(current_user) != "alumno":
+        return []
+    tasks = (
+        db.query(Tarea)
+        .join(RelBloquesGrupos, RelBloquesGrupos.id_bloque == Tarea.id_bloque)
+        .join(RelAlumnosGrupos, RelAlumnosGrupos.id_grupo == RelBloquesGrupos.id_grupo)
+        .filter(RelAlumnosGrupos.id_alumno == current_user.id_alumno)
+        .order_by(Tarea.fecha, Tarea.id_tarea)
+        .all()
+    )
+    grade_map = {
+        grade.id_tarea: grade.nota
+        for grade in db.query(RelAlumnoTarea)
+        .filter(RelAlumnoTarea.id_alumno == current_user.id_alumno)
+        .all()
+    }
+    grades = [
+        build_grade_out(task, grade_map.get(task.id_tarea))
+        for task in tasks
+        if is_visible_grade_task(task)
+    ]
+    grades.append(attendance_grade_for_user(db, current_user.id_alumno))
+    grades.append(attitude_grade_for_student(current_user.id_alumno))
+    return grades
 
 
 async def get_current_user(
@@ -1479,6 +1595,22 @@ def get_user_profile(
     return serialize_profile(user)
 
 
+@app.get("/api/v1/dashboard/me", response_model=DashboardOut, tags=["Dashboard"])
+def get_my_dashboard(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    role = get_user_role(current_user)
+    grades = build_my_grades(db, current_user)
+    attendance = build_attendance_metrics(db, user_id) if role == "alumno" else None
+    return DashboardOut(
+        grades=grades,
+        attendance=attendance,
+        events=cached_dashboard_events(db),
+    )
+
+
 @app.get("/api/v1/calendar/events", response_model=List[EventOut], tags=["Calendario"])
 def list_events(
     tipo: Optional[str] = None,
@@ -1487,6 +1619,9 @@ def list_events(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    if not tipo and not id_bloque and not id_sesion:
+        return cached_calendar_events(db)
+
     query = db.query(Evento)
     if tipo:
         query = query.filter(Evento.tipo == tipo)
@@ -1494,7 +1629,7 @@ def list_events(
         query = query.filter(Evento.id_bloque == id_bloque)
     if id_sesion:
         query = query.filter(Evento.id_sesion == id_sesion)
-    return [serialize_calendar_event(db, event) for event in query.order_by(Evento.fecha_inicio).all()]
+    return serialize_calendar_events(db, query.order_by(Evento.fecha_inicio).all())
 
 
 @app.post("/api/v1/calendar/events", response_model=EventOut, tags=["Calendario"], status_code=201)
@@ -1507,6 +1642,7 @@ def create_event(
     event = Evento(id=str(uuid.uuid4()), **payload)
     db.add(event)
     db.commit()
+    invalidate_calendar_cache()
     db.refresh(event)
     return serialize_calendar_event(db, event)
 
@@ -1537,8 +1673,9 @@ def update_event(
     for key, value in payload.items():
         setattr(event, key, value)
     db.commit()
+    invalidate_calendar_cache()
     db.refresh(event)
-    return event
+    return serialize_calendar_event(db, event)
 
 
 @app.delete("/api/v1/calendar/events/{event_id}", status_code=204, tags=["Calendario"])
@@ -1552,6 +1689,7 @@ def delete_event(
         raise HTTPException(status_code=404, detail="Evento no encontrado")
     db.delete(event)
     db.commit()
+    invalidate_calendar_cache()
     return
 
 
@@ -1893,28 +2031,7 @@ def list_my_grades(
     db: Session = Depends(get_db),
     current_user=Depends(require_student),
 ):
-    tasks = (
-        db.query(Tarea)
-        .join(RelBloquesGrupos, RelBloquesGrupos.id_bloque == Tarea.id_bloque)
-        .join(RelAlumnosGrupos, RelAlumnosGrupos.id_grupo == RelBloquesGrupos.id_grupo)
-        .filter(RelAlumnosGrupos.id_alumno == current_user.id_alumno)
-        .order_by(Tarea.fecha, Tarea.id_tarea)
-        .all()
-    )
-    grade_map = {
-        grade.id_tarea: grade.nota
-        for grade in db.query(RelAlumnoTarea)
-        .filter(RelAlumnoTarea.id_alumno == current_user.id_alumno)
-        .all()
-    }
-    grades = [
-        build_grade_out(task, grade_map.get(task.id_tarea))
-        for task in tasks
-        if is_visible_grade_task(task)
-    ]
-    grades.append(attendance_grade_for_user(db, current_user.id_alumno))
-    grades.append(attitude_grade_for_student(current_user.id_alumno))
-    return grades
+    return build_my_grades(db, current_user)
 
 
 @app.get("/api/v1/grades/me/blocks/{block_id}", response_model=List[GradeOut], tags=["Notas"])

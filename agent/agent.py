@@ -20,6 +20,7 @@ TOOLS = [
     academic.list_students_in_session,
     # Notas
     academic.get_my_grades,
+    academic.get_my_grade_summary,
     academic.get_my_grades_for_block,
     academic.register_grade,
     academic.update_grade,
