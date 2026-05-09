@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { getCalendarEvents, type CalendarEvent } from '../api/client';
+import { CenteredLoadingSpinner } from './ui/LoadingSpinner';
 
 const EVENT_META: Record<string, { label: string; icon: React.ElementType; bg: string; text: string; chip: string }> = {
   class: { label: 'Sesión', icon: BookOpen, bg: 'bg-blue-50', text: 'text-blue-700', chip: 'bg-blue-500' },
@@ -238,7 +239,7 @@ export function CalendarScreen() {
         </div>
 
         {loading ? (
-          <p className="text-gray-400 text-sm text-center py-8">Cargando calendario...</p>
+          <CenteredLoadingSpinner />
         ) : (
           <div className="grid grid-cols-7 border-t border-l border-gray-100 rounded-xl overflow-hidden">
             {monthDays.map((day) => {

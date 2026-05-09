@@ -7,6 +7,7 @@ import {
   type AttendanceMetrics,
   type CalendarEvent,
 } from '../api/client';
+import { CenteredLoadingSpinner } from './ui/LoadingSpinner';
 
 const EVENT_TYPE_CONFIG: Record<string, { label: string; bgColor: string; chipColor: string }> = {
   class: { label: 'Sesión', bgColor: 'bg-blue-50', chipColor: 'bg-blue-500' },
@@ -187,9 +188,7 @@ export function DashboardScreen() {
         <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
           <h3 className="text-[#008899] mb-3" style={{ fontWeight: 600 }}>HOY</h3>
           {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map(i => <div key={i} className="h-12 bg-gray-100 rounded animate-pulse" />)}
-            </div>
+            <CenteredLoadingSpinner className="py-5" />
           ) : getTodayEvents().length > 0 ? (
             <div className="space-y-3">
               {getTodayEvents().map((ev) => (
@@ -223,7 +222,7 @@ export function DashboardScreen() {
             >
               <h3 className="text-[#008899] mb-2" style={{ fontWeight: 600 }}>MIS NOTAS</h3>
               {loading ? (
-                <div className="h-8 bg-gray-100 rounded animate-pulse" />
+                <CenteredLoadingSpinner className="py-2" size="sm" />
               ) : avgGrade !== null ? (
                 <p className="text-2xl" style={{ fontWeight: 800, color: '#008899' }}>{avgGrade.toFixed(1)}</p>
               ) : (
@@ -238,7 +237,7 @@ export function DashboardScreen() {
             >
               <h3 className="text-[#008899] mb-2" style={{ fontWeight: 600 }}>ASISTENCIA</h3>
               {loading ? (
-                <div className="h-8 bg-gray-100 rounded animate-pulse" />
+                <CenteredLoadingSpinner className="py-2" size="sm" />
               ) : attendance ? (
                 <>
                   <p className="text-2xl" style={{ fontWeight: 800, color: '#008899' }}>{attendance.porcentaje_asistencia.toFixed(0)}%</p>
@@ -257,9 +256,7 @@ export function DashboardScreen() {
           <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
             <h3 className="text-[#008899] mb-3" style={{ fontWeight: 600 }}>PRÓXIMAS ENTREGAS</h3>
             {loading ? (
-              <div className="space-y-2">
-                {[1, 2].map(i => <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />)}
-              </div>
+              <CenteredLoadingSpinner className="py-5" />
             ) : getUpcomingDeliveries().length > 0 ? (
               <div className="space-y-2">
                 {getUpcomingDeliveries().map((ev) => (

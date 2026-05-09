@@ -11,6 +11,7 @@ import {
   type AttendanceRecord,
   type CalendarEvent,
 } from '../api/client';
+import { CenteredLoadingSpinner } from './ui/LoadingSpinner';
 
 interface SessionAttendance {
   id_sesion: string;
@@ -294,7 +295,7 @@ export function AttendanceScreen() {
             </div>
 
             {loading ? (
-              <p className="text-gray-400 text-sm text-center py-8">Cargando asistencia...</p>
+              <CenteredLoadingSpinner />
             ) : sessionRows.length === 0 ? (
               <p className="text-gray-400 text-sm text-center py-8">No hay registros de asistencia.</p>
             ) : (

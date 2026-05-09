@@ -6,6 +6,7 @@ import {
   saveAttendance,
   type AttendanceRosterRow,
 } from '../api/client';
+import { CenteredLoadingSpinner } from './ui/LoadingSpinner';
 
 export function ClassAttendanceScreen() {
   const navigate = useNavigate();
@@ -93,7 +94,7 @@ export function ClassAttendanceScreen() {
         </div>
 
         {loading ? (
-          <p className="text-gray-400 text-sm text-center py-8">Cargando alumnos...</p>
+          <CenteredLoadingSpinner />
         ) : students.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-8">No hay alumnos para esta sesión.</p>
         ) : (

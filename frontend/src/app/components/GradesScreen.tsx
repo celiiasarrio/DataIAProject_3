@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BookOpen, ChevronDown, ChevronLeft, ChevronUp, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { getMyGrades, type GradeOut } from '../api/client';
+import { CenteredLoadingSpinner } from './ui/LoadingSpinner';
 
 interface GradeCategory {
   id: string;
@@ -122,7 +123,7 @@ export function GradesScreen() {
         </div>
 
         {loading ? (
-          <p className="text-gray-400 text-sm text-center py-8">Cargando notas...</p>
+          <CenteredLoadingSpinner />
         ) : (
           <>
             <div className="grid grid-cols-2 gap-3 mb-5">

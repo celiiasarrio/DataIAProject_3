@@ -38,6 +38,7 @@ import {
   type ProfileDocument,
   type ProfileFull,
 } from '../api/client';
+import { CenteredLoadingSpinner } from './ui/LoadingSpinner';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 const DOC_TYPES = ['DNI/NIE', 'Matricula', 'Certificado', 'Convenio practicas', 'Autorizacion', 'Otro'];
@@ -452,7 +453,7 @@ export function ProfileScreen() {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center text-gray-500">Cargando perfil...</div>;
+    return <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center"><CenteredLoadingSpinner size="lg" /></div>;
   }
 
   if (!profile) {

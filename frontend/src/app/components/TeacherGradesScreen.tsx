@@ -10,6 +10,7 @@ import {
   type GradeRosterRow,
   type TaskOut,
 } from '../api/client';
+import { CenteredLoadingSpinner } from './ui/LoadingSpinner';
 
 export function TeacherGradesScreen() {
   const navigate = useNavigate();
@@ -133,7 +134,7 @@ export function TeacherGradesScreen() {
         </div>
 
         {loading ? (
-          <p className="text-gray-400 text-sm text-center py-8">Cargando...</p>
+          <CenteredLoadingSpinner />
         ) : rows.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-8">No hay alumnos para esta tarea.</p>
         ) : (
