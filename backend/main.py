@@ -1342,13 +1342,7 @@ def assert_professor_teaches_block(db: Session, current_user, block_id: Optional
 def restrict_events_to_current_user(query, current_user):
     role = get_user_role(current_user)
     if role == "profesor":
-        teacher_blocks = query.session.query(RelProfesoresBloques.id_bloque).filter(
-            RelProfesoresBloques.id_profesor == current_user.id_profesor
-        )
-        query = query.filter(or_(
-            Evento.id_profesor == current_user.id_profesor,
-            and_(Evento.tipo == "class", Evento.id_bloque.in_(teacher_blocks)),
-        ))
+        query = query.filter(Evento.id_profesor == current_user.id_profesor)
     elif role == "alumno":
         query = (
             query
@@ -2495,10 +2489,7 @@ def student_check_in(
             .first()
         )
     elif role == "profesor":
-        belongs_to_session_block = db.query(RelProfesoresBloques).filter(
-            RelProfesoresBloques.id_profesor == user_id,
-            RelProfesoresBloques.id_bloque == session_row.id_bloque,
-        ).first()
+        belongs_to_session_block = session_row.id_profesor == user_id
     else:
         belongs_to_session_block = db.query(RelCoordinadoresGrupos).first()
 

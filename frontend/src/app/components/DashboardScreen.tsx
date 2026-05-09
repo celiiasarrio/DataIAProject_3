@@ -1,4 +1,4 @@
-import { BookOpen, CheckCircle, Calendar, Users, Clock, FileText, Trophy, FolderOpen } from 'lucide-react';
+import { BookOpen, CheckCircle, Calendar, Users, Clock, MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
@@ -136,6 +136,30 @@ export function DashboardScreen() {
     },
   ];
 
+  const professorActions = [
+    {
+      icon: BookOpen,
+      title: 'Notas alumnos',
+      description: 'Introduce y edita calificaciones de tus asignaturas.',
+      action: 'Gestionar notas',
+      route: '/teacher/grades',
+    },
+    {
+      icon: CheckCircle,
+      title: 'Mi asistencia',
+      description: 'Marca tu asistencia a las sesiones que impartes.',
+      action: 'Registrar asistencia',
+      route: '/attendance',
+    },
+    {
+      icon: MessageSquare,
+      title: 'Tutorias',
+      description: 'Revisa solicitudes y responde a tus alumnos.',
+      action: 'Gestionar tutorias',
+      route: '/tutoring',
+    },
+  ];
+
   if (userRole !== 'student' && userRole !== 'professor') {
     return (
       <div className="min-h-screen bg-[#f5f5f5] pb-24">
@@ -179,6 +203,58 @@ export function DashboardScreen() {
     );
   }
 
+  if (userRole === 'professor') {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5] pb-24">
+        <div className="bg-[#008899] px-6 pt-12 pb-16 rounded-b-3xl">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h1 className="text-white text-2xl mb-1" style={{ fontWeight: 300, fontFamily: 'Didot, Bodoni, serif' }}>EDEM</h1>
+              <p className="text-white text-xs opacity-90">Panel de profesor</p>
+            </div>
+          </div>
+          <p className="text-white text-lg">Hola{userName ? `, ${userName.split(' ')[0]}` : ''}</p>
+        </div>
+
+        <div className="px-6 -mt-10">
+          <div className="bg-white rounded-2xl p-5 shadow-sm">
+            <div className="text-center mb-5">
+              <h2 className="text-[#008899] text-lg" style={{ fontWeight: 800 }}>Gestion docente</h2>
+              <p className="text-gray-500 text-sm mt-1">Accesos principales de profesor</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {professorActions.map(({ icon: Icon, title, description, action, route }) => (
+                <div key={title} className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center text-center">
+                  <div className="h-11 w-11 rounded-2xl bg-[#008899]/10 flex items-center justify-center mb-3">
+                    <Icon size={22} className="text-[#008899]" />
+                  </div>
+                  <h3 className="text-gray-900 text-sm" style={{ fontWeight: 800 }}>{title}</h3>
+                  <p className="text-gray-500 text-xs mt-2 flex-1">{description}</p>
+                  <button
+                    onClick={() => navigate(route)}
+                    className="mt-4 w-full bg-[#008899] text-white py-2.5 rounded-xl text-sm hover:bg-[#007788] transition-colors"
+                    style={{ fontWeight: 700 }}
+                  >
+                    {action}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => navigate('/calendar')}
+            className="mt-4 w-full bg-white text-[#008899] py-3 rounded-2xl shadow-sm text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+            style={{ fontWeight: 800 }}
+          >
+            <Calendar size={18} />
+            Ver mis clases
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f5f5f5] pb-20">
       {/* Header */}
@@ -201,21 +277,6 @@ export function DashboardScreen() {
               { icon: BookOpen, label: 'Notas', route: '/grades' },
               { icon: CheckCircle, label: 'Asistencia', route: '/attendance' },
               { icon: Users, label: 'Tutorías', route: '/tutoring' },
-            ].map((item) => (
-              <button
-                key={item.label}
-                onClick={() => item.route && navigate(item.route)}
-                className="flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg hover:bg-[#f5f5f5] transition-colors"
-              >
-                <item.icon size={20} className="text-[#008899]" />
-                <span className="text-xs text-gray-700 text-center">{item.label}</span>
-              </button>
-            ))}
-            {userRole === 'professor' && [
-              { icon: Calendar, label: 'Mis Clases', route: '/calendar' },
-              { icon: BookOpen, label: 'Notas Alumnos', route: '/teacher/grades' },
-              { icon: FolderOpen, label: 'Material', route: '/teacher/content' },
-              { icon: CheckCircle, label: 'Pase de Lista', route: '/calendar' },
             ].map((item) => (
               <button
                 key={item.label}
