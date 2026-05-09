@@ -12,6 +12,7 @@ from google.genai import types
 from pydantic import BaseModel, Field
 
 from agent.agent import create_root_agent
+from agent.audit import log_chat_request
 from agent.config import settings
 from agent.firestore_session_service import FirestoreSessionService
 from agent.user_memory import (
@@ -266,6 +267,12 @@ async def chat(
 ):
     jwt_token = extract_bearer_token(authorization)
     profile = fetch_profile(jwt_token)
+    log_chat_request(
+        user_id=str(profile.get("id", "unknown")),
+        user_role=profile.get("rol") or "desconocido",
+        session_id=payload.session_id or "new",
+        message_length=len(payload.message),
+    )
     composed_message = payload.message
     if payload.history and not payload.session_id:
         composed_message = build_message(payload.history, payload.message)
