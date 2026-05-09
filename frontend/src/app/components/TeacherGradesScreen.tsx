@@ -34,6 +34,14 @@ const isGradableTask = (taskName: string): boolean => {
   return !nonGradable.some(name => taskName.toLowerCase().includes(name.toLowerCase()));
 };
 
+const pickNextTask = (tasksData: TaskOut[]): TaskOut | undefined => {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  return [...tasksData]
+    .filter((task) => task.fecha && new Date(task.fecha) >= todayStart)
+    .sort((a, b) => new Date(a.fecha ?? '').getTime() - new Date(b.fecha ?? '').getTime())[0] ?? tasksData[0];
+};
+
 export function TeacherGradesScreen() {
   const navigate = useNavigate();
   const [blocks, setBlocks] = useState<BlockOut[]>([]);
@@ -58,7 +66,8 @@ export function TeacherGradesScreen() {
         blocksData.map(block => getBlockTasks(block.id_bloque))
       );
 
-      const now = new Date();
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
       let closestTask: { blockId: string; taskId: number; fecha: string } | null = null;
 
       blocksData.forEach((block, blockIndex) => {
@@ -66,7 +75,7 @@ export function TeacherGradesScreen() {
         blockTasks.forEach(task => {
           if (!task.fecha) return;
           const taskDate = new Date(task.fecha);
-          if (taskDate > now) {
+          if (taskDate >= todayStart) {
             if (!closestTask || taskDate < new Date(closestTask.fecha)) {
               closestTask = { blockId: block.id_bloque, taskId: task.id_tarea, fecha: task.fecha };
             }
@@ -143,7 +152,8 @@ export function TeacherGradesScreen() {
     getBlockTasks(blockId).then((data) => {
       const gradableTasks = data.filter(task => isGradableTask(task.nombre));
       setTasks(gradableTasks);
-      if (gradableTasks[0]) setTaskId(String(gradableTasks[0].id_tarea));
+      const nextTask = pickNextTask(gradableTasks);
+      if (nextTask) setTaskId(String(nextTask.id_tarea));
     });
   }, [blockId]);
 

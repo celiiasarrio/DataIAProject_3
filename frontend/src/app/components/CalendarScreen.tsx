@@ -201,6 +201,7 @@ export function CalendarScreen() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleMonth, setVisibleMonth] = useState(() => monthStart(new Date()));
+  const [today, setToday] = useState(() => new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [selectedDayEvents, setSelectedDayEvents] = useState<CalendarEvent[] | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -229,16 +230,33 @@ export function CalendarScreen() {
         const nextEvent =
           sorted.find((event) => new Date(event.fecha_inicio).getTime() >= Date.now()) ??
           sorted[0];
-        if (nextEvent) setVisibleMonth(monthStart(new Date(nextEvent.fecha_inicio)));
+        setVisibleMonth(monthStart(role === 'professor' ? new Date() : nextEvent ? new Date(nextEvent.fecha_inicio) : new Date()));
       })
       .catch(() => setEvents([]))
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    const refreshToday = () => {
+      const nextToday = new Date();
+      setToday(nextToday);
+      if (localStorage.getItem('userRole') === 'professor') {
+        setVisibleMonth(monthStart(nextToday));
+      }
+    };
+
+    const interval = window.setInterval(refreshToday, 60_000);
+    document.addEventListener('visibilitychange', refreshToday);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshToday);
+    };
+  }, []);
+
   const canManageAttendance = userRole === 'admin';
   const canEditSessions = userRole === 'admin';
   const canManageAcademicEvents = userRole === 'professor' || userRole === 'admin';
-  const todayKey = getDayKey(new Date());
+  const todayKey = getDayKey(today);
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();

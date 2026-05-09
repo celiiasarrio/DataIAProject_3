@@ -491,6 +491,61 @@ def mandatory_attendance_sessions(db: Session, until: Optional[date] = None) -> 
     ]
 
 
+def professor_attendance_sessions(db: Session, professor_id: str) -> List[Sesion]:
+    sessions = (
+        db.query(Sesion)
+        .join(Evento, Evento.id_sesion == Sesion.id_sesion)
+        .filter(
+            Evento.tipo == "class",
+            Evento.id_profesor == professor_id,
+            Evento.id_sesion.isnot(None),
+        )
+        .order_by(Sesion.fecha, Sesion.hora_inicio, Sesion.id_sesion)
+        .all()
+    )
+    unique: dict[str, Sesion] = {}
+    for session in sessions:
+        unique[session.id_sesion] = session
+    return list(unique.values())
+
+
+def ensure_professor_attendance_records(db: Session, professor_id: str) -> None:
+    sessions = professor_attendance_sessions(db, professor_id)
+    if not sessions:
+        return
+
+    existing = {
+        record.id_sesion: record
+        for record in db.query(Asistencia)
+        .filter(
+            Asistencia.id_alumno == professor_id,
+            Asistencia.id_sesion.in_([session.id_sesion for session in sessions]),
+        )
+        .all()
+    }
+
+    changed = False
+    for session in sessions:
+        attendance_date = session.fecha or date.today()
+        record = existing.get(session.id_sesion)
+        if record:
+            if record.fecha != attendance_date or not record.presente:
+                record.fecha = attendance_date
+                record.presente = True
+                changed = True
+        else:
+            db.add(Asistencia(
+                id_alumno=professor_id,
+                id_sesion=session.id_sesion,
+                fecha=attendance_date,
+                presente=True,
+            ))
+            changed = True
+
+    if changed:
+        db.commit()
+
+
 def build_attendance_metrics(db: Session, user_id: str) -> "AttendanceMetricsOut":
     sessions = mandatory_attendance_sessions(db, date.today())
     session_ids = [session.id_sesion for session in sessions]
@@ -2436,6 +2491,8 @@ def list_my_attendance(
     current_user=Depends(get_current_user),
 ):
     user_id = get_user_id(current_user)
+    if get_user_role(current_user) == "profesor":
+        ensure_professor_attendance_records(db, user_id)
     return (
         db.query(Asistencia)
         .filter(Asistencia.id_alumno == user_id)
@@ -2529,7 +2586,11 @@ def student_check_in(
             .first()
         )
     elif role == "profesor":
-        belongs_to_session_block = session_row.id_profesor == user_id
+        belongs_to_session_block = db.query(Evento).filter(
+            Evento.tipo == "class",
+            Evento.id_profesor == user_id,
+            Evento.id_sesion == session_row.id_sesion,
+        ).first()
     else:
         belongs_to_session_block = db.query(RelCoordinadoresGrupos).first()
 
