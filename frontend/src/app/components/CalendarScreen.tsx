@@ -466,20 +466,20 @@ export function CalendarScreen() {
         )}
       </div>
 
-      <div className="bg-white rounded-t-3xl px-4 pt-5 pb-6 min-h-[70vh]">
+      <div className="bg-white dark:bg-gray-900 rounded-t-3xl px-4 pt-5 pb-6 min-h-[70vh]">
         <div className="flex items-center justify-between mb-4 px-1">
           <button
             onClick={() => setVisibleMonth((current) => addMonths(current, -1))}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
           >
             <ChevronLeft size={18} />
           </button>
-          <h2 className="text-[#008899] capitalize" style={{ fontWeight: 800 }}>
+          <h2 className="text-[#008899] dark:text-cyan-300 capitalize" style={{ fontWeight: 800 }}>
             {formatMonth(visibleMonth)}
           </h2>
           <button
             onClick={() => setVisibleMonth((current) => addMonths(current, 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
           >
             <ChevronRight size={18} />
           </button>
@@ -487,7 +487,7 @@ export function CalendarScreen() {
 
         <div className="grid grid-cols-7 mb-1">
           {WEEK_DAYS.map((day) => (
-            <div key={day} className="text-center text-xs text-gray-400 py-2">
+            <div key={day} className="text-center text-xs text-gray-400 dark:text-gray-500 py-2">
               {day}
             </div>
           ))}
@@ -496,7 +496,7 @@ export function CalendarScreen() {
         {loading ? (
           <CenteredLoadingSpinner />
         ) : (
-          <div className="grid grid-cols-7 border-t border-l border-gray-100 rounded-xl overflow-hidden">
+          <div className="grid grid-cols-7 border-t border-l border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
             {monthDays.map((day) => {
               const key = getDayKey(day);
               const dayEvents = eventsByDay.get(key) ?? [];
@@ -510,26 +510,26 @@ export function CalendarScreen() {
                   key={key}
                   className={`min-h-[104px] border-r border-b p-1.5 ${
                     isToday
-                      ? 'bg-gray-100 border-gray-300 ring-1 ring-inset ring-gray-400'
+                      ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 ring-1 ring-inset ring-gray-400 dark:ring-gray-500'
                       : inMonth
-                        ? 'bg-white border-gray-100'
-                        : 'bg-gray-50 border-gray-100'
+                        ? 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800'
+                        : 'bg-gray-50 dark:bg-gray-950 border-gray-100 dark:border-gray-800'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span
                       className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs ${
                         isToday
-                          ? 'bg-gray-700 text-white'
+                          ? 'bg-gray-700 dark:bg-gray-300 text-white dark:text-gray-900'
                           : inMonth
-                            ? 'text-gray-700'
-                            : 'text-gray-300'
+                            ? 'text-gray-700 dark:text-gray-200'
+                            : 'text-gray-300 dark:text-gray-600'
                       }`}
                     >
                       {day.getDate()}
                     </span>
                     {dayEvents.length > 0 && (
-                      <CalendarDays size={11} className="text-gray-300" />
+                      <CalendarDays size={11} className="text-gray-300 dark:text-gray-600" />
                     )}
                   </div>
 

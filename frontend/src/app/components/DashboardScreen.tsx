@@ -178,7 +178,7 @@ export function DashboardScreen() {
 
   if (userRole !== 'student' && userRole !== 'professor') {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] pb-24">
+      <div className="min-h-screen bg-[#f5f5f5] dark:bg-gray-950 pb-24">
         <div className="bg-[#008899] px-6 pt-12 pb-16 rounded-b-3xl">
           <div className="flex items-center justify-between mb-5">
             <div>
@@ -190,19 +190,19 @@ export function DashboardScreen() {
         </div>
 
         <div className="px-6 -mt-10">
-          <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm">
             <div className="text-center mb-5">
               <h2 className="text-[#008899] text-lg" style={{ fontWeight: 800 }}>Gestión académica</h2>
               <p className="text-gray-500 text-sm mt-1">Accesos principales de coordinación</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-3 justify-items-center">
               {coordinatorActions.map(({ icon: Icon, title, description, action, route }) => (
-                <div key={title} className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center text-center w-full max-w-xs">
+                <div key={title} className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 flex flex-col items-center text-center w-full max-w-xs">
                   <div className="h-11 w-11 rounded-2xl bg-[#008899]/10 flex items-center justify-center mb-3">
                     <Icon size={22} className="text-[#008899]" />
                   </div>
-                  <h3 className="text-gray-900 text-sm" style={{ fontWeight: 800 }}>{title}</h3>
-                  <p className="text-gray-500 text-xs mt-2 flex-1">{description}</p>
+                  <h3 className="text-gray-900 dark:text-gray-100 text-sm" style={{ fontWeight: 800 }}>{title}</h3>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs mt-2 flex-1">{description}</p>
                   <button
                     onClick={() => navigate(route)}
                     className="mt-4 w-full bg-[#008899] text-white py-2.5 rounded-xl text-sm hover:bg-[#007788] transition-colors"
@@ -300,7 +300,7 @@ export function DashboardScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] pb-20">
+    <div className="min-h-screen bg-[#f5f5f5] dark:bg-gray-950 pb-20">
       {/* Header */}
       <div className="bg-[#008899] px-6 pt-12 pb-6 rounded-b-3xl">
         <div className="flex items-center justify-between mb-4">
@@ -315,7 +315,7 @@ export function DashboardScreen() {
       {/* Content */}
       <div className="px-6 -mt-4">
         {/* Quick Access */}
-        <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-4 mb-4 shadow-sm">
           <div className="flex gap-3 justify-center flex-wrap">
             {userRole === 'student' && [
               { icon: BookOpen, label: 'Notas', route: '/grades' },
@@ -325,18 +325,18 @@ export function DashboardScreen() {
               <button
                 key={item.label}
                 onClick={() => item.route && navigate(item.route)}
-                className="flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg hover:bg-[#f5f5f5] transition-colors"
+                className="flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg hover:bg-[#f5f5f5] dark:hover:bg-gray-800 transition-colors"
               >
-                <item.icon size={20} className="text-[#008899]" />
-                <span className="text-xs text-gray-700 text-center">{item.label}</span>
+                <item.icon size={20} className="text-[#008899] dark:text-cyan-300" />
+                <span className="text-xs text-gray-700 dark:text-gray-300 text-center">{item.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Today Card */}
-        <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-          <h3 className="text-[#008899] mb-3" style={{ fontWeight: 600 }}>HOY</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-4 mb-4 shadow-sm">
+          <h3 className="text-[#008899] dark:text-cyan-300 mb-3" style={{ fontWeight: 600 }}>HOY</h3>
           {loading ? (
             <CenteredLoadingSpinner className="py-5" />
           ) : getTodayEvents().length > 0 ? (
@@ -344,12 +344,12 @@ export function DashboardScreen() {
               {getTodayEvents().map((ev) => (
                 <div key={ev.id} className="border-l-4 border-[#008899] pl-3 pb-2">
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <span className="text-sm font-medium text-gray-800 flex-1">{ev.titulo}</span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-100 flex-1">{ev.titulo}</span>
                     <span className={`text-xs px-2 py-1 rounded text-white ${EVENT_TYPE_CONFIG[ev.tipo]?.chipColor || 'bg-gray-400'}`}>
                       {EVENT_TYPE_CONFIG[ev.tipo]?.label || ev.tipo}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                     <span className="flex items-center gap-1">
                       <Clock size={14} /> {formatEventTime(ev.fecha_inicio)}
                     </span>
@@ -359,7 +359,7 @@ export function DashboardScreen() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">Hoy no tienes clases ni eventos programados.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Hoy no tienes clases ni eventos programados.</p>
           )}
         </div>
 
@@ -372,7 +372,7 @@ export function DashboardScreen() {
                 onClick={() => navigate('/grades')}
                 className="flex flex-col items-center gap-2 focus:outline-none"
               >
-                <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow border border-gray-200">
+                <div className="w-20 h-20 rounded-full bg-white dark:bg-gray-900 shadow-sm flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
                   {loading ? (
                     <div className="text-xs text-gray-400">...</div>
                   ) : avgGrade !== null ? (
@@ -383,7 +383,7 @@ export function DashboardScreen() {
                     <span className="text-xs text-gray-400" style={{ textAlign: 'center' }}>—</span>
                   )}
                 </div>
-                <span className="text-xs text-gray-600" style={{ fontWeight: 600 }}>Mis notas</span>
+                <span className="text-xs text-gray-600 dark:text-gray-300" style={{ fontWeight: 600 }}>Mis notas</span>
               </button>
 
               {/* Asistencia Indicator */}
@@ -391,7 +391,7 @@ export function DashboardScreen() {
                 onClick={() => navigate('/attendance')}
                 className="flex flex-col items-center gap-2 focus:outline-none"
               >
-                <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow border border-gray-200">
+                <div className="w-20 h-20 rounded-full bg-white dark:bg-gray-900 shadow-sm flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
                   {loading ? (
                     <div className="text-xs text-gray-400">...</div>
                   ) : attendance ? (
@@ -402,7 +402,7 @@ export function DashboardScreen() {
                     <span className="text-xs text-gray-400" style={{ textAlign: 'center' }}>—</span>
                   )}
                 </div>
-                <span className="text-xs text-gray-600" style={{ fontWeight: 600 }}>Asistencia</span>
+                <span className="text-xs text-gray-600 dark:text-gray-300" style={{ fontWeight: 600 }}>Asistencia</span>
               </button>
             </div>
           </div>
@@ -410,24 +410,24 @@ export function DashboardScreen() {
 
         {/* Upcoming Deliveries (Students only) */}
         {userRole === 'student' && (
-          <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-            <h3 className="text-[#008899] mb-3" style={{ fontWeight: 600 }}>PRÓXIMAS ENTREGAS</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 mb-4 shadow-sm">
+            <h3 className="text-[#008899] dark:text-cyan-300 mb-3" style={{ fontWeight: 600 }}>PRÓXIMAS ENTREGAS</h3>
             {loading ? (
               <CenteredLoadingSpinner className="py-5" />
             ) : getUpcomingDeliveries().length > 0 ? (
               <div className="space-y-2">
                 {getUpcomingDeliveries().map((ev) => (
-                  <div key={ev.id} className="flex items-start justify-between p-2 rounded-lg bg-gray-50 border border-gray-100">
+                  <div key={ev.id} className="flex items-start justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-800">{ev.titulo}</p>
-                      <p className="text-xs text-gray-500">{formatEventDate(ev.fecha_inicio)}</p>
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{ev.titulo}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{formatEventDate(ev.fecha_inicio)}</p>
                     </div>
                     <span className="text-xs px-2 py-1 rounded text-white bg-amber-400">Entrega</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">No tienes entregas próximas.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">No tienes entregas próximas.</p>
             )}
           </div>
         )}
