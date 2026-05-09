@@ -121,13 +121,6 @@ export function DashboardScreen() {
 
   const coordinatorActions = [
     {
-      icon: Calendar,
-      title: 'Calendario',
-      description: 'Gestiona sesiones, clases y eventos académicos.',
-      action: 'Abrir calendario',
-      route: '/calendar',
-    },
-    {
       icon: BookOpen,
       title: 'Notas alumnos',
       description: 'Edita calificaciones por asignatura y tarea.',
@@ -137,9 +130,9 @@ export function DashboardScreen() {
     {
       icon: CheckCircle,
       title: 'Asistencia',
-      description: 'Marca o quita asistencia desde las sesiones del calendario.',
+      description: 'Marca o quita asistencia de los alumnos.',
       action: 'Gestionar asistencia',
-      route: '/calendar',
+      route: '/group-attendance',
     },
   ];
 

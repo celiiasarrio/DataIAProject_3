@@ -274,6 +274,10 @@ export async function getBlockTasks(blockId: string): Promise<TaskOut[]> {
   return apiFetch<TaskOut[]>(`/api/v1/blocks/${blockId}/tasks`);
 }
 
+export async function getBlockStudents(blockId: string): Promise<AlumnoOut[]> {
+  return apiFetch<AlumnoOut[]>(`/api/v1/blocks/${blockId}/students`);
+}
+
 export async function getTaskGrades(taskId: number): Promise<GradeRosterRow[]> {
   return apiFetch<GradeRosterRow[]>(`/api/v1/grades/tasks/${taskId}`);
 }

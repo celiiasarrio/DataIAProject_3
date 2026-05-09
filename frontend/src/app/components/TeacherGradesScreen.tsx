@@ -19,6 +19,11 @@ const formatGrade = (value: number | null): string =>
 
 const parseGrade = (value: string): number => Number(value.replace(',', '.'));
 
+const calculateAverage = (rows: GradeRosterRow[]): number | null => {
+  const grades = rows.map(r => r.nota).filter((n): n is number => n != null);
+  return grades.length > 0 ? grades.reduce((a, b) => a + b, 0) / grades.length : null;
+};
+
 export function TeacherGradesScreen() {
   const navigate = useNavigate();
   const [blocks, setBlocks] = useState<BlockOut[]>([]);
@@ -152,6 +157,21 @@ export function TeacherGradesScreen() {
           <p className="text-gray-400 text-sm text-center py-8">No hay alumnos para esta tarea.</p>
         ) : (
           <>
+            {(() => {
+              const avg = calculateAverage(rows);
+              return avg !== null ? (
+                <div className="mb-5 flex justify-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-24 h-24 rounded-full bg-[#008899] flex items-center justify-center">
+                      <span className="text-white text-3xl" style={{ fontWeight: 800 }}>
+                        {formatGrade(avg)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">Media del grupo</p>
+                  </div>
+                </div>
+              ) : null;
+            })()}
             <button
               onClick={() => setGradesOpen((open) => !open)}
               className="w-full bg-gray-50 rounded-2xl p-4 flex items-center justify-between text-left"
