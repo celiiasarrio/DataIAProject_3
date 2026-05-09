@@ -292,6 +292,14 @@ class ProfesorListOut(ORMModel):
     correo: str
 
 
+class TutoringRecipientOut(BaseModel):
+    id: str
+    nombre: str
+    apellido: str
+    correo: str
+    rol: str
+
+
 class SesionCreate(BaseModel):
     id_sesion: Optional[str] = None
     id_bloque: Optional[str] = None
@@ -2123,6 +2131,34 @@ def list_professors(
     return db.query(Profesor).order_by(Profesor.nombre, Profesor.apellido).all()
 
 
+@app.get("/api/v1/tutoring-recipients", response_model=List[TutoringRecipientOut], tags=["Solicitudes de TutorÃ­a"])
+def list_tutoring_recipients(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    professors = [
+        TutoringRecipientOut(
+            id=professor.id_profesor,
+            nombre=professor.nombre,
+            apellido=professor.apellido,
+            correo=professor.correo,
+            rol="profesor",
+        )
+        for professor in db.query(Profesor).order_by(Profesor.nombre, Profesor.apellido).all()
+    ]
+    coordinators = [
+        TutoringRecipientOut(
+            id=coordinator.id_coordinador,
+            nombre=coordinator.nombre,
+            apellido=coordinator.apellido,
+            correo=coordinator.correo,
+            rol="coordinador",
+        )
+        for coordinator in db.query(Coordinador).order_by(Coordinador.nombre, Coordinador.apellido).all()
+    ]
+    return professors + coordinators
+
+
 @app.post("/api/v1/sessions", response_model=SesionOut, tags=["Sesiones"], status_code=201)
 def create_session(
     session_in: SesionCreate,
@@ -2739,6 +2775,12 @@ def create_tutoring_request(
     current_user=Depends(get_current_user),
 ):
     user_id = get_user_id(current_user)
+    recipient_exists = (
+        db.query(Profesor).filter(Profesor.id_profesor == request_in.id_profesor).first()
+        or db.query(Coordinador).filter(Coordinador.id_coordinador == request_in.id_profesor).first()
+    )
+    if not recipient_exists:
+        raise HTTPException(status_code=404, detail="Destinatario de tutoria no encontrado")
     new_id = generate_id()
     solicitud = SolicitudTutoria(
         id=new_id,

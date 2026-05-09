@@ -11,8 +11,8 @@ import {
   acceptAlternativeTutoring,
   rejectAlternativeTutoring,
   cancelTutoringRequest,
-  getProfessors,
-  type ProfessorOut,
+  getTutoringRecipients,
+  type TutoringRecipientOut,
   type SolicitudTutoriaOut,
 } from '../api/client';
 import { CenteredLoadingSpinner } from './ui/LoadingSpinner';
@@ -39,15 +39,15 @@ const getStatusColor = (estado: string) => {
   return colors[estado] || 'bg-gray-100 text-gray-600';
 };
 
-const getProfessorName = (professors: ProfessorOut[], id: string) => {
-  const prof = professors.find(p => p.id_profesor === id);
-  return prof ? `${prof.nombre} ${prof.apellido}` : id;
+const getRecipientName = (recipients: TutoringRecipientOut[], id: string) => {
+  const recipient = recipients.find((item) => item.id === id);
+  return recipient ? `${recipient.nombre} ${recipient.apellido}` : id;
 };
 
 export function TutoringScreen() {
   const navigate = useNavigate();
   const [role] = useState(() => localStorage.getItem('userRole') || 'student');
-  const [professors, setProfessors] = useState<ProfessorOut[]>([]);
+  const [recipients, setRecipients] = useState<TutoringRecipientOut[]>([]);
   const [requests, setRequests] = useState<SolicitudTutoriaOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -69,18 +69,18 @@ export function TutoringScreen() {
 
   useEffect(() => {
     Promise.all([
-      getProfessors(),
+      getTutoringRecipients(),
       isStudent ? getMyTutoringRequests() : getReceivedTutoringRequests(),
     ])
-      .then(([profs, reqs]) => {
-        setProfessors(profs);
+      .then(([items, reqs]) => {
+        setRecipients(items);
         setRequests(reqs);
-        if (isStudent && profs.length > 0 && !form.id_profesor) {
-          setForm(prev => ({ ...prev, id_profesor: profs[0].id_profesor }));
+        if (isStudent && items.length > 0 && !form.id_profesor) {
+          setForm(prev => ({ ...prev, id_profesor: items[0].id }));
         }
       })
       .catch(() => {
-        setProfessors([]);
+        setRecipients([]);
         setRequests([]);
       })
       .finally(() => setLoading(false));
@@ -88,7 +88,7 @@ export function TutoringScreen() {
 
   const handleSubmit = async () => {
     if (!form.id_profesor || !form.motivo || !form.opcion1_fecha_hora || !form.opcion2_fecha_hora) {
-      setMessage('Completa al menos: profesor, motivo y 2 opciones de fecha/hora');
+      setMessage('Completa al menos: destinatario, motivo y 2 opciones de fecha/hora');
       return;
     }
 
@@ -106,7 +106,7 @@ export function TutoringScreen() {
       const newRequest = await createTutoringRequest(payload);
       setRequests([newRequest, ...requests]);
       setForm({
-        id_profesor: professors[0]?.id_profesor || '',
+        id_profesor: recipients[0]?.id || '',
         motivo: '',
         opcion1_fecha_hora: '',
         opcion2_fecha_hora: '',
@@ -241,15 +241,15 @@ export function TutoringScreen() {
             ) : (
               <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
                 <label className="block mb-3">
-                  <span className="text-xs text-gray-400">Profesor</span>
+                  <span className="text-xs text-gray-400">Profesor o coordinador</span>
                   <select
                     value={form.id_profesor}
                     onChange={(e) => setForm({ ...form, id_profesor: e.target.value })}
                     className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#008899]"
                   >
-                    {professors.map(p => (
-                      <option key={p.id_profesor} value={p.id_profesor}>
-                        {p.nombre} {p.apellido}
+                    {recipients.map((recipient) => (
+                      <option key={recipient.id} value={recipient.id}>
+                        {recipient.nombre} {recipient.apellido} · {recipient.rol === 'coordinador' ? 'Coordinador' : 'Profesor'}
                       </option>
                     ))}
                   </select>
@@ -337,7 +337,7 @@ export function TutoringScreen() {
                   <div key={req.id} className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <p className="text-sm text-gray-600">{getProfessorName(professors, req.id_profesor)}</p>
+                        <p className="text-sm text-gray-600">{getRecipientName(recipients, req.id_profesor)}</p>
                         <p className="text-sm font-medium text-gray-800">{req.motivo}</p>
                       </div>
                       <span className={`text-xs px-2 py-1 rounded-lg ${getStatusColor(req.estado)}`}>

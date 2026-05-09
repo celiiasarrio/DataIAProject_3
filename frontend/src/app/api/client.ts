@@ -256,6 +256,14 @@ export interface ProfessorOut {
   correo: string;
 }
 
+export interface TutoringRecipientOut {
+  id: string;
+  nombre: string;
+  apellido: string;
+  correo: string;
+  rol: 'profesor' | 'coordinador';
+}
+
 export interface TaskOut {
   id_tarea: number;
   id_bloque: string;
@@ -284,6 +292,10 @@ export async function getMyBlocks(): Promise<BlockOut[]> {
 
 export async function getProfessors(): Promise<ProfessorOut[]> {
   return apiFetch<ProfessorOut[]>('/api/v1/professors');
+}
+
+export async function getTutoringRecipients(): Promise<TutoringRecipientOut[]> {
+  return apiFetch<TutoringRecipientOut[]>('/api/v1/tutoring-recipients');
 }
 
 export async function getBlockTasks(blockId: string): Promise<TaskOut[]> {

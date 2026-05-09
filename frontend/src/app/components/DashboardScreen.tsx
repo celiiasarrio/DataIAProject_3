@@ -143,6 +143,13 @@ export function DashboardScreen() {
       action: 'Gestionar asistencia',
       route: '/group-attendance',
     },
+    {
+      icon: MessageSquare,
+      title: 'Tutorias',
+      description: 'Revisa y responde solicitudes de tutoria.',
+      action: 'Ver tutorias',
+      route: '/tutoring',
+    },
   ];
 
   const professorActions = [
@@ -188,7 +195,7 @@ export function DashboardScreen() {
               <h2 className="text-[#008899] text-lg" style={{ fontWeight: 800 }}>Gestión académica</h2>
               <p className="text-gray-500 text-sm mt-1">Accesos principales de coordinación</p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-2 justify-items-center">
+            <div className="grid gap-3 sm:grid-cols-3 justify-items-center">
               {coordinatorActions.map(({ icon: Icon, title, description, action, route }) => (
                 <div key={title} className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center text-center w-full max-w-xs">
                   <div className="h-11 w-11 rounded-2xl bg-[#008899]/10 flex items-center justify-center mb-3">
