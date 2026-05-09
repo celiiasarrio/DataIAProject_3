@@ -29,6 +29,11 @@ const isGradableBlock = (blockName: string): boolean => {
   return !nonGradable.some(name => blockName.toLowerCase().includes(name.toLowerCase()));
 };
 
+const isGradableTask = (taskName: string): boolean => {
+  const nonGradable = ['PPTX', 'Hito', 'hitos', 'Entregables', 'TFM', 'tfm'];
+  return !nonGradable.some(name => taskName.toLowerCase().includes(name.toLowerCase()));
+};
+
 export function TeacherGradesScreen() {
   const navigate = useNavigate();
   const [blocks, setBlocks] = useState<BlockOut[]>([]);
@@ -65,7 +70,7 @@ export function TeacherGradesScreen() {
           let closestTask: { blockId: string; taskId: number; fecha: string } | null = null;
 
           gradableBlocks.forEach((block, blockIndex) => {
-            const blockTasks = allTasks[blockIndex];
+            const blockTasks = allTasks[blockIndex].filter(task => isGradableTask(task.nombre));
             blockTasks.forEach(task => {
               if (!task.fecha) return;
               const taskDate = new Date(task.fecha);
@@ -102,8 +107,9 @@ export function TeacherGradesScreen() {
     setTaskId('');
     setGradesOpen(false);
     getBlockTasks(blockId).then((data) => {
-      setTasks(data);
-      if (data[0]) setTaskId(String(data[0].id_tarea));
+      const gradableTasks = data.filter(task => isGradableTask(task.nombre));
+      setTasks(gradableTasks);
+      if (gradableTasks[0]) setTaskId(String(gradableTasks[0].id_tarea));
     });
   }, [blockId]);
 
