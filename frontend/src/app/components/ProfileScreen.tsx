@@ -43,7 +43,7 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 
 const DOC_TYPES = ['DNI/NIE', 'Matricula', 'Certificado', 'Convenio practicas', 'Autorizacion', 'Otro'];
 
-type EditableSection = 'personal' | 'contact' | 'professional' | 'preferences';
+type EditableSection = 'personal' | 'contact' | 'professional';
 
 const TRANSLATIONS = {
   es: {
@@ -364,7 +364,6 @@ export function ProfileScreen() {
         personal: ['nombre', 'apellido', 'telefono', 'ciudad', 'idioma_preferido', 'contacto_emergencia'],
         contact: ['correo_personal', 'telefono', 'linkedin', 'github', 'portfolio', 'preferencia_contacto'],
         professional: ['area_interes', 'stack_tecnologico', 'experiencia_actual', 'disponibilidad', 'preferencia_jornada', 'linkedin', 'github', 'portfolio'],
-        preferences: ['idioma_app', 'visibilidad_profesional', 'permitir_cv_empleabilidad', 'permitir_links_profesores', 'tema'],
       };
       const payload = Object.fromEntries(fieldsBySection[editing].map((key) => [key, form[key]]));
       const updatedProfile = await updateProfileSection(editing, payload);
@@ -661,52 +660,6 @@ export function ProfileScreen() {
                 </div>
               ))}
             </div>
-          )}
-        </Card>
-
-        <Card
-          title={t.preferences}
-          icon={ShieldCheck}
-          onEdit={() => beginEdit('preferences')}
-          editing={editing === 'preferences'}
-          onCancel={() => setEditing(null)}
-          onSave={saveSection}
-        >
-          {editing === 'preferences' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <SelectInput
-                label="Idioma app"
-                value={String(form.idioma_app ?? 'es')}
-                onChange={(v) => setField('idioma_app', v)}
-                options={[
-                  { value: 'es', label: 'Español' },
-                  { value: 'en', label: 'English' },
-                  { value: 'ca', label: 'Valenciano' },
-                ]}
-              />
-              <SelectInput
-                label="Tema"
-                value={String(form.tema ?? 'claro')}
-                onChange={(v) => setField('tema', v)}
-                options={[
-                  { value: 'claro', label: 'Claro' },
-                  { value: 'oscuro', label: 'Oscuro' },
-                ]}
-              />
-              <ToggleRow label="Perfil profesional visible" checked={Boolean(form.visibilidad_profesional)} onChange={(v) => setField('visibilidad_profesional', v)} />
-              <ToggleRow label="Empleabilidad/coordinacion puede ver CV" checked={Boolean(form.permitir_cv_empleabilidad)} onChange={(v) => setField('permitir_cv_empleabilidad', v)} />
-              <ToggleRow label="Profesores pueden ver LinkedIn/GitHub" checked={Boolean(form.permitir_links_profesores)} onChange={(v) => setField('permitir_links_profesores', v)} />
-            </div>
-          ) : (
-            <InfoGrid
-              items={[
-                ['Idioma app', profile.idioma_app],
-                ['Tema', profile.tema],
-                ['Perfil profesional', profile.visibilidad_profesional ? 'Visible' : 'Privado'],
-                ['CV para empleabilidad', profile.permitir_cv_empleabilidad ? 'Permitido' : 'No permitido'],
-                ['Links para profesores', profile.permitir_links_profesores ? 'Permitido' : 'No permitido'],
-              ]}
-            />
           )}
         </Card>
 
