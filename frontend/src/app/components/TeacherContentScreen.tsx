@@ -6,6 +6,7 @@ import {
   deleteContent,
   getBlockContent,
   getMyBlocks,
+  uploadBlockContentFile,
   type BlockOut,
   type ContentOut,
 } from '../api/client';
@@ -16,6 +17,7 @@ type ContentForm = {
   descripcion: string;
   tipo: string;
   url: string;
+  file: File | null;
 };
 
 const emptyForm: ContentForm = {
@@ -23,6 +25,7 @@ const emptyForm: ContentForm = {
   descripcion: '',
   tipo: 'link',
   url: '',
+  file: null,
 };
 
 const formatDate = (value: string) =>
@@ -72,19 +75,26 @@ export function TeacherContentScreen() {
 
   const handleSave = async () => {
     if (!blockId) return;
-    if (!form.titulo.trim() || !form.url.trim()) {
+    if (!form.titulo.trim() || (!form.url.trim() && !form.file)) {
       setMessage('Completa título y URL.');
       return;
     }
     setSaving(true);
     setMessage(null);
     try {
-      const created = await createBlockContent(blockId, {
-        titulo: form.titulo.trim(),
-        descripcion: form.descripcion.trim() || null,
-        tipo: form.tipo,
-        url: form.url.trim(),
-      });
+      const created = form.file
+        ? await uploadBlockContentFile(blockId, {
+            titulo: form.titulo.trim(),
+            descripcion: form.descripcion.trim() || null,
+            tipo: form.tipo,
+            file: form.file,
+          })
+        : await createBlockContent(blockId, {
+            titulo: form.titulo.trim(),
+            descripcion: form.descripcion.trim() || null,
+            tipo: form.tipo,
+            url: form.url.trim(),
+          });
       setContent((current) => [created, ...current]);
       setForm(emptyForm);
       setFormOpen(false);
@@ -172,10 +182,20 @@ export function TeacherContentScreen() {
                 <input
                   value={form.url}
                   onChange={(event) => updateField('url', event.target.value)}
+                  disabled={Boolean(form.file)}
                   className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
                 />
               </label>
             </div>
+            <label className="block">
+              <span className="text-xs text-gray-400">Archivo</span>
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip"
+                onChange={(event) => setForm((current) => ({ ...current, file: event.target.files?.[0] ?? null, url: event.target.files?.[0] ? '' : current.url }))}
+                className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+              />
+            </label>
             <label className="block">
               <span className="text-xs text-gray-400">Descripción</span>
               <textarea

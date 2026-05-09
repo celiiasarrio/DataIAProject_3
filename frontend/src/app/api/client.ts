@@ -438,6 +438,18 @@ export async function createBlockContent(blockId: string, payload: ContentCreate
   });
 }
 
+export async function uploadBlockContentFile(
+  blockId: string,
+  payload: { titulo: string; descripcion?: string | null; tipo: string; file: File },
+): Promise<ContentOut> {
+  const formData = new FormData();
+  formData.append('titulo', payload.titulo);
+  if (payload.descripcion) formData.append('descripcion', payload.descripcion);
+  formData.append('tipo', payload.tipo);
+  formData.append('file', payload.file);
+  return uploadForm<ContentOut>(`/api/v1/blocks/${blockId}/content/file`, formData);
+}
+
 export async function deleteContent(contentId: string): Promise<void> {
   return apiFetch<void>(`/api/v1/content/${contentId}`, { method: 'DELETE' });
 }

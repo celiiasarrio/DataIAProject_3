@@ -31,6 +31,7 @@ export function BottomNav() {
         ...baseItems,
         { icon: Calendar, path: '/calendar', label: 'Calendario' },
         { icon: BookOpen, path: '/teacher/grades', label: 'Notas' },
+        { icon: FolderOpen, path: '/teacher/content', label: 'Material' },
         { icon: User, path: '/profile', label: 'Perfil' },
       ];
     }

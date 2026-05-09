@@ -16,7 +16,7 @@ try:
     import bcrypt as bcrypt_lib
 except ModuleNotFoundError:  # pragma: no cover - fallback for thin local envs
     bcrypt_lib = None
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
@@ -2864,6 +2864,71 @@ def create_block_content(
         id_bloque=block_id,
         id_profesor=professor_id,
         **model_dump(content_in),
+    )
+    db.add(content)
+    db.commit()
+    db.refresh(content)
+    return content
+
+
+@app.post("/api/v1/blocks/{block_id}/content/file", response_model=ContentOut, tags=["Contenido"], status_code=201)
+def upload_block_content_file(
+    block_id: str,
+    titulo: str = Form(...),
+    descripcion: Optional[str] = Form(None),
+    tipo: str = Form("documento"),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_professor_or_staff),
+):
+    if not db.query(Bloque).filter(Bloque.id_bloque == block_id).first():
+        raise HTTPException(status_code=404, detail="Bloque no encontrado")
+    if not titulo.strip():
+        raise HTTPException(status_code=422, detail="El titulo es obligatorio")
+
+    professor_id = getattr(current_user, "id_profesor", None)
+    if professor_id:
+        assert_professor_teaches_block(db, current_user, block_id)
+    else:
+        teacher_link = db.query(RelProfesoresBloques).filter(
+            RelProfesoresBloques.id_bloque == block_id
+        ).first()
+        if not teacher_link:
+            raise HTTPException(status_code=400, detail="El bloque no tiene profesor asignado")
+        professor_id = teacher_link.id_profesor
+
+    ext = validate_upload(
+        file,
+        {"pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "txt", "zip"},
+        {
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "text/plain",
+            "application/zip",
+            "application/x-zip-compressed",
+        },
+        20,
+    )
+    url = store_upload(
+        get_user_id(current_user),
+        file,
+        f"content/{safe_upload_user_id(block_id)}",
+        uuid.uuid4().hex,
+        ext,
+    )
+    content = Contenido(
+        id=str(uuid.uuid4()),
+        id_bloque=block_id,
+        id_profesor=professor_id,
+        titulo=titulo.strip(),
+        descripcion=descripcion.strip() if descripcion else None,
+        tipo=tipo or "documento",
+        url=url,
     )
     db.add(content)
     db.commit()
