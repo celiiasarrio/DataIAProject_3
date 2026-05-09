@@ -155,9 +155,9 @@ export function DashboardScreen() {
               <h2 className="text-[#008899] text-lg" style={{ fontWeight: 800 }}>Gestión académica</h2>
               <p className="text-gray-500 text-sm mt-1">Accesos principales de coordinación</p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-2 justify-items-center">
               {coordinatorActions.map(({ icon: Icon, title, description, action, route }) => (
-                <div key={title} className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center text-center">
+                <div key={title} className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center text-center w-full max-w-xs">
                   <div className="h-11 w-11 rounded-2xl bg-[#008899]/10 flex items-center justify-center mb-3">
                     <Icon size={22} className="text-[#008899]" />
                   </div>
@@ -195,8 +195,8 @@ export function DashboardScreen() {
       {/* Content */}
       <div className="px-6 -mt-4">
         {/* Quick Access */}
-        <div className="bg-white rounded-xl p-4 mb-4 shadow-sm overflow-x-auto">
-          <div className="flex gap-3 min-w-min">
+        <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
+          <div className="flex gap-3 justify-center flex-wrap">
             {userRole === 'student' && [
               { icon: BookOpen, label: 'Notas', route: '/grades' },
               { icon: CheckCircle, label: 'Asistencia', route: '/attendance' },
@@ -258,40 +258,56 @@ export function DashboardScreen() {
           )}
         </div>
 
-        {/* Grades & Attendance (Students only) */}
+        {/* Grades & Attendance Indicators (Students only) */}
         {userRole === 'student' && (
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div
-              className="bg-white rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate('/grades')}
-            >
-              <h3 className="text-[#008899] mb-2" style={{ fontWeight: 600 }}>MIS NOTAS</h3>
-              {loading ? (
-                <CenteredLoadingSpinner className="py-2" size="sm" />
-              ) : avgGrade !== null ? (
-                <p className="text-2xl" style={{ fontWeight: 800, color: '#008899' }}>{avgGrade.toFixed(1)}</p>
-              ) : (
-                <p className="text-sm text-gray-500">Todavía no hay calificaciones publicadas.</p>
-              )}
-              <p className="text-xs text-gray-400 mt-2">Ver calificaciones →</p>
-            </div>
+          <div className="flex justify-center mb-6">
+            <div className="grid grid-cols-3 gap-6">
+              {/* Notas Indicator */}
+              <button
+                onClick={() => navigate('/grades')}
+                className="flex flex-col items-center gap-2 focus:outline-none"
+              >
+                <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow border border-gray-200">
+                  {loading ? (
+                    <div className="text-xs text-gray-400">...</div>
+                  ) : avgGrade !== null ? (
+                    <span className="text-2xl" style={{ fontWeight: 800, color: '#008899' }}>
+                      {avgGrade.toFixed(1).replace('.', ',')}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-400" style={{ textAlign: 'center' }}>—</span>
+                  )}
+                </div>
+                <span className="text-xs text-gray-600" style={{ fontWeight: 600 }}>Mis notas</span>
+              </button>
 
-            <div
-              className="bg-white rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate('/attendance')}
-            >
-              <h3 className="text-[#008899] mb-2" style={{ fontWeight: 600 }}>ASISTENCIA</h3>
-              {loading ? (
-                <CenteredLoadingSpinner className="py-2" size="sm" />
-              ) : attendance ? (
-                <>
-                  <p className="text-2xl" style={{ fontWeight: 800, color: '#008899' }}>{attendance.porcentaje_asistencia.toFixed(0)}%</p>
-                  {attendance.aviso && <p className="text-xs text-red-500 mt-2">{attendance.aviso}</p>}
-                </>
-              ) : (
-                <p className="text-sm text-gray-500">Todavía no hay datos de asistencia.</p>
-              )}
-              <p className="text-xs text-gray-400 mt-2">Ver asistencia →</p>
+              {/* Asistencia Indicator */}
+              <button
+                onClick={() => navigate('/attendance')}
+                className="flex flex-col items-center gap-2 focus:outline-none"
+              >
+                <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow border border-gray-200">
+                  {loading ? (
+                    <div className="text-xs text-gray-400">...</div>
+                  ) : attendance ? (
+                    <span className="text-2xl" style={{ fontWeight: 800, color: '#008899' }}>
+                      {attendance.porcentaje_asistencia.toFixed(0)}%
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-400" style={{ textAlign: 'center' }}>—</span>
+                  )}
+                </div>
+                <span className="text-xs text-gray-600" style={{ fontWeight: 600 }}>Asistencia</span>
+              </button>
+
+              {/* Tutorías Access */}
+              <button
+                onClick={() => navigate('/tutoring')}
+                className="flex flex-col items-center gap-2 focus:outline-none"
+              >
+                <Users size={28} className="text-[#008899]" />
+                <span className="text-xs text-gray-600" style={{ fontWeight: 600 }}>Tutorías</span>
+              </button>
             </div>
           </div>
         )}
@@ -320,22 +336,6 @@ export function DashboardScreen() {
           </div>
         )}
 
-        {userRole === 'student' && (
-          <>
-            <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-              <h3 className="text-[#008899] mb-2" style={{ fontWeight: 600 }}>TUTORÍAS</h3>
-              <p className="text-gray-500 text-xs mb-3">Reserva una tutoría con tu profesor o tutor académico</p>
-              <p className="text-sm text-gray-500 mb-3">No tienes tutorías programadas.</p>
-              <button
-                onClick={() => navigate('/tutoring')}
-                className="bg-[#008899] text-white px-4 py-2 rounded-lg text-sm w-full hover:bg-[#007788] transition-colors"
-                style={{ fontWeight: 500 }}
-              >
-                Pedir tutoría
-              </button>
-            </div>
-          </>
-        )}
 
         {userRole === 'student' && (
           <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
