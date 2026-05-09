@@ -261,7 +261,7 @@ export function DashboardScreen() {
         {/* Grades & Attendance Indicators (Students only) */}
         {userRole === 'student' && (
           <div className="flex justify-center mb-6">
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 gap-8">
               {/* Notas Indicator */}
               <button
                 onClick={() => navigate('/grades')}
@@ -298,15 +298,6 @@ export function DashboardScreen() {
                   )}
                 </div>
                 <span className="text-xs text-gray-600" style={{ fontWeight: 600 }}>Asistencia</span>
-              </button>
-
-              {/* Tutorías Access */}
-              <button
-                onClick={() => navigate('/tutoring')}
-                className="flex flex-col items-center gap-2 focus:outline-none"
-              >
-                <Users size={28} className="text-[#008899]" />
-                <span className="text-xs text-gray-600" style={{ fontWeight: 600 }}>Tutorías</span>
               </button>
             </div>
           </div>
