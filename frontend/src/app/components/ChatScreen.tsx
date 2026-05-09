@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useNavigate } from 'react-router';
 import { sendAgentMessage, type AgentChatMessage } from '../api/client';
+import { LoadingSpinner } from './ui/LoadingSpinner';
 
 
 const WELCOME_MESSAGE =
@@ -118,7 +119,7 @@ export function ChatScreen() {
               <Sparkles className="text-white" size={14} />
             </div>
             <div className="bg-white rounded-2xl rounded-tl-none px-4 py-3 border border-[#d8ebee]">
-              <p className="text-sm text-gray-500">Pensando...</p>
+              <LoadingSpinner size="sm" />
             </div>
           </div>
         )}

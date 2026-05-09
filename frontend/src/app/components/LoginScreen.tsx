@@ -2,6 +2,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { login, getMyProfile, mapRol } from '../api/client';
+import { LoadingSpinner } from './ui/LoadingSpinner';
 
 export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
@@ -106,7 +107,7 @@ export function LoginScreen() {
             disabled={loading}
             className="w-full bg-[#008899] text-white py-3 rounded-lg mt-6 hover:bg-[#007788] transition-colors disabled:opacity-60"
           >
-            {loading ? 'Entrando...' : 'Login'}
+            {loading ? <LoadingSpinner size="sm" tone="white" /> : 'Login'}
           </button>
         </form>
       </div>

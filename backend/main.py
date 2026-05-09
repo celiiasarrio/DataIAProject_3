@@ -16,7 +16,7 @@ try:
     import bcrypt as bcrypt_lib
 except ModuleNotFoundError:  # pragma: no cover - fallback for thin local envs
     bcrypt_lib = None
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
@@ -283,6 +283,13 @@ class BloqueOut(ORMModel):
     nombre: str
 
 
+class ProfesorListOut(ORMModel):
+    id_profesor: str
+    nombre: str
+    apellido: str
+    correo: str
+
+
 class SesionCreate(BaseModel):
     id_sesion: Optional[str] = None
     id_bloque: Optional[str] = None
@@ -291,6 +298,8 @@ class SesionCreate(BaseModel):
     hora_inicio: Optional[time] = None
     hora_fin: Optional[time] = None
     aula: Optional[str] = None
+    edificio: Optional[str] = None
+    planta: Optional[str] = None
 
 
 class SesionUpdate(BaseModel):
@@ -300,6 +309,8 @@ class SesionUpdate(BaseModel):
     hora_inicio: Optional[time] = None
     hora_fin: Optional[time] = None
     aula: Optional[str] = None
+    edificio: Optional[str] = None
+    planta: Optional[str] = None
 
 
 class SesionOut(ORMModel):
@@ -310,6 +321,8 @@ class SesionOut(ORMModel):
     hora_inicio: Optional[time] = None
     hora_fin: Optional[time] = None
     aula: Optional[str] = None
+    edificio: Optional[str] = None
+    planta: Optional[str] = None
 
 
 class EventBase(BaseModel):
@@ -348,6 +361,8 @@ class EventOut(ORMModel):
     bloque_nombre: Optional[str] = None
     id_sesion: Optional[str] = None
     aula: Optional[str] = None
+    edificio: Optional[str] = None
+    planta: Optional[str] = None
     id_profesor: Optional[str] = None
     profesor_nombre: Optional[str] = None
     fecha_inicio: datetime
@@ -621,6 +636,9 @@ class ReservationCreate(BaseModel):
 
 class ReservationUpdate(BaseModel):
     estado: str
+    id_franja: Optional[str] = None
+    fecha: Optional[date] = None
+    notas: Optional[str] = None
 
 
 class ReservationOut(ORMModel):
@@ -1079,10 +1097,19 @@ def serialize_calendar_event(
     event: Evento,
     block_map: Optional[dict[str, Bloque]] = None,
     professor_map: Optional[dict[str, Profesor]] = None,
+    session_map: Optional[dict[str, Sesion]] = None,
 ) -> EventOut:
     block = None
     if event.id_bloque:
         block = block_map.get(event.id_bloque) if block_map is not None else db.query(Bloque).filter(Bloque.id_bloque == event.id_bloque).first()
+
+    session_row = None
+    if event.id_sesion:
+        session_row = (
+            session_map.get(event.id_sesion)
+            if session_map is not None
+            else db.query(Sesion).filter(Sesion.id_sesion == event.id_sesion).first()
+        )
 
     professor = None
     if event.id_profesor:
@@ -1099,6 +1126,8 @@ def serialize_calendar_event(
         bloque_nombre=block.nombre if block else None,
         id_sesion=event.id_sesion,
         aula=event.aula,
+        edificio=session_row.edificio if session_row else None,
+        planta=session_row.planta if session_row else None,
         id_profesor=event.id_profesor,
         profesor_nombre=f"{professor.nombre} {professor.apellido}" if professor else None,
         fecha_inicio=event.fecha_inicio,
@@ -1110,6 +1139,7 @@ def serialize_calendar_event(
 def serialize_calendar_events(db: Session, events: List[Evento]) -> List[EventOut]:
     block_ids = sorted({event.id_bloque for event in events if event.id_bloque})
     professor_ids = sorted({event.id_profesor for event in events if event.id_profesor})
+    session_ids = sorted({event.id_sesion for event in events if event.id_sesion})
     block_map = {
         block.id_bloque: block
         for block in db.query(Bloque).filter(Bloque.id_bloque.in_(block_ids)).all()
@@ -1118,7 +1148,11 @@ def serialize_calendar_events(db: Session, events: List[Evento]) -> List[EventOu
         professor.id_profesor: professor
         for professor in db.query(Profesor).filter(Profesor.id_profesor.in_(professor_ids)).all()
     } if professor_ids else {}
-    return [serialize_calendar_event(db, event, block_map, professor_map) for event in events]
+    session_map = {
+        session_row.id_sesion: session_row
+        for session_row in db.query(Sesion).filter(Sesion.id_sesion.in_(session_ids)).all()
+    } if session_ids else {}
+    return [serialize_calendar_event(db, event, block_map, professor_map, session_map) for event in events]
 
 
 CALENDAR_CACHE_TTL_SECONDS = 60
@@ -1175,6 +1209,18 @@ def cached_dashboard_events(db: Session) -> List[EventOut]:
     _dashboard_events_cache["events"] = serialized
     _dashboard_events_cache["expires_at"] = now + CALENDAR_CACHE_TTL_SECONDS
     return serialized
+
+
+def dashboard_events_for_user(db: Session, current_user) -> List[EventOut]:
+    query = restrict_events_to_current_user(db.query(Evento), current_user)
+    events = (
+        query
+        .filter(Evento.fecha_fin >= datetime.utcnow())
+        .order_by(Evento.fecha_inicio)
+        .limit(30)
+        .all()
+    )
+    return serialize_calendar_events(db, events)
 
 
 def build_my_grades(db: Session, current_user) -> List[GradeOut]:
@@ -1249,6 +1295,63 @@ def require_professor_or_staff(current_user=Depends(get_current_user)):
     if get_user_role(current_user) not in {"profesor", "personal"}:
         raise HTTPException(status_code=403, detail="Solo profesores o personal pueden acceder.")
     return current_user
+
+
+def professor_teaches_block(db: Session, professor_id: str, block_id: str) -> bool:
+    return db.query(RelProfesoresBloques).filter(
+        RelProfesoresBloques.id_profesor == professor_id,
+        RelProfesoresBloques.id_bloque == block_id,
+    ).first() is not None
+
+
+def assert_professor_teaches_block(db: Session, current_user, block_id: Optional[str]) -> None:
+    if get_user_role(current_user) != "profesor" or not block_id:
+        return
+    if not professor_teaches_block(db, current_user.id_profesor, block_id):
+        raise HTTPException(status_code=403, detail="No puedes acceder a este bloque")
+
+
+def restrict_events_to_current_user(query, current_user):
+    role = get_user_role(current_user)
+    if role == "profesor":
+        teacher_blocks = query.session.query(RelProfesoresBloques.id_bloque).filter(
+            RelProfesoresBloques.id_profesor == current_user.id_profesor
+        )
+        query = query.filter(or_(
+            Evento.id_profesor == current_user.id_profesor,
+            and_(Evento.tipo == "class", Evento.id_bloque.in_(teacher_blocks)),
+        ))
+    elif role == "alumno":
+        query = (
+            query
+            .join(RelBloquesGrupos, RelBloquesGrupos.id_bloque == Evento.id_bloque)
+            .join(RelAlumnosGrupos, RelAlumnosGrupos.id_grupo == RelBloquesGrupos.id_grupo)
+            .filter(RelAlumnosGrupos.id_alumno == current_user.id_alumno)
+        )
+    elif role == "personal":
+        query = (
+            query
+            .join(RelBloquesGrupos, RelBloquesGrupos.id_bloque == Evento.id_bloque)
+            .join(RelCoordinadoresGrupos, RelCoordinadoresGrupos.id_grupo == RelBloquesGrupos.id_grupo)
+            .filter(RelCoordinadoresGrupos.id_coordinador == current_user.id_coordinador)
+        )
+    return query
+
+
+def ensure_event_write_allowed(db: Session, event: Evento, current_user, creating: bool = False) -> None:
+    role = get_user_role(current_user)
+    if role == "personal":
+        return
+    if role != "profesor":
+        raise HTTPException(status_code=403, detail="No puedes modificar eventos")
+    if event.id_sesion:
+        raise HTTPException(status_code=403, detail="No puedes modificar sesiones oficiales")
+    if event.tipo not in {"delivery", "exam", "notice"}:
+        raise HTTPException(status_code=403, detail="Solo puedes gestionar entregas, examenes o avisos")
+    if event.id_profesor != current_user.id_profesor:
+        raise HTTPException(status_code=403, detail="No puedes modificar eventos de otro profesor")
+    if event.id_bloque and not professor_teaches_block(db, current_user.id_profesor, event.id_bloque):
+        raise HTTPException(status_code=403, detail="No puedes crear eventos en este bloque")
 
 
 @app.on_event("startup")
@@ -1607,7 +1710,7 @@ def get_my_dashboard(
     return DashboardOut(
         grades=grades,
         attendance=attendance,
-        events=cached_dashboard_events(db),
+        events=dashboard_events_for_user(db, current_user),
     )
 
 
@@ -1619,10 +1722,11 @@ def list_events(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    if not tipo and not id_bloque and not id_sesion:
+    role = get_user_role(current_user)
+    if role not in {"profesor", "alumno", "personal"} and not tipo and not id_bloque and not id_sesion:
         return cached_calendar_events(db)
 
-    query = db.query(Evento)
+    query = restrict_events_to_current_user(db.query(Evento), current_user)
     if tipo:
         query = query.filter(Evento.tipo == tipo)
     if id_bloque:
@@ -1639,7 +1743,18 @@ def create_event(
     current_user=Depends(require_professor_or_staff),
 ):
     payload = enrich_event_block(db, model_dump(event_in))
+    role = get_user_role(current_user)
+    if role == "profesor":
+        payload["id_profesor"] = current_user.id_profesor
+        if payload.get("id_sesion"):
+            raise HTTPException(status_code=403, detail="No puedes crear sesiones oficiales")
+        if payload.get("tipo") not in {"delivery", "exam", "notice"}:
+            raise HTTPException(status_code=403, detail="Solo puedes crear entregas, examenes o avisos")
+        assert_professor_teaches_block(db, current_user, payload.get("id_bloque"))
+    if payload["fecha_fin"] <= payload["fecha_inicio"]:
+        raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior a la hora de inicio")
     event = Evento(id=str(uuid.uuid4()), **payload)
+    ensure_event_write_allowed(db, event, current_user, creating=True)
     db.add(event)
     db.commit()
     invalidate_calendar_cache()
@@ -1656,6 +1771,8 @@ def get_event(
     event = db.query(Evento).filter(Evento.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Evento no encontrado")
+    if get_user_role(current_user) == "profesor" and event.id_profesor != current_user.id_profesor:
+        raise HTTPException(status_code=403, detail="No puedes ver eventos de otro profesor")
     return serialize_calendar_event(db, event)
 
 
@@ -1669,9 +1786,38 @@ def update_event(
     event = db.query(Evento).filter(Evento.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Evento no encontrado")
+    ensure_event_write_allowed(db, event, current_user)
     payload = enrich_event_block(db, model_dump(event_in, exclude_unset=True))
+    if get_user_role(current_user) == "profesor":
+        payload["id_profesor"] = current_user.id_profesor
+        if payload.get("id_sesion") or event.id_sesion:
+            raise HTTPException(status_code=403, detail="No puedes modificar sesiones oficiales")
+        if payload.get("tipo", event.tipo) not in {"delivery", "exam", "notice"}:
+            raise HTTPException(status_code=403, detail="Solo puedes gestionar entregas, examenes o avisos")
+        assert_professor_teaches_block(db, current_user, payload.get("id_bloque", event.id_bloque))
+    fecha_inicio = payload.get("fecha_inicio", event.fecha_inicio)
+    fecha_fin = payload.get("fecha_fin", event.fecha_fin)
+    if fecha_inicio and fecha_fin and fecha_fin <= fecha_inicio:
+        raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior a la hora de inicio")
+    for required in ("titulo",):
+        if required in payload and not str(payload[required] or "").strip():
+            raise HTTPException(status_code=422, detail="El titulo no puede estar vacio")
     for key, value in payload.items():
         setattr(event, key, value)
+    if event.id_sesion:
+        session_row = db.query(Sesion).filter(Sesion.id_sesion == event.id_sesion).first()
+        if session_row:
+            if "titulo" in payload:
+                session_row.nombre = event.titulo
+            if "id_bloque" in payload and event.id_bloque:
+                session_row.id_bloque = event.id_bloque
+            if "aula" in payload:
+                session_row.aula = event.aula
+            if "fecha_inicio" in payload:
+                session_row.fecha = event.fecha_inicio.date()
+                session_row.hora_inicio = event.fecha_inicio.time().replace(second=0, microsecond=0)
+            if "fecha_fin" in payload:
+                session_row.hora_fin = event.fecha_fin.time().replace(second=0, microsecond=0)
     db.commit()
     invalidate_calendar_cache()
     db.refresh(event)
@@ -1687,6 +1833,7 @@ def delete_event(
     event = db.query(Evento).filter(Evento.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Evento no encontrado")
+    ensure_event_write_allowed(db, event, current_user)
     db.delete(event)
     db.commit()
     invalidate_calendar_cache()
@@ -1853,6 +2000,8 @@ def create_block_session(
         hora_inicio=session_in.hora_inicio,
         hora_fin=session_in.hora_fin,
         aula=session_in.aula,
+        edificio=session_in.edificio,
+        planta=session_in.planta,
     )
     db.add(session_row)
     db.commit()
@@ -1911,6 +2060,14 @@ def list_my_sessions(
     )
 
 
+@app.get("/api/v1/professors", response_model=List[ProfesorListOut], tags=["Profesores"])
+def list_professors(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return db.query(Profesor).order_by(Profesor.nombre, Profesor.apellido).all()
+
+
 @app.post("/api/v1/sessions", response_model=SesionOut, tags=["Sesiones"], status_code=201)
 def create_session(
     session_in: SesionCreate,
@@ -1930,6 +2087,8 @@ def create_session(
         hora_inicio=session_in.hora_inicio,
         hora_fin=session_in.hora_fin,
         aula=session_in.aula,
+        edificio=session_in.edificio,
+        planta=session_in.planta,
     )
     db.add(session_row)
     db.commit()
@@ -1959,9 +2118,32 @@ def update_session(
     session_row = db.query(Sesion).filter(Sesion.id_sesion == session_id).first()
     if not session_row:
         raise HTTPException(status_code=404, detail="Sesion no encontrada")
-    for key, value in model_dump(session_in, exclude_unset=True).items():
+    payload = model_dump(session_in, exclude_unset=True)
+    for required in ("id_bloque", "nombre", "aula", "edificio", "planta"):
+        if required in payload and not str(payload[required] or "").strip():
+            raise HTTPException(status_code=422, detail=f"{required} no puede estar vacio")
+    if "id_bloque" in payload and not db.query(Bloque).filter(Bloque.id_bloque == payload["id_bloque"]).first():
+        raise HTTPException(status_code=404, detail="Bloque no encontrado")
+    hora_inicio = payload.get("hora_inicio", session_row.hora_inicio)
+    hora_fin = payload.get("hora_fin", session_row.hora_fin)
+    if hora_inicio and hora_fin and hora_fin <= hora_inicio:
+        raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior a la hora de inicio")
+    for key, value in payload.items():
         setattr(session_row, key, value)
+    related_events = db.query(Evento).filter(Evento.id_sesion == session_id).all()
+    for event in related_events:
+        if "nombre" in payload:
+            event.titulo = session_row.nombre
+        if "id_bloque" in payload:
+            event.id_bloque = session_row.id_bloque
+        if "aula" in payload:
+            event.aula = session_row.aula
+        if session_row.fecha and session_row.hora_inicio and ("fecha" in payload or "hora_inicio" in payload):
+            event.fecha_inicio = datetime.combine(session_row.fecha, session_row.hora_inicio)
+        if session_row.fecha and session_row.hora_fin and ("fecha" in payload or "hora_fin" in payload):
+            event.fecha_fin = datetime.combine(session_row.fecha, session_row.hora_fin)
     db.commit()
+    invalidate_calendar_cache()
     db.refresh(session_row)
     return session_row
 
@@ -2018,6 +2200,7 @@ def list_block_tasks(
     block = db.query(Bloque).filter(Bloque.id_bloque == block_id).first()
     if not block:
         raise HTTPException(status_code=404, detail="Bloque no encontrado")
+    assert_professor_teaches_block(db, current_user, block_id)
     return (
         db.query(Tarea)
         .filter(Tarea.id_bloque == block_id)
@@ -2072,6 +2255,7 @@ def list_task_grades(
     task = db.query(Tarea).filter(Tarea.id_tarea == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    assert_professor_teaches_block(db, current_user, task.id_bloque)
 
     students = (
         db.query(Alumno)
@@ -2113,10 +2297,15 @@ def create_grade(
     task = db.query(Tarea).filter(Tarea.id_tarea == grade_in.id_tarea).first()
     if not task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    assert_professor_teaches_block(db, current_user, task.id_bloque)
     grade = db.query(RelAlumnoTarea).filter(
         RelAlumnoTarea.id_alumno == grade_in.id_alumno,
         RelAlumnoTarea.id_tarea == grade_in.id_tarea,
     ).first()
+    task = db.query(Tarea).filter(Tarea.id_tarea == tarea_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    assert_professor_teaches_block(db, current_user, task.id_bloque)
     if grade:
         grade.nota = grade_in.nota
     else:
@@ -2339,6 +2528,9 @@ def list_tutoring_slots(
     current_user=Depends(get_current_user),
 ):
     query = db.query(FranjaTutoria)
+    role = get_user_role(current_user)
+    if role == "profesor":
+        query = query.filter(FranjaTutoria.id_profesor == current_user.id_profesor)
     if id_profesor:
         query = query.filter(FranjaTutoria.id_profesor == id_profesor)
     if id_bloque:
@@ -2382,12 +2574,13 @@ def list_my_reservations(
     current_user=Depends(get_current_user),
 ):
     user_id = get_user_id(current_user)
-    return (
-        db.query(Reserva)
-        .filter(or_(Reserva.id_alumno == user_id, Reserva.id_profesor == user_id))
-        .order_by(Reserva.fecha.desc())
-        .all()
-    )
+    query = db.query(Reserva)
+    role = get_user_role(current_user)
+    if role == "alumno":
+        query = query.filter(Reserva.id_alumno == user_id)
+    elif role == "profesor":
+        query = query.filter(Reserva.id_profesor == user_id)
+    return query.order_by(Reserva.fecha.desc(), Reserva.fecha_creacion.desc()).all()
 
 
 @app.post("/api/v1/reservations", response_model=ReservationOut, tags=["Reservas y Tutorias"], status_code=201)
@@ -2399,6 +2592,19 @@ def create_reservation(
     slot = db.query(FranjaTutoria).filter(FranjaTutoria.id == reservation_in.id_franja).first()
     if not slot:
         raise HTTPException(status_code=404, detail="Franja no encontrada")
+    if not slot.disponible:
+        raise HTTPException(status_code=422, detail="Franja no disponible")
+    if slot.id_profesor != reservation_in.id_profesor:
+        raise HTTPException(status_code=422, detail="La franja no pertenece al profesor seleccionado")
+    if reservation_in.fecha.weekday() != slot.dia_semana:
+        raise HTTPException(status_code=422, detail="La fecha no coincide con el dia disponible")
+    existing = db.query(Reserva).filter(
+        Reserva.id_franja == reservation_in.id_franja,
+        Reserva.fecha == reservation_in.fecha,
+        Reserva.estado.in_(["pending", "approved", "alternative"]),
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Esa franja ya tiene una solicitud activa")
     reservation = Reserva(
         id=str(uuid.uuid4()),
         id_alumno=current_user.id_alumno,
@@ -2419,12 +2625,56 @@ def update_reservation(
     reservation_id: str,
     reservation_in: ReservationUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(require_professor_or_staff),
+    current_user=Depends(get_current_user),
 ):
     reservation = db.query(Reserva).filter(Reserva.id == reservation_id).first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    role = get_user_role(current_user)
+    user_id = get_user_id(current_user)
+    allowed_states = {"pending", "approved", "rejected", "alternative", "cancelled"}
+    if reservation_in.estado not in allowed_states:
+        raise HTTPException(status_code=422, detail="Estado no permitido")
+    if role == "profesor" and reservation.id_profesor != user_id:
+        raise HTTPException(status_code=403, detail="No puedes gestionar esta tutoria")
+    if role == "alumno":
+        if reservation.id_alumno != user_id:
+            raise HTTPException(status_code=403, detail="No puedes gestionar esta tutoria")
+        if reservation_in.estado not in {"approved", "cancelled", "rejected"}:
+            raise HTTPException(status_code=403, detail="Estado no permitido para alumno")
+        if reservation.estado == "alternative" and reservation_in.estado in {"approved", "rejected"}:
+            reservation.estado = reservation_in.estado
+        elif reservation.estado == "pending" and reservation_in.estado == "cancelled":
+            reservation.estado = "cancelled"
+        else:
+            raise HTTPException(status_code=422, detail="No se puede aplicar ese cambio")
+        db.commit()
+        db.refresh(reservation)
+        return reservation
+
+    if reservation_in.estado == "alternative":
+        if not reservation_in.id_franja or not reservation_in.fecha:
+            raise HTTPException(status_code=422, detail="La propuesta alternativa necesita franja y fecha")
+        slot = db.query(FranjaTutoria).filter(FranjaTutoria.id == reservation_in.id_franja).first()
+        if not slot:
+            raise HTTPException(status_code=404, detail="Franja no encontrada")
+        if slot.id_profesor != reservation.id_profesor:
+            raise HTTPException(status_code=422, detail="La franja no pertenece al profesor de la tutoria")
+        if reservation_in.fecha.weekday() != slot.dia_semana:
+            raise HTTPException(status_code=422, detail="La fecha no coincide con el dia disponible")
+        existing = db.query(Reserva).filter(
+            Reserva.id != reservation.id,
+            Reserva.id_franja == reservation_in.id_franja,
+            Reserva.fecha == reservation_in.fecha,
+            Reserva.estado.in_(["pending", "approved", "alternative"]),
+        ).first()
+        if existing:
+            raise HTTPException(status_code=409, detail="Esa franja ya tiene una solicitud activa")
+        reservation.id_franja = reservation_in.id_franja
+        reservation.fecha = reservation_in.fecha
     reservation.estado = reservation_in.estado
+    if reservation_in.notas is not None:
+        reservation.notas = reservation_in.notas
     db.commit()
     db.refresh(reservation)
     return reservation
@@ -2643,6 +2893,9 @@ def list_block_content(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    role = get_user_role(current_user)
+    if role == "profesor":
+        assert_professor_teaches_block(db, current_user, block_id)
     return (
         db.query(Contenido)
         .filter(Contenido.id_bloque == block_id)
@@ -2668,11 +2921,78 @@ def create_block_content(
         if not teacher_link:
             raise HTTPException(status_code=400, detail="El bloque no tiene profesor asignado")
         professor_id = teacher_link.id_profesor
+    else:
+        assert_professor_teaches_block(db, current_user, block_id)
     content = Contenido(
         id=str(uuid.uuid4()),
         id_bloque=block_id,
         id_profesor=professor_id,
         **model_dump(content_in),
+    )
+    db.add(content)
+    db.commit()
+    db.refresh(content)
+    return content
+
+
+@app.post("/api/v1/blocks/{block_id}/content/file", response_model=ContentOut, tags=["Contenido"], status_code=201)
+def upload_block_content_file(
+    block_id: str,
+    titulo: str = Form(...),
+    descripcion: Optional[str] = Form(None),
+    tipo: str = Form("documento"),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_professor_or_staff),
+):
+    if not db.query(Bloque).filter(Bloque.id_bloque == block_id).first():
+        raise HTTPException(status_code=404, detail="Bloque no encontrado")
+    if not titulo.strip():
+        raise HTTPException(status_code=422, detail="El titulo es obligatorio")
+
+    professor_id = getattr(current_user, "id_profesor", None)
+    if professor_id:
+        assert_professor_teaches_block(db, current_user, block_id)
+    else:
+        teacher_link = db.query(RelProfesoresBloques).filter(
+            RelProfesoresBloques.id_bloque == block_id
+        ).first()
+        if not teacher_link:
+            raise HTTPException(status_code=400, detail="El bloque no tiene profesor asignado")
+        professor_id = teacher_link.id_profesor
+
+    ext = validate_upload(
+        file,
+        {"pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "txt", "zip"},
+        {
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "text/plain",
+            "application/zip",
+            "application/x-zip-compressed",
+        },
+        20,
+    )
+    url = store_upload(
+        get_user_id(current_user),
+        file,
+        f"content/{safe_upload_user_id(block_id)}",
+        uuid.uuid4().hex,
+        ext,
+    )
+    content = Contenido(
+        id=str(uuid.uuid4()),
+        id_bloque=block_id,
+        id_profesor=professor_id,
+        titulo=titulo.strip(),
+        descripcion=descripcion.strip() if descripcion else None,
+        tipo=tipo or "documento",
+        url=url,
     )
     db.add(content)
     db.commit()
@@ -2689,6 +3009,8 @@ def delete_content(
     content = db.query(Contenido).filter(Contenido.id == content_id).first()
     if not content:
         raise HTTPException(status_code=404, detail="Contenido no encontrado")
+    if get_user_role(current_user) == "profesor" and content.id_profesor != current_user.id_profesor:
+        raise HTTPException(status_code=403, detail="No puedes eliminar contenido de otro profesor")
     db.delete(content)
     db.commit()
     return
