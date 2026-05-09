@@ -511,6 +511,83 @@ export async function updateReservation(
   });
 }
 
+export interface SolicitudTutoriaCreate {
+  id_profesor: string;
+  motivo: string;
+  opcion1_fecha_hora: string;
+  opcion2_fecha_hora: string;
+  opcion3_fecha_hora?: string;
+  comentario_alumno?: string;
+}
+
+export interface SolicitudTutoriaOut {
+  id: string;
+  id_alumno: string;
+  id_profesor: string;
+  motivo: string;
+  estado: string;
+  opcion1_fecha_hora: string;
+  opcion2_fecha_hora: string;
+  opcion3_fecha_hora?: string;
+  fecha_hora_confirmada?: string;
+  propuesta_alternativa_fecha_hora?: string;
+  comentario_profesor?: string;
+  comentario_alumno?: string;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
+}
+
+export async function createTutoringRequest(payload: SolicitudTutoriaCreate): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>('/api/v1/tutoring-requests', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getMyTutoringRequests(): Promise<SolicitudTutoriaOut[]> {
+  return apiFetch<SolicitudTutoriaOut[]>('/api/v1/tutoring-requests/me');
+}
+
+export async function getReceivedTutoringRequests(): Promise<SolicitudTutoriaOut[]> {
+  return apiFetch<SolicitudTutoriaOut[]>('/api/v1/tutoring-requests/received');
+}
+
+export async function acceptTutoringRequest(requestId: string, option: 1 | 2 | 3): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>(`/api/v1/tutoring-requests/${requestId}/accept/${option}`, {
+    method: 'POST',
+  });
+}
+
+export async function rejectTutoringRequest(requestId: string): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>(`/api/v1/tutoring-requests/${requestId}/reject`, {
+    method: 'POST',
+  });
+}
+
+export async function proposeAlternativeTutoring(requestId: string, propuesta: string): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>(`/api/v1/tutoring-requests/${requestId}/propose-alternative?propuesta=${encodeURIComponent(propuesta)}`, {
+    method: 'POST',
+  });
+}
+
+export async function acceptAlternativeTutoring(requestId: string): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>(`/api/v1/tutoring-requests/${requestId}/accept-alternative`, {
+    method: 'POST',
+  });
+}
+
+export async function rejectAlternativeTutoring(requestId: string): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>(`/api/v1/tutoring-requests/${requestId}/reject-alternative`, {
+    method: 'POST',
+  });
+}
+
+export async function cancelTutoringRequest(requestId: string): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>(`/api/v1/tutoring-requests/${requestId}/cancel`, {
+    method: 'POST',
+  });
+}
+
 export interface AgentChatMessage {
   role: 'user' | 'assistant';
   content: string;

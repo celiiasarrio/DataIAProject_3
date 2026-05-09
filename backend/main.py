@@ -60,6 +60,7 @@ from models import (
     RelProfesoresBloques,
     Reserva,
     Sesion,
+    SolicitudTutoria,
     Tarea,
     Ubicacion,
 )
@@ -650,6 +651,32 @@ class ReservationOut(ORMModel):
     notas: Optional[str] = None
     estado: str
     fecha_creacion: datetime
+
+
+class SolicitudTutoriaCreate(BaseModel):
+    id_profesor: str
+    motivo: str
+    opcion1_fecha_hora: datetime
+    opcion2_fecha_hora: datetime
+    opcion3_fecha_hora: Optional[datetime] = None
+    comentario_alumno: Optional[str] = None
+
+
+class SolicitudTutoriaOut(ORMModel):
+    id: str
+    id_alumno: str
+    id_profesor: str
+    motivo: str
+    estado: str
+    opcion1_fecha_hora: datetime
+    opcion2_fecha_hora: datetime
+    opcion3_fecha_hora: Optional[datetime] = None
+    fecha_hora_confirmada: Optional[datetime] = None
+    propuesta_alternativa_fecha_hora: Optional[datetime] = None
+    comentario_profesor: Optional[str] = None
+    comentario_alumno: Optional[str] = None
+    fecha_creacion: datetime
+    fecha_actualizacion: datetime
 
 
 class NotificationOut(ORMModel):
@@ -2678,6 +2705,177 @@ def update_reservation(
     db.commit()
     db.refresh(reservation)
     return reservation
+
+
+@app.post("/api/v1/tutoring-requests", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"], status_code=201)
+def create_tutoring_request(
+    request_in: SolicitudTutoriaCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    new_id = generate_id()
+    solicitud = SolicitudTutoria(
+        id=new_id,
+        id_alumno=user_id,
+        id_profesor=request_in.id_profesor,
+        motivo=request_in.motivo,
+        estado="Pendiente",
+        opcion1_fecha_hora=request_in.opcion1_fecha_hora,
+        opcion2_fecha_hora=request_in.opcion2_fecha_hora,
+        opcion3_fecha_hora=request_in.opcion3_fecha_hora,
+        comentario_alumno=request_in.comentario_alumno,
+    )
+    db.add(solicitud)
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
+
+
+@app.get("/api/v1/tutoring-requests/me", response_model=List[SolicitudTutoriaOut], tags=["Solicitudes de Tutoría"])
+def list_my_tutoring_requests(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    return db.query(SolicitudTutoria).filter(SolicitudTutoria.id_alumno == user_id).order_by(SolicitudTutoria.fecha_creacion.desc()).all()
+
+
+@app.get("/api/v1/tutoring-requests/received", response_model=List[SolicitudTutoriaOut], tags=["Solicitudes de Tutoría"])
+def list_received_tutoring_requests(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    return db.query(SolicitudTutoria).filter(SolicitudTutoria.id_profesor == user_id).order_by(SolicitudTutoria.fecha_creacion.desc()).all()
+
+
+@app.post("/api/v1/tutoring-requests/{request_id}/accept/{option}", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"])
+def accept_tutoring_request(
+    request_id: str,
+    option: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    solicitud = db.query(SolicitudTutoria).filter(SolicitudTutoria.id == request_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    if solicitud.id_profesor != get_user_id(current_user):
+        raise HTTPException(status_code=403, detail="No puedes aceptar esta solicitud")
+    if solicitud.estado != "Pendiente":
+        raise HTTPException(status_code=422, detail="La solicitud no está pendiente")
+    if option == 1:
+        solicitud.fecha_hora_confirmada = solicitud.opcion1_fecha_hora
+    elif option == 2:
+        solicitud.fecha_hora_confirmada = solicitud.opcion2_fecha_hora
+    elif option == 3:
+        if not solicitud.opcion3_fecha_hora:
+            raise HTTPException(status_code=422, detail="No existe opción 3")
+        solicitud.fecha_hora_confirmada = solicitud.opcion3_fecha_hora
+    else:
+        raise HTTPException(status_code=422, detail="Opción no válida")
+    solicitud.estado = "Aceptada"
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
+
+
+@app.post("/api/v1/tutoring-requests/{request_id}/reject", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"])
+def reject_tutoring_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    solicitud = db.query(SolicitudTutoria).filter(SolicitudTutoria.id == request_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    if solicitud.id_profesor != get_user_id(current_user):
+        raise HTTPException(status_code=403, detail="No puedes rechazar esta solicitud")
+    if solicitud.estado != "Pendiente":
+        raise HTTPException(status_code=422, detail="La solicitud no está pendiente")
+    solicitud.estado = "Rechazada"
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
+
+
+@app.post("/api/v1/tutoring-requests/{request_id}/propose-alternative", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"])
+def propose_alternative_tutoring(
+    request_id: str,
+    propuesta: datetime,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    solicitud = db.query(SolicitudTutoria).filter(SolicitudTutoria.id == request_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    if solicitud.id_profesor != get_user_id(current_user):
+        raise HTTPException(status_code=403, detail="No puedes proponer alternativa en esta solicitud")
+    if solicitud.estado != "Pendiente":
+        raise HTTPException(status_code=422, detail="La solicitud no está pendiente")
+    solicitud.propuesta_alternativa_fecha_hora = propuesta
+    solicitud.estado = "Propuesta alternativa"
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
+
+
+@app.post("/api/v1/tutoring-requests/{request_id}/accept-alternative", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"])
+def accept_alternative_tutoring(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    solicitud = db.query(SolicitudTutoria).filter(SolicitudTutoria.id == request_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    if solicitud.id_alumno != get_user_id(current_user):
+        raise HTTPException(status_code=403, detail="No puedes aceptar esta propuesta")
+    if solicitud.estado != "Propuesta alternativa":
+        raise HTTPException(status_code=422, detail="No hay propuesta alternativa pendiente")
+    solicitud.fecha_hora_confirmada = solicitud.propuesta_alternativa_fecha_hora
+    solicitud.estado = "Aceptada"
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
+
+
+@app.post("/api/v1/tutoring-requests/{request_id}/reject-alternative", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"])
+def reject_alternative_tutoring(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    solicitud = db.query(SolicitudTutoria).filter(SolicitudTutoria.id == request_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    if solicitud.id_alumno != get_user_id(current_user):
+        raise HTTPException(status_code=403, detail="No puedes rechazar esta propuesta")
+    if solicitud.estado != "Propuesta alternativa":
+        raise HTTPException(status_code=422, detail="No hay propuesta alternativa pendiente")
+    solicitud.estado = "Rechazada"
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
+
+
+@app.post("/api/v1/tutoring-requests/{request_id}/cancel", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"])
+def cancel_tutoring_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    solicitud = db.query(SolicitudTutoria).filter(SolicitudTutoria.id == request_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    if solicitud.id_alumno != get_user_id(current_user):
+        raise HTTPException(status_code=403, detail="No puedes cancelar esta solicitud")
+    if solicitud.estado != "Pendiente":
+        raise HTTPException(status_code=422, detail="Solo se pueden cancelar solicitudes pendientes")
+    solicitud.estado = "Cancelada"
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
 
 
 @app.get("/api/v1/notifications", response_model=List[NotificationOut], tags=["Notificaciones"])

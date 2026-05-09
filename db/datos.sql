@@ -25,7 +25,8 @@ TRUNCATE TABLE
     perfil_detalles,
     perfil_documentos,
     correos,
-    contenidos
+    contenidos,
+    solicitud_tutoria
 RESTART IDENTITY CASCADE;
 
 INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido1", "apellido2", "correo", "contrasena", "url_foto", "rol", "grupo") VALUES
@@ -695,3 +696,21 @@ SELECT
     (fecha || ' 23:59:59')::TIMESTAMP AS fecha_fin,
     COALESCE(descripcion, CONCAT('Entrega: ', nombre)) AS descripcion
 FROM tareas;
+
+-- Tabla de solicitudes de tutoría
+CREATE TABLE IF NOT EXISTS solicitud_tutoria (
+    id VARCHAR(255) PRIMARY KEY,
+    id_alumno VARCHAR(255) NOT NULL REFERENCES alumnos(id_alumno),
+    id_profesor VARCHAR(255) NOT NULL,
+    motivo TEXT NOT NULL,
+    estado VARCHAR(50) DEFAULT 'Pendiente' NOT NULL,
+    opcion1_fecha_hora TIMESTAMP NOT NULL,
+    opcion2_fecha_hora TIMESTAMP NOT NULL,
+    opcion3_fecha_hora TIMESTAMP,
+    fecha_hora_confirmada TIMESTAMP,
+    propuesta_alternativa_fecha_hora TIMESTAMP,
+    comentario_profesor TEXT,
+    comentario_alumno TEXT,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
