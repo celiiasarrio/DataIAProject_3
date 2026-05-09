@@ -473,7 +473,8 @@ export interface ReservationOut {
   id: string;
   id_alumno: string;
   id_profesor: string;
-  id_franja: string;
+  id_franja: string | null;
+  hora: string | null;
   fecha: string;
   notas: string | null;
   estado: string;
@@ -487,7 +488,7 @@ export async function getTutoringSlots(professorId?: string): Promise<TutoringSl
 
 export async function createReservation(payload: {
   id_profesor: string;
-  id_franja: string;
+  hora: string;
   fecha: string;
   notas?: string | null;
 }): Promise<ReservationOut> {

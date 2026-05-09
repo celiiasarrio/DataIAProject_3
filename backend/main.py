@@ -32,7 +32,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for thin local envs
 
     jwt = None
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import and_, create_engine, or_
+from sqlalchemy import and_, create_engine, or_, text
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool
 
@@ -629,7 +629,8 @@ class TutoringSlotOut(ORMModel):
 
 class ReservationCreate(BaseModel):
     id_profesor: str
-    id_franja: str
+    id_franja: Optional[str] = None
+    hora: Optional[time] = None
     fecha: date
     notas: Optional[str] = None
 
@@ -645,7 +646,8 @@ class ReservationOut(ORMModel):
     id: str
     id_alumno: str
     id_profesor: str
-    id_franja: str
+    id_franja: Optional[str] = None
+    hora: Optional[time] = None
     fecha: date
     notas: Optional[str] = None
     estado: str
@@ -1354,9 +1356,67 @@ def ensure_event_write_allowed(db: Session, event: Evento, current_user, creatin
         raise HTTPException(status_code=403, detail="No puedes crear eventos en este bloque")
 
 
+def _migrate_reservas(eng):
+    db_url = str(eng.url)
+    is_sqlite = db_url.startswith("sqlite")
+    with eng.connect() as conn:
+        if is_sqlite:
+            cols = {row[1] for row in conn.execute(text("PRAGMA table_info(reservas)")).fetchall()}
+            notnull_map = {row[1]: row[3] for row in conn.execute(text("PRAGMA table_info(reservas)")).fetchall()}
+            needs_hora = "hora" not in cols
+            needs_nullable = notnull_map.get("id_franja", 0) == 1
+            if needs_hora or needs_nullable:
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS _reservas_new (
+                        id VARCHAR NOT NULL,
+                        id_alumno VARCHAR NOT NULL,
+                        id_profesor VARCHAR NOT NULL,
+                        id_franja VARCHAR,
+                        hora TEXT,
+                        fecha DATE NOT NULL,
+                        notas TEXT,
+                        estado VARCHAR NOT NULL DEFAULT 'pending',
+                        fecha_creacion DATETIME NOT NULL,
+                        PRIMARY KEY (id)
+                    )
+                """))
+                conn.execute(text("""
+                    INSERT OR IGNORE INTO _reservas_new
+                        (id, id_alumno, id_profesor, id_franja, fecha, notas, estado, fecha_creacion)
+                    SELECT id, id_alumno, id_profesor, id_franja, fecha, notas, estado, fecha_creacion
+                    FROM reservas
+                """))
+                conn.execute(text("DROP TABLE reservas"))
+                conn.execute(text("ALTER TABLE _reservas_new RENAME TO reservas"))
+                conn.commit()
+        else:
+            conn.execute(text("""
+                DO $$ BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='reservas' AND column_name='hora'
+                    ) THEN
+                        ALTER TABLE reservas ADD COLUMN hora TIME;
+                    END IF;
+                END $$;
+            """))
+            conn.execute(text("""
+                DO $$ BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='reservas' AND column_name='id_franja' AND is_nullable='NO'
+                    ) THEN
+                        ALTER TABLE reservas ALTER COLUMN id_franja DROP NOT NULL;
+                    END IF;
+                END $$;
+            """))
+            conn.commit()
+
+
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
+    _migrate_reservas(engine)
 
 
 @app.get("/")
@@ -2589,27 +2649,32 @@ def create_reservation(
     db: Session = Depends(get_db),
     current_user=Depends(require_student),
 ):
-    slot = db.query(FranjaTutoria).filter(FranjaTutoria.id == reservation_in.id_franja).first()
-    if not slot:
-        raise HTTPException(status_code=404, detail="Franja no encontrada")
-    if not slot.disponible:
-        raise HTTPException(status_code=422, detail="Franja no disponible")
-    if slot.id_profesor != reservation_in.id_profesor:
-        raise HTTPException(status_code=422, detail="La franja no pertenece al profesor seleccionado")
-    if reservation_in.fecha.weekday() != slot.dia_semana:
-        raise HTTPException(status_code=422, detail="La fecha no coincide con el dia disponible")
-    existing = db.query(Reserva).filter(
-        Reserva.id_franja == reservation_in.id_franja,
-        Reserva.fecha == reservation_in.fecha,
-        Reserva.estado.in_(["pending", "approved", "alternative"]),
-    ).first()
-    if existing:
-        raise HTTPException(status_code=409, detail="Esa franja ya tiene una solicitud activa")
+    if reservation_in.id_franja:
+        slot = db.query(FranjaTutoria).filter(FranjaTutoria.id == reservation_in.id_franja).first()
+        if not slot:
+            raise HTTPException(status_code=404, detail="Franja no encontrada")
+        if not slot.disponible:
+            raise HTTPException(status_code=422, detail="Franja no disponible")
+        if slot.id_profesor != reservation_in.id_profesor:
+            raise HTTPException(status_code=422, detail="La franja no pertenece al profesor seleccionado")
+        if reservation_in.fecha.weekday() != slot.dia_semana:
+            raise HTTPException(status_code=422, detail="La fecha no coincide con el dia disponible")
+        existing = db.query(Reserva).filter(
+            Reserva.id_franja == reservation_in.id_franja,
+            Reserva.fecha == reservation_in.fecha,
+            Reserva.estado.in_(["pending", "approved", "alternative"]),
+        ).first()
+        if existing:
+            raise HTTPException(status_code=409, detail="Esa franja ya tiene una solicitud activa")
+    else:
+        if not reservation_in.hora:
+            raise HTTPException(status_code=422, detail="Indica una hora para la tutoría")
     reservation = Reserva(
         id=str(uuid.uuid4()),
         id_alumno=current_user.id_alumno,
         id_profesor=reservation_in.id_profesor,
         id_franja=reservation_in.id_franja,
+        hora=reservation_in.hora,
         fecha=reservation_in.fecha,
         notas=reservation_in.notas,
         estado="pending",

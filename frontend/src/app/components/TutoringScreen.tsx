@@ -15,6 +15,16 @@ import { CenteredLoadingSpinner } from './ui/LoadingSpinner';
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
+const TIME_SLOTS = Array.from({ length: 20 }, (_, i) => {
+  const mins = 8 * 60 + i * 30;
+  return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+});
+
+const todayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 const statusLabel: Record<string, string> = {
   pending: 'Pendiente',
   approved: 'Aprobada',
@@ -64,8 +74,8 @@ export function TutoringScreen() {
   const [professorId, setProfessorId] = useState('');
   const [professorSearch, setProfessorSearch] = useState('');
   const [professorOpen, setProfessorOpen] = useState(false);
-  const [slotId, setSlotId] = useState('');
   const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
   const [notes, setNotes] = useState('');
   const [responseNotes, setResponseNotes] = useState<Record<string, string>>({});
   const [alternativeSlot, setAlternativeSlot] = useState<Record<string, string>>({});
@@ -91,11 +101,6 @@ export function TutoringScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  const professorSlots = useMemo(
-    () => slots.filter((slot) => slot.id_profesor === professorId),
-    [slots, professorId],
-  );
-
   const filteredProfessors = useMemo(() => {
     const query = professorSearch.trim().toLowerCase();
     if (!query) return professors;
@@ -105,22 +110,13 @@ export function TutoringScreen() {
   }, [professors, professorSearch]);
 
   const selectedProfessor = professors.find((p) => p.id_profesor === professorId);
-  const canRequest = !!professorId && notes.trim().length > 0 && !saving && professorSlots.length > 0;
-
-  useEffect(() => {
-    const firstSlot = professorSlots[0];
-    setSlotId(firstSlot?.id ?? '');
-    setDate(firstSlot ? nextDatesForWeekday(firstSlot.dia_semana)[0] : '');
-  }, [professorSlots]);
-
-  const selectedSlot = slots.find((slot) => slot.id === slotId);
-  const availableDates = selectedSlot ? nextDatesForWeekday(selectedSlot.dia_semana) : [];
+  const canRequest = !!professorId && !!date && !!time && notes.trim().length > 0 && !saving;
 
   const reservationSlot = (reservation: ReservationOut) => slots.find((slot) => slot.id === reservation.id_franja);
 
   const submitRequest = async () => {
-    if (!professorId || !slotId || !date) {
-      setMessage('Selecciona profesor, franja y fecha.');
+    if (!professorId || !date || !time) {
+      setMessage('Selecciona profesor, fecha y hora.');
       return;
     }
     setSaving(true);
@@ -128,12 +124,14 @@ export function TutoringScreen() {
     try {
       const created = await createReservation({
         id_profesor: professorId,
-        id_franja: slotId,
+        hora: time,
         fecha: date,
         notas: notes.trim() || null,
       });
       setReservations((current) => [created, ...current]);
       setNotes('');
+      setDate('');
+      setTime('');
       setMessage('Solicitud enviada');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No se ha podido solicitar la tutoría');
@@ -241,42 +239,29 @@ export function TutoringScreen() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-gray-500 dark:text-gray-400" style={{ fontWeight: 600 }}>Franja horaria</label>
-                  <div className="relative">
-                    <select
-                      value={slotId}
-                      onChange={(event) => setSlotId(event.target.value)}
-                      disabled={professorSlots.length === 0}
-                      className="w-full appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-3 pr-10 py-2 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899] disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
-                    >
-                      {professorSlots.length === 0 ? (
-                        <option value="">Sin franjas disponibles</option>
-                      ) : (
-                        professorSlots.map((slot) => (
-                          <option key={slot.id} value={slot.id}>{slotLabel(slot)}</option>
-                        ))
-                      )}
-                    </select>
-                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                  </div>
+                  <label className="text-xs text-gray-500 dark:text-gray-400" style={{ fontWeight: 600 }}>Fecha</label>
+                  <input
+                    type="date"
+                    value={date}
+                    min={todayStr()}
+                    onChange={(event) => setDate(event.target.value)}
+                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899]"
+                  />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-gray-500 dark:text-gray-400" style={{ fontWeight: 600 }}>Fecha</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400" style={{ fontWeight: 600 }}>Hora</label>
                   <div className="relative">
                     <select
-                      value={date}
-                      onChange={(event) => setDate(event.target.value)}
-                      disabled={!selectedSlot}
-                      className="w-full appearance-none rounded-lg border border-gray-200 bg-white pl-3 pr-10 py-2 text-sm text-gray-800 capitalize focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899] disabled:bg-gray-100 disabled:text-gray-400"
+                      value={time}
+                      onChange={(event) => setTime(event.target.value)}
+                      disabled={!date}
+                      className="w-full appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-3 pr-10 py-2 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899] disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
                     >
-                      {!selectedSlot ? (
-                        <option value="">Selecciona una franja primero</option>
-                      ) : (
-                        availableDates.map((item) => (
-                          <option key={item} value={item}>{formatDate(item)}</option>
-                        ))
-                      )}
+                      <option value="">Selecciona una hora</option>
+                      {TIME_SLOTS.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
                     </select>
                     <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>
@@ -324,7 +309,9 @@ export function TutoringScreen() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-gray-800 dark:text-gray-100 text-sm" style={{ fontWeight: 700 }}>{professorName(professors, reservation.id_profesor)}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{formatDate(reservation.fecha)} · {slotLabel(slot)}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {formatDate(reservation.fecha)} · {reservation.hora ? reservation.hora.slice(0, 5) : slotLabel(slot)}
+                          </p>
                         </div>
                         <span className={`text-xs px-2 py-1 rounded-full ${statusClass[reservation.estado] ?? statusClass.pending}`}>
                           {statusLabel[reservation.estado] ?? reservation.estado}
