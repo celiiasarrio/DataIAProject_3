@@ -380,12 +380,6 @@ export function CalendarScreen() {
                   </div>
                 </div>
               </div>
-              {selectedEvent.descripcion && (
-                <div>
-                  <p className="text-xs text-gray-400">Descripción</p>
-                  <p className="text-sm text-gray-700">{selectedEvent.descripcion}</p>
-                </div>
-              )}
             </div>
 
             {canManageAttendance && selectedEvent.tipo === 'class' && selectedEvent.id_sesion && (
