@@ -1,4 +1,4 @@
-import { Bell, BookOpen, CheckCircle, Calendar, DoorOpen, Users, Clock, FileText, Trophy } from 'lucide-react';
+import { BookOpen, CheckCircle, Calendar, Users, Clock, FileText, Trophy, FolderOpen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
@@ -9,6 +9,7 @@ import {
   type CalendarEvent,
 } from '../api/client';
 import { ThemeToggleFish } from './ThemeToggleFish';
+import { CenteredLoadingSpinner } from './ui/LoadingSpinner';
 
 type Theme = 'claro' | 'oscuro';
 
@@ -38,6 +39,16 @@ const formatEventTime = (dateStr: string): string => {
 
 const formatEventDate = (dateStr: string): string => {
   return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' }).format(new Date(dateStr));
+};
+
+const formatEventLocation = (event: CalendarEvent): string | null => {
+  const planta =
+    event.planta?.toLowerCase() === 'baja'
+      ? 'Planta baja'
+      : event.planta
+        ? `Planta ${event.planta}`
+        : null;
+  return [event.aula, event.edificio, planta].filter(Boolean).join(' · ') || null;
 };
 
 export function DashboardScreen() {
@@ -139,6 +150,66 @@ export function DashboardScreen() {
 
   const avgGrade = calculateGradeAverage();
 
+  const coordinatorActions = [
+    {
+      icon: BookOpen,
+      title: 'Notas alumnos',
+      description: 'Edita calificaciones por asignatura y tarea.',
+      action: 'Gestionar notas',
+      route: '/teacher/grades',
+    },
+    {
+      icon: CheckCircle,
+      title: 'Asistencia',
+      description: 'Marca o quita asistencia de los alumnos.',
+      action: 'Gestionar asistencia',
+      route: '/group-attendance',
+    },
+  ];
+
+  if (userRole !== 'student' && userRole !== 'professor') {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5] pb-24">
+        <div className="bg-[#008899] px-6 pt-12 pb-16 rounded-b-3xl">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h1 className="text-white text-2xl mb-1" style={{ fontWeight: 300, fontFamily: 'Didot, Bodoni, serif' }}>EDEM</h1>
+              <p className="text-white text-xs opacity-90">Panel de coordinación</p>
+            </div>
+          </div>
+          <p className="text-white text-lg">Hola{userName ? `, ${userName.split(' ')[0]}` : ''}</p>
+        </div>
+
+        <div className="px-6 -mt-10">
+          <div className="bg-white rounded-2xl p-5 shadow-sm">
+            <div className="text-center mb-5">
+              <h2 className="text-[#008899] text-lg" style={{ fontWeight: 800 }}>Gestión académica</h2>
+              <p className="text-gray-500 text-sm mt-1">Accesos principales de coordinación</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-2 justify-items-center">
+              {coordinatorActions.map(({ icon: Icon, title, description, action, route }) => (
+                <div key={title} className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center text-center w-full max-w-xs">
+                  <div className="h-11 w-11 rounded-2xl bg-[#008899]/10 flex items-center justify-center mb-3">
+                    <Icon size={22} className="text-[#008899]" />
+                  </div>
+                  <h3 className="text-gray-900 text-sm" style={{ fontWeight: 800 }}>{title}</h3>
+                  <p className="text-gray-500 text-xs mt-2 flex-1">{description}</p>
+                  <button
+                    onClick={() => navigate(route)}
+                    className="mt-4 w-full bg-[#008899] text-white py-2.5 rounded-xl text-sm hover:bg-[#007788] transition-colors"
+                    style={{ fontWeight: 700 }}
+                  >
+                    {action}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f5f5f5] pb-20">
       <ThemeToggleFish theme={theme} onToggle={handleToggleTheme} busy={themeBusy} />
@@ -149,7 +220,6 @@ export function DashboardScreen() {
             <h1 className="text-white text-2xl mb-1" style={{ fontWeight: 300, fontFamily: 'Didot, Bodoni, serif' }}>EDEM</h1>
             <p className="text-white text-xs opacity-90">EDEM STUDENT HUB</p>
           </div>
-          <Bell className="text-white cursor-pointer" size={24} onClick={() => navigate('/notifications')} />
         </div>
         <p className="text-white text-lg mb-2">Hola{userName ? `, ${userName.split(' ')[0]}` : ''}</p>
       </div>
@@ -157,13 +227,12 @@ export function DashboardScreen() {
       {/* Content */}
       <div className="px-6 -mt-4">
         {/* Quick Access */}
-        <div className="bg-white rounded-xl p-4 mb-4 shadow-sm overflow-x-auto">
-          <div className="flex gap-3 min-w-min">
+        <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
+          <div className="flex gap-3 justify-center flex-wrap">
             {userRole === 'student' && [
               { icon: BookOpen, label: 'Notas', route: '/grades' },
               { icon: CheckCircle, label: 'Asistencia', route: '/attendance' },
-              { icon: DoorOpen, label: 'Salas', route: '/rooms' },
-              { icon: Users, label: 'Tutorías', route: null },
+              { icon: Users, label: 'Tutorías', route: '/tutoring' },
             ].map((item) => (
               <button
                 key={item.label}
@@ -177,21 +246,8 @@ export function DashboardScreen() {
             {userRole === 'professor' && [
               { icon: Calendar, label: 'Mis Clases', route: '/calendar' },
               { icon: BookOpen, label: 'Notas Alumnos', route: '/teacher/grades' },
+              { icon: FolderOpen, label: 'Material', route: '/teacher/content' },
               { icon: CheckCircle, label: 'Pase de Lista', route: '/calendar' },
-            ].map((item) => (
-              <button
-                key={item.label}
-                onClick={() => item.route && navigate(item.route)}
-                className="flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg hover:bg-[#f5f5f5] transition-colors"
-              >
-                <item.icon size={20} className="text-[#008899]" />
-                <span className="text-xs text-gray-700 text-center">{item.label}</span>
-              </button>
-            ))}
-            {userRole !== 'student' && userRole !== 'professor' && [
-              { icon: Calendar, label: 'Calendario', route: '/calendar' },
-              { icon: BookOpen, label: 'Notas Alumnos', route: '/teacher/grades' },
-              { icon: CheckCircle, label: 'Asistencia', route: '/calendar' },
             ].map((item) => (
               <button
                 key={item.label}
@@ -209,9 +265,7 @@ export function DashboardScreen() {
         <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
           <h3 className="text-[#008899] mb-3" style={{ fontWeight: 600 }}>HOY</h3>
           {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map(i => <div key={i} className="h-12 bg-gray-100 rounded animate-pulse" />)}
-            </div>
+            <CenteredLoadingSpinner className="py-5" />
           ) : getTodayEvents().length > 0 ? (
             <div className="space-y-3">
               {getTodayEvents().map((ev) => (
@@ -226,7 +280,7 @@ export function DashboardScreen() {
                     <span className="flex items-center gap-1">
                       <Clock size={14} /> {formatEventTime(ev.fecha_inicio)}
                     </span>
-                    {ev.aula && <span>{ev.aula}</span>}
+                    {formatEventLocation(ev) && <span>{formatEventLocation(ev)}</span>}
                   </div>
                 </div>
               ))}
@@ -236,40 +290,47 @@ export function DashboardScreen() {
           )}
         </div>
 
-        {/* Grades & Attendance (Students only) */}
+        {/* Grades & Attendance Indicators (Students only) */}
         {userRole === 'student' && (
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div
-              className="bg-white rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate('/grades')}
-            >
-              <h3 className="text-[#008899] mb-2" style={{ fontWeight: 600 }}>MIS NOTAS</h3>
-              {loading ? (
-                <div className="h-8 bg-gray-100 rounded animate-pulse" />
-              ) : avgGrade !== null ? (
-                <p className="text-2xl" style={{ fontWeight: 800, color: '#008899' }}>{avgGrade.toFixed(1)}</p>
-              ) : (
-                <p className="text-sm text-gray-500">Todavía no hay calificaciones publicadas.</p>
-              )}
-              <p className="text-xs text-gray-400 mt-2">Ver calificaciones →</p>
-            </div>
+          <div className="flex justify-center mb-6">
+            <div className="grid grid-cols-2 gap-8">
+              {/* Notas Indicator */}
+              <button
+                onClick={() => navigate('/grades')}
+                className="flex flex-col items-center gap-2 focus:outline-none"
+              >
+                <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow border border-gray-200">
+                  {loading ? (
+                    <div className="text-xs text-gray-400">...</div>
+                  ) : avgGrade !== null ? (
+                    <span className="text-2xl" style={{ fontWeight: 800, color: '#008899' }}>
+                      {avgGrade.toFixed(1).replace('.', ',')}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-400" style={{ textAlign: 'center' }}>—</span>
+                  )}
+                </div>
+                <span className="text-xs text-gray-600" style={{ fontWeight: 600 }}>Mis notas</span>
+              </button>
 
-            <div
-              className="bg-white rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate('/attendance')}
-            >
-              <h3 className="text-[#008899] mb-2" style={{ fontWeight: 600 }}>ASISTENCIA</h3>
-              {loading ? (
-                <div className="h-8 bg-gray-100 rounded animate-pulse" />
-              ) : attendance ? (
-                <>
-                  <p className="text-2xl" style={{ fontWeight: 800, color: '#008899' }}>{attendance.porcentaje_asistencia.toFixed(0)}%</p>
-                  {attendance.aviso && <p className="text-xs text-red-500 mt-2">{attendance.aviso}</p>}
-                </>
-              ) : (
-                <p className="text-sm text-gray-500">Todavía no hay datos de asistencia.</p>
-              )}
-              <p className="text-xs text-gray-400 mt-2">Ver asistencia →</p>
+              {/* Asistencia Indicator */}
+              <button
+                onClick={() => navigate('/attendance')}
+                className="flex flex-col items-center gap-2 focus:outline-none"
+              >
+                <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow border border-gray-200">
+                  {loading ? (
+                    <div className="text-xs text-gray-400">...</div>
+                  ) : attendance ? (
+                    <span className="text-2xl" style={{ fontWeight: 800, color: '#008899' }}>
+                      {attendance.porcentaje_asistencia.toFixed(0)}%
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-400" style={{ textAlign: 'center' }}>—</span>
+                  )}
+                </div>
+                <span className="text-xs text-gray-600" style={{ fontWeight: 600 }}>Asistencia</span>
+              </button>
             </div>
           </div>
         )}
@@ -279,9 +340,7 @@ export function DashboardScreen() {
           <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
             <h3 className="text-[#008899] mb-3" style={{ fontWeight: 600 }}>PRÓXIMAS ENTREGAS</h3>
             {loading ? (
-              <div className="space-y-2">
-                {[1, 2].map(i => <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />)}
-              </div>
+              <CenteredLoadingSpinner className="py-5" />
             ) : getUpcomingDeliveries().length > 0 ? (
               <div className="space-y-2">
                 {getUpcomingDeliveries().map((ev) => (
@@ -300,42 +359,13 @@ export function DashboardScreen() {
           </div>
         )}
 
+
         {userRole === 'student' && (
-          <>
-            {/* Room Booking */}
-            <div className="bg-[#008899] rounded-xl p-4 mb-4 shadow-sm">
-              <h3 className="text-white mb-2" style={{ fontWeight: 600 }}>RESERVA DE SALAS</h3>
-              <p className="text-white text-xs opacity-90 mb-3">Encuentra un espacio para estudiar, reunirte o trabajar en equipo</p>
-              <button
-                onClick={() => navigate('/rooms')}
-                className="bg-white text-[#008899] px-4 py-2 rounded-lg text-sm w-full hover:bg-gray-50 transition-colors"
-                style={{ fontWeight: 500 }}
-              >
-                Reservar sala
-              </button>
-            </div>
-
-            {/* Tutoring */}
-            <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-              <h3 className="text-[#008899] mb-2" style={{ fontWeight: 600 }}>TUTORÍAS</h3>
-              <p className="text-gray-500 text-xs mb-3">Reserva una tutoría con tu profesor o tutor académico</p>
-              <p className="text-sm text-gray-500 mb-3">No tienes tutorías programadas.</p>
-              <button
-                disabled
-                className="bg-gray-200 text-gray-500 px-4 py-2 rounded-lg text-sm w-full opacity-60"
-                style={{ fontWeight: 500 }}
-              >
-                Pedir tutoría
-              </button>
-            </div>
-          </>
+          <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
+            <h3 className="text-[#008899] mb-3" style={{ fontWeight: 600 }}>CONTENIDO RECIENTE</h3>
+            <p className="text-sm text-gray-500">No hay contenido reciente.</p>
+          </div>
         )}
-
-        {/* Recent Content */}
-        <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-          <h3 className="text-[#008899] mb-3" style={{ fontWeight: 600 }}>CONTENIDO RECIENTE</h3>
-          <p className="text-sm text-gray-500">No hay contenido reciente.</p>
-        </div>
       </div>
     </div>
   );

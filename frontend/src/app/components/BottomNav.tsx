@@ -1,4 +1,4 @@
-import { Home, Calendar, User, BookOpen } from 'lucide-react';
+import { Home, Calendar, User, BookOpen, FolderOpen } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 
 export function BottomNav() {
@@ -22,6 +22,7 @@ export function BottomNav() {
         ...baseItems,
         { icon: Calendar, path: '/calendar', label: 'Mis Clases' },
         { icon: BookOpen, path: '/teacher/grades', label: 'Notas' },
+        { icon: FolderOpen, path: '/teacher/content', label: 'Material' },
         { icon: User, path: '/profile', label: 'Perfil' },
       ];
     } else {
@@ -29,7 +30,6 @@ export function BottomNav() {
       return [
         ...baseItems,
         { icon: Calendar, path: '/calendar', label: 'Calendario' },
-        { icon: BookOpen, path: '/teacher/grades', label: 'Notas' },
         { icon: User, path: '/profile', label: 'Perfil' },
       ];
     }

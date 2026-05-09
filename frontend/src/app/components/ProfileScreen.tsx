@@ -38,6 +38,7 @@ import {
   type ProfileDocument,
   type ProfileFull,
 } from '../api/client';
+import { CenteredLoadingSpinner } from './ui/LoadingSpinner';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 const DOC_TYPES = ['DNI/NIE', 'Matricula', 'Certificado', 'Convenio practicas', 'Autorizacion', 'Otro'];
@@ -363,7 +364,7 @@ export function ProfileScreen() {
         personal: ['nombre', 'apellido', 'telefono', 'ciudad', 'idioma_preferido', 'contacto_emergencia'],
         contact: ['correo_personal', 'telefono', 'linkedin', 'github', 'portfolio', 'preferencia_contacto'],
         professional: ['area_interes', 'stack_tecnologico', 'experiencia_actual', 'disponibilidad', 'preferencia_jornada', 'linkedin', 'github', 'portfolio'],
-        preferences: ['idioma_app', 'notificaciones_email', 'notificaciones_push', 'visibilidad_profesional', 'permitir_cv_empleabilidad', 'permitir_links_profesores', 'tema'],
+        preferences: ['idioma_app', 'visibilidad_profesional', 'permitir_cv_empleabilidad', 'permitir_links_profesores', 'tema'],
       };
       const payload = Object.fromEntries(fieldsBySection[editing].map((key) => [key, form[key]]));
       const updatedProfile = await updateProfileSection(editing, payload);
@@ -452,7 +453,7 @@ export function ProfileScreen() {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center text-gray-500">Cargando perfil...</div>;
+    return <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center"><CenteredLoadingSpinner size="lg" /></div>;
   }
 
   if (!profile) {
@@ -692,8 +693,6 @@ export function ProfileScreen() {
                   { value: 'oscuro', label: 'Oscuro' },
                 ]}
               />
-              <ToggleRow label="Notificaciones email" checked={Boolean(form.notificaciones_email)} onChange={(v) => setField('notificaciones_email', v)} />
-              <ToggleRow label="Notificaciones push" checked={Boolean(form.notificaciones_push)} onChange={(v) => setField('notificaciones_push', v)} />
               <ToggleRow label="Perfil profesional visible" checked={Boolean(form.visibilidad_profesional)} onChange={(v) => setField('visibilidad_profesional', v)} />
               <ToggleRow label="Empleabilidad/coordinacion puede ver CV" checked={Boolean(form.permitir_cv_empleabilidad)} onChange={(v) => setField('permitir_cv_empleabilidad', v)} />
               <ToggleRow label="Profesores pueden ver LinkedIn/GitHub" checked={Boolean(form.permitir_links_profesores)} onChange={(v) => setField('permitir_links_profesores', v)} />
