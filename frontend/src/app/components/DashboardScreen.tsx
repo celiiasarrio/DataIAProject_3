@@ -1,4 +1,4 @@
-import { Bell, BookOpen, CheckCircle, Calendar, DoorOpen, Users, Clock, FileText, Trophy } from 'lucide-react';
+import { Bell, BookOpen, CheckCircle, Calendar, DoorOpen, Users, Clock, FileText, Trophy, FolderOpen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
@@ -156,6 +156,7 @@ export function DashboardScreen() {
             {userRole === 'professor' && [
               { icon: Calendar, label: 'Mis Clases', route: '/calendar' },
               { icon: BookOpen, label: 'Notas Alumnos', route: '/teacher/grades' },
+              { icon: FolderOpen, label: 'Material', route: '/teacher/content' },
               { icon: CheckCircle, label: 'Pase de Lista', route: '/calendar' },
             ].map((item) => (
               <button

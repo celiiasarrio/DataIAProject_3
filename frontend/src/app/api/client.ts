@@ -381,12 +381,21 @@ export async function updateSession(sessionId: string, payload: SessionUpdatePay
 }
 
 export interface CalendarEventUpdatePayload {
+  tipo?: string;
   titulo?: string;
   id_bloque?: string;
   aula?: string;
   id_profesor?: string | null;
   fecha_inicio?: string;
   fecha_fin?: string;
+  descripcion?: string | null;
+}
+
+export async function createCalendarEvent(payload: CalendarEventUpdatePayload): Promise<CalendarEvent> {
+  return apiFetch<CalendarEvent>('/api/v1/calendar/events', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function updateCalendarEvent(eventId: string, payload: CalendarEventUpdatePayload): Promise<CalendarEvent> {
@@ -394,6 +403,43 @@ export async function updateCalendarEvent(eventId: string, payload: CalendarEven
     method: 'PUT',
     body: JSON.stringify(payload),
   });
+}
+
+export async function deleteCalendarEvent(eventId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/calendar/events/${eventId}`, { method: 'DELETE' });
+}
+
+export interface ContentOut {
+  id: string;
+  id_bloque: string;
+  id_profesor: string;
+  titulo: string;
+  descripcion: string | null;
+  tipo: string;
+  url: string;
+  fecha_subida: string;
+}
+
+export interface ContentCreatePayload {
+  titulo: string;
+  descripcion?: string | null;
+  tipo: string;
+  url: string;
+}
+
+export async function getBlockContent(blockId: string): Promise<ContentOut[]> {
+  return apiFetch<ContentOut[]>(`/api/v1/blocks/${blockId}/content`);
+}
+
+export async function createBlockContent(blockId: string, payload: ContentCreatePayload): Promise<ContentOut> {
+  return apiFetch<ContentOut>(`/api/v1/blocks/${blockId}/content`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteContent(contentId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/content/${contentId}`, { method: 'DELETE' });
 }
 
 export interface AgentChatMessage {

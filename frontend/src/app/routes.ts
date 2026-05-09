@@ -12,6 +12,7 @@ import { CoursesScreen } from './components/CoursesScreen';
 import { CourseDetailScreen } from './components/CourseDetailScreen';
 import { GradingScreen } from './components/GradingScreen';
 import { TeacherGradesScreen } from './components/TeacherGradesScreen';
+import { TeacherContentScreen } from './components/TeacherContentScreen';
 import { ClassAttendanceScreen } from './components/ClassAttendanceScreen';
 import { Layout } from './components/Layout';
 
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
       { path: 'courses/:courseId',                            Component: CourseDetailScreen   },
       { path: 'courses/:courseId/blocks/:blockId/grade',      Component: GradingScreen        },
       { path: 'teacher/grades',                               Component: TeacherGradesScreen  },
+      { path: 'teacher/content',                              Component: TeacherContentScreen },
       { path: 'sessions/:sessionId/attendance',               Component: ClassAttendanceScreen},
     ],
   },
