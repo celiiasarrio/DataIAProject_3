@@ -1,4 +1,4 @@
-import { ChevronLeft, Check, X, RotateCcw } from 'lucide-react';
+import { ChevronLeft, Check, X, RotateCcw, ChevronDown, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
@@ -62,6 +62,8 @@ export function TutoringScreen() {
   const [slots, setSlots] = useState<TutoringSlot[]>([]);
   const [reservations, setReservations] = useState<ReservationOut[]>([]);
   const [professorId, setProfessorId] = useState('');
+  const [professorSearch, setProfessorSearch] = useState('');
+  const [professorOpen, setProfessorOpen] = useState(false);
   const [slotId, setSlotId] = useState('');
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -95,6 +97,17 @@ export function TutoringScreen() {
     () => slots.filter((slot) => slot.id_profesor === professorId),
     [slots, professorId],
   );
+
+  const filteredProfessors = useMemo(() => {
+    const query = professorSearch.trim().toLowerCase();
+    if (!query) return professors;
+    return professors.filter((p) =>
+      `${p.nombre} ${p.apellido}`.toLowerCase().includes(query),
+    );
+  }, [professors, professorSearch]);
+
+  const selectedProfessor = professors.find((p) => p.id_profesor === professorId);
+  const canRequest = !!professorId && notes.trim().length > 0 && !saving && professorSlots.length > 0;
 
   useEffect(() => {
     const firstSlot = professorSlots[0];
@@ -180,31 +193,115 @@ export function TutoringScreen() {
             {isStudent && (
               <div className="bg-gray-50 rounded-2xl p-4 mb-5 space-y-3">
                 <h2 className="text-[#008899] text-sm" style={{ fontWeight: 800 }}>Solicitar tutoría</h2>
-                <select value={professorId} onChange={(event) => setProfessorId(event.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
-                  {professors.map((professor) => (
-                    <option key={professor.id_profesor} value={professor.id_profesor}>
-                      {professor.nombre} {professor.apellido}
-                    </option>
-                  ))}
-                </select>
-                <select value={slotId} onChange={(event) => setSlotId(event.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
-                  {professorSlots.map((slot) => (
-                    <option key={slot.id} value={slot.id}>{slotLabel(slot)}</option>
-                  ))}
-                </select>
-                <select value={date} onChange={(event) => setDate(event.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
-                  {availableDates.map((item) => (
-                    <option key={item} value={item}>{formatDate(item)}</option>
-                  ))}
-                </select>
-                <textarea
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                  rows={3}
-                  placeholder="Motivo de la tutoría"
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
-                />
-                <button onClick={submitRequest} disabled={saving || professorSlots.length === 0} className="w-full bg-[#008899] disabled:bg-gray-300 text-white py-3 rounded-xl text-sm" style={{ fontWeight: 700 }}>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500" style={{ fontWeight: 600 }}>Profesor</label>
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Buscar profesor..."
+                      value={professorOpen ? professorSearch : selectedProfessor ? `${selectedProfessor.nombre} ${selectedProfessor.apellido}` : ''}
+                      onFocus={() => {
+                        setProfessorOpen(true);
+                        setProfessorSearch('');
+                      }}
+                      onBlur={() => window.setTimeout(() => setProfessorOpen(false), 150)}
+                      onChange={(event) => setProfessorSearch(event.target.value)}
+                      className="w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899]"
+                    />
+                    {professorOpen && (
+                      <ul className="absolute z-20 left-0 right-0 mt-1 max-h-52 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                        {filteredProfessors.length === 0 ? (
+                          <li className="px-3 py-2 text-sm text-gray-400">Sin coincidencias</li>
+                        ) : (
+                          filteredProfessors.map((p) => {
+                            const isSel = p.id_profesor === professorId;
+                            return (
+                              <li
+                                key={p.id_profesor}
+                                onMouseDown={(event) => {
+                                  event.preventDefault();
+                                  setProfessorId(p.id_profesor);
+                                  setProfessorOpen(false);
+                                  setProfessorSearch('');
+                                }}
+                                className={`px-3 py-2 text-sm cursor-pointer ${isSel ? 'bg-[#008899]/10 text-[#008899]' : 'hover:bg-gray-100 text-gray-800'}`}
+                                style={{ fontWeight: isSel ? 700 : 500 }}
+                              >
+                                {p.nombre} {p.apellido}
+                              </li>
+                            );
+                          })
+                        )}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500" style={{ fontWeight: 600 }}>Franja horaria</label>
+                  <div className="relative">
+                    <select
+                      value={slotId}
+                      onChange={(event) => setSlotId(event.target.value)}
+                      disabled={professorSlots.length === 0}
+                      className="w-full appearance-none rounded-lg border border-gray-200 bg-white pl-3 pr-10 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899] disabled:bg-gray-100 disabled:text-gray-400"
+                    >
+                      {professorSlots.length === 0 ? (
+                        <option value="">Sin franjas disponibles</option>
+                      ) : (
+                        professorSlots.map((slot) => (
+                          <option key={slot.id} value={slot.id}>{slotLabel(slot)}</option>
+                        ))
+                      )}
+                    </select>
+                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500" style={{ fontWeight: 600 }}>Fecha</label>
+                  <div className="relative">
+                    <select
+                      value={date}
+                      onChange={(event) => setDate(event.target.value)}
+                      disabled={!selectedSlot}
+                      className="w-full appearance-none rounded-lg border border-gray-200 bg-white pl-3 pr-10 py-2 text-sm text-gray-800 capitalize focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899] disabled:bg-gray-100 disabled:text-gray-400"
+                    >
+                      {!selectedSlot ? (
+                        <option value="">Selecciona una franja primero</option>
+                      ) : (
+                        availableDates.map((item) => (
+                          <option key={item} value={item}>{formatDate(item)}</option>
+                        ))
+                      )}
+                    </select>
+                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500" style={{ fontWeight: 600 }}>Motivo de la tutoría</label>
+                  <textarea
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    rows={3}
+                    placeholder="Cuéntale al profesor en qué necesitas ayuda"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899]"
+                  />
+                </div>
+
+                <button
+                  onClick={submitRequest}
+                  disabled={!canRequest}
+                  className={`w-full py-3 rounded-xl text-sm transition-all duration-200 ${
+                    canRequest
+                      ? 'bg-[#008899] text-white shadow-lg shadow-[#008899]/40 ring-2 ring-[#008899]/30 hover:bg-[#007788]'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                  style={{ fontWeight: 700 }}
+                >
                   Solicitar cita
                 </button>
               </div>
