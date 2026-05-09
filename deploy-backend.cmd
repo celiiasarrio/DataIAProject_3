@@ -42,9 +42,11 @@ echo ==^> Deploying backend Cloud Run service...
 "%TERRAFORM_BIN%" -chdir="%SCRIPT_DIR%\terraform" apply -auto-approve ^
   -var="deploy_services=true" ^
   -var="deploy_backend=true" ^
-  -var="deploy_frontend=false" ^
-  -var="deploy_agent=false" ^
-  -var="backend_image_tag=%IMAGE_TAG%"
+  -var="deploy_frontend=true" ^
+  -var="deploy_agent=true" ^
+  -var="backend_image_tag=%IMAGE_TAG%" ^
+  -var="frontend_image_tag=latest" ^
+  -var="agent_image_tag=latest"
 if errorlevel 1 exit /b 1
 
 echo ==^> Backend URL:
