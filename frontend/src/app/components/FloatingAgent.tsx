@@ -1,5 +1,6 @@
 import { Bot, Send, X } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { sendAgentMessage } from '../api/client';
 
 const FLOATING_AGENT_SESSION_KEY = 'campus-floating-agent-session-id';
@@ -133,7 +134,18 @@ export function FloatingAgent() {
                     <Bot className="text-white" size={14} />
                   </div>
                   <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-none px-3 py-2 max-w-[80%]">
-                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{m.text}</p>
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p className="text-sm text-gray-800 mb-1 last:mb-0">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc list-inside text-sm text-gray-800 space-y-0.5 my-1">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside text-sm text-gray-800 space-y-0.5 my-1">{children}</ol>,
+                        li: ({ children }) => <li className="text-sm text-gray-800">{children}</li>,
+                        strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                      }}
+                    >
+                      {m.text}
+                    </ReactMarkdown>
                   </div>
                 </div>
               ) : (

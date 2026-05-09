@@ -1,5 +1,6 @@
 import { ChevronLeft, Send, Sparkles } from 'lucide-react';
 import { FormEvent, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { useNavigate } from 'react-router';
 import { sendAgentMessage, type AgentChatMessage } from '../api/client';
 
@@ -91,9 +92,22 @@ export function ChatScreen() {
                   : 'bg-white rounded-2xl rounded-tl-none px-4 py-3 max-w-[80%] border border-[#d8ebee]'
               }
             >
-              <p className={message.role === 'user' ? 'text-sm text-white' : 'text-sm text-gray-800'}>
-                {message.content}
-              </p>
+              {message.role === 'user' ? (
+                <p className="text-sm text-white">{message.content}</p>
+              ) : (
+                <ReactMarkdown
+                  components={{
+                    p: ({ children }) => <p className="text-sm text-gray-800 mb-1 last:mb-0">{children}</p>,
+                    ul: ({ children }) => <ul className="list-disc list-inside text-sm text-gray-800 space-y-0.5 my-1">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal list-inside text-sm text-gray-800 space-y-0.5 my-1">{children}</ol>,
+                    li: ({ children }) => <li className="text-sm text-gray-800">{children}</li>,
+                    strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
+                    em: ({ children }) => <em className="italic">{children}</em>,
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              )}
             </div>
           </div>
         ))}
