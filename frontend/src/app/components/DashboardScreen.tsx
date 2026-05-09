@@ -328,12 +328,6 @@ export function DashboardScreen() {
         )}
 
 
-        {userRole === 'student' && (
-          <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-            <h3 className="text-[#008899] mb-3" style={{ fontWeight: 600 }}>CONTENIDO RECIENTE</h3>
-            <p className="text-sm text-gray-500">No hay contenido reciente.</p>
-          </div>
-        )}
       </div>
     </div>
   );
