@@ -59,6 +59,16 @@ const isMandatoryAttendanceEvent = (event: CalendarEvent) => {
 const getSessionTitle = (event: CalendarEvent) =>
   event.titulo.replace(/^SES-\d+\s*[-:|]?\s*/i, '').trim() || event.titulo;
 
+const formatEventLocation = (event: CalendarEvent): string | null => {
+  const planta =
+    event.planta?.toLowerCase() === 'baja'
+      ? 'Planta baja'
+      : event.planta
+        ? `Planta ${event.planta}`
+        : null;
+  return [event.aula, event.edificio, planta].filter(Boolean).join(' · ') || null;
+};
+
 function RingChart({ pct, size = 56 }: { pct: number; size?: number }) {
   const safePct = Math.max(0, Math.min(100, pct));
   const r = (size - 8) / 2;
@@ -259,7 +269,7 @@ export function AttendanceScreen() {
                   <div key={event.id} className="bg-gray-50 rounded-2xl p-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-gray-800 text-sm truncate" style={{ fontWeight: 600 }}>{getSessionTitle(event)}</p>
-                      <p className="text-xs text-gray-400">{formatSessionDate(event.fecha_inicio)} · {event.aula ?? event.id_sesion}</p>
+                      <p className="text-xs text-gray-400">{formatSessionDate(event.fecha_inicio)} · {formatEventLocation(event) ?? event.id_sesion}</p>
                     </div>
                     <button
                       onClick={() => event.id_sesion && handleCheckIn(event.id_sesion)}

@@ -32,6 +32,16 @@ const formatEventDate = (dateStr: string): string => {
   return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' }).format(new Date(dateStr));
 };
 
+const formatEventLocation = (event: CalendarEvent): string | null => {
+  const planta =
+    event.planta?.toLowerCase() === 'baja'
+      ? 'Planta baja'
+      : event.planta
+        ? `Planta ${event.planta}`
+        : null;
+  return [event.aula, event.edificio, planta].filter(Boolean).join(' · ') || null;
+};
+
 export function DashboardScreen() {
   const navigate = useNavigate();
   const [grades, setGrades] = useState<GradeOut[]>([]);
@@ -194,7 +204,7 @@ export function DashboardScreen() {
                     <span className="flex items-center gap-1">
                       <Clock size={14} /> {formatEventTime(ev.fecha_inicio)}
                     </span>
-                    {ev.aula && <span>{ev.aula}</span>}
+                    {formatEventLocation(ev) && <span>{formatEventLocation(ev)}</span>}
                   </div>
                 </div>
               ))}

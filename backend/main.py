@@ -291,6 +291,8 @@ class SesionCreate(BaseModel):
     hora_inicio: Optional[time] = None
     hora_fin: Optional[time] = None
     aula: Optional[str] = None
+    edificio: Optional[str] = None
+    planta: Optional[str] = None
 
 
 class SesionUpdate(BaseModel):
@@ -300,6 +302,8 @@ class SesionUpdate(BaseModel):
     hora_inicio: Optional[time] = None
     hora_fin: Optional[time] = None
     aula: Optional[str] = None
+    edificio: Optional[str] = None
+    planta: Optional[str] = None
 
 
 class SesionOut(ORMModel):
@@ -310,6 +314,8 @@ class SesionOut(ORMModel):
     hora_inicio: Optional[time] = None
     hora_fin: Optional[time] = None
     aula: Optional[str] = None
+    edificio: Optional[str] = None
+    planta: Optional[str] = None
 
 
 class EventBase(BaseModel):
@@ -348,6 +354,8 @@ class EventOut(ORMModel):
     bloque_nombre: Optional[str] = None
     id_sesion: Optional[str] = None
     aula: Optional[str] = None
+    edificio: Optional[str] = None
+    planta: Optional[str] = None
     id_profesor: Optional[str] = None
     profesor_nombre: Optional[str] = None
     fecha_inicio: datetime
@@ -1079,10 +1087,19 @@ def serialize_calendar_event(
     event: Evento,
     block_map: Optional[dict[str, Bloque]] = None,
     professor_map: Optional[dict[str, Profesor]] = None,
+    session_map: Optional[dict[str, Sesion]] = None,
 ) -> EventOut:
     block = None
     if event.id_bloque:
         block = block_map.get(event.id_bloque) if block_map is not None else db.query(Bloque).filter(Bloque.id_bloque == event.id_bloque).first()
+
+    session_row = None
+    if event.id_sesion:
+        session_row = (
+            session_map.get(event.id_sesion)
+            if session_map is not None
+            else db.query(Sesion).filter(Sesion.id_sesion == event.id_sesion).first()
+        )
 
     professor = None
     if event.id_profesor:
@@ -1099,6 +1116,8 @@ def serialize_calendar_event(
         bloque_nombre=block.nombre if block else None,
         id_sesion=event.id_sesion,
         aula=event.aula,
+        edificio=session_row.edificio if session_row else None,
+        planta=session_row.planta if session_row else None,
         id_profesor=event.id_profesor,
         profesor_nombre=f"{professor.nombre} {professor.apellido}" if professor else None,
         fecha_inicio=event.fecha_inicio,
@@ -1110,6 +1129,7 @@ def serialize_calendar_event(
 def serialize_calendar_events(db: Session, events: List[Evento]) -> List[EventOut]:
     block_ids = sorted({event.id_bloque for event in events if event.id_bloque})
     professor_ids = sorted({event.id_profesor for event in events if event.id_profesor})
+    session_ids = sorted({event.id_sesion for event in events if event.id_sesion})
     block_map = {
         block.id_bloque: block
         for block in db.query(Bloque).filter(Bloque.id_bloque.in_(block_ids)).all()
@@ -1118,7 +1138,11 @@ def serialize_calendar_events(db: Session, events: List[Evento]) -> List[EventOu
         professor.id_profesor: professor
         for professor in db.query(Profesor).filter(Profesor.id_profesor.in_(professor_ids)).all()
     } if professor_ids else {}
-    return [serialize_calendar_event(db, event, block_map, professor_map) for event in events]
+    session_map = {
+        session_row.id_sesion: session_row
+        for session_row in db.query(Sesion).filter(Sesion.id_sesion.in_(session_ids)).all()
+    } if session_ids else {}
+    return [serialize_calendar_event(db, event, block_map, professor_map, session_map) for event in events]
 
 
 CALENDAR_CACHE_TTL_SECONDS = 60
@@ -1853,6 +1877,8 @@ def create_block_session(
         hora_inicio=session_in.hora_inicio,
         hora_fin=session_in.hora_fin,
         aula=session_in.aula,
+        edificio=session_in.edificio,
+        planta=session_in.planta,
     )
     db.add(session_row)
     db.commit()
@@ -1930,6 +1956,8 @@ def create_session(
         hora_inicio=session_in.hora_inicio,
         hora_fin=session_in.hora_fin,
         aula=session_in.aula,
+        edificio=session_in.edificio,
+        planta=session_in.planta,
     )
     db.add(session_row)
     db.commit()

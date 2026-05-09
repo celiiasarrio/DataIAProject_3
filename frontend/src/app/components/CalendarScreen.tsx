@@ -124,6 +124,16 @@ const getEventPrefix = (event: CalendarEvent) => {
 const getEventDisplayTitle = (event: CalendarEvent) =>
   [getEventPrefix(event), event.titulo].filter(Boolean).join(' ');
 
+const formatEventLocation = (event: CalendarEvent): string | null => {
+  const planta =
+    event.planta?.toLowerCase() === 'baja'
+      ? 'Planta baja'
+      : event.planta
+        ? `Planta ${event.planta}`
+        : null;
+  return [event.aula, event.edificio, planta].filter(Boolean).join(' · ') || null;
+};
+
 const shouldShowEvent = (event: CalendarEvent) => {
   const title = normalizeText(event.titulo);
   if (title.includes('experiencia internacional') && event.tipo !== 'international') return false;
@@ -366,7 +376,7 @@ export function CalendarScreen() {
                   <MapPin size={15} className="text-gray-400 mt-0.5" />
                   <div>
                     <p className="text-xs text-gray-400">Aula</p>
-                    <p className="text-sm text-gray-800">{selectedEvent.aula ?? 'Aula pendiente'}</p>
+                    <p className="text-sm text-gray-800">{formatEventLocation(selectedEvent) ?? 'Aula pendiente'}</p>
                   </div>
                 </div>
               </div>
@@ -430,7 +440,7 @@ export function CalendarScreen() {
                       {getEventDisplayTitle(event)}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      {[event.profesor_nombre, event.aula].filter(Boolean).join(' · ')}
+                      {[event.profesor_nombre, formatEventLocation(event)].filter(Boolean).join(' · ')}
                     </p>
                   </button>
                 );

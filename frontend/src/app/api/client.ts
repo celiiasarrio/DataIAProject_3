@@ -338,6 +338,8 @@ export interface CalendarEvent {
   bloque_nombre: string | null;
   id_sesion: string | null;
   aula: string | null;
+  edificio: string | null;
+  planta: string | null;
   id_profesor: string | null;
   profesor_nombre: string | null;
   fecha_inicio: string;
