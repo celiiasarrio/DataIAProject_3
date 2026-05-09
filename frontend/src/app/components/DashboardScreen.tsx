@@ -117,6 +117,15 @@ export function DashboardScreen() {
       .slice(0, 5);
   };
 
+  const getUpcomingClasses = (): CalendarEvent[] => {
+    if (!events) return [];
+    const now = new Date();
+    return events
+      .filter((ev) => ev.tipo === 'class' && new Date(ev.fecha_fin) >= now)
+      .sort((a, b) => new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime())
+      .slice(0, 6);
+  };
+
   const avgGrade = calculateGradeAverage();
 
   const coordinatorActions = [
@@ -242,14 +251,42 @@ export function DashboardScreen() {
             </div>
           </div>
 
-          <button
-            onClick={() => navigate('/calendar')}
-            className="mt-4 w-full bg-white text-[#008899] py-3 rounded-2xl shadow-sm text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-            style={{ fontWeight: 800 }}
-          >
-            <Calendar size={18} />
-            Ver mis clases
-          </button>
+          <div className="mt-4 bg-white rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar size={18} className="text-[#008899]" />
+              <h2 className="text-[#008899] text-base" style={{ fontWeight: 800 }}>Mis clases</h2>
+            </div>
+            {loading ? (
+              <CenteredLoadingSpinner className="py-5" />
+            ) : getUpcomingClasses().length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-5">No tienes clases próximas.</p>
+            ) : (
+              <div className="space-y-3">
+                {getUpcomingClasses().map((ev) => (
+                  <div key={ev.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-gray-900 text-sm truncate" style={{ fontWeight: 800 }}>
+                          {ev.titulo}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatEventDate(ev.fecha_inicio)} · {formatEventTime(ev.fecha_inicio)} - {formatEventTime(ev.fecha_fin)}
+                        </p>
+                        {formatEventLocation(ev) && (
+                          <p className="text-xs text-gray-400 mt-1">{formatEventLocation(ev)}</p>
+                        )}
+                      </div>
+                      {ev.bloque_nombre && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-white text-[#008899] flex-shrink-0" style={{ fontWeight: 700 }}>
+                          {ev.bloque_nombre}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );

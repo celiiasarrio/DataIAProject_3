@@ -753,6 +753,10 @@ def model_dump(instance: BaseModel, **kwargs):
     return instance.dict(**kwargs)
 
 
+def generate_id() -> str:
+    return str(uuid.uuid4())
+
+
 def verify_password(stored_password: str, provided_password: str) -> bool:
     if not stored_password:
         return False
