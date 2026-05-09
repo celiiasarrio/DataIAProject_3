@@ -26,7 +26,8 @@ TRUNCATE TABLE
     perfil_documentos,
     correos,
     contenidos,
-    solicitud_tutoria
+    solicitud_tutoria,
+    user_sessions
 RESTART IDENTITY CASCADE;
 
 INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido1", "apellido2", "correo", "contrasena", "url_foto", "rol", "grupo") VALUES
@@ -713,4 +714,18 @@ CREATE TABLE IF NOT EXISTS solicitud_tutoria (
     comentario_alumno TEXT,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Tabla de sesiones de usuario para múltiples conexiones simultáneas
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id VARCHAR(255) PRIMARY KEY,
+    id_usuario VARCHAR(255) NOT NULL,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    device_info VARCHAR(255),
+    ip_address VARCHAR(45),
+    fecha_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    fecha_expiracion TIMESTAMP NOT NULL,
+    activa BOOLEAN DEFAULT true NOT NULL,
+    INDEX idx_id_usuario (id_usuario),
+    INDEX idx_token_hash (token_hash)
 );

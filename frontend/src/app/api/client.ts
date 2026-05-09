@@ -64,6 +64,22 @@ export async function login(email: string, password: string): Promise<{ access_t
   return res.json();
 }
 
+export async function logout(): Promise<void> {
+  try {
+    await apiFetch<{ mensaje: string }>('/api/v1/logout', { method: 'POST' });
+  } catch (error) {
+    // Log the logout error but don't throw - proceed with local cleanup
+    console.error('Logout error:', error);
+  }
+  // Clear local session regardless of API response
+  localStorage.removeItem('token');
+  localStorage.removeItem('userRole');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('userName');
+  localStorage.removeItem('userEmail');
+  localStorage.removeItem('userPhoto');
+}
+
 export interface UserProfile {
   id: string;
   nombre: string;

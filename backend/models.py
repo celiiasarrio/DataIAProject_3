@@ -305,3 +305,16 @@ class SolicitudTutoria(Base):
     comentario_alumno = Column(Text, nullable=True)
     fecha_creacion = Column(DateTime, default=datetime.utcnow, nullable=False)
     fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+
+    id = Column(String, primary_key=True, index=True)
+    id_usuario = Column(String, nullable=False, index=True)
+    token_hash = Column(String, nullable=False, unique=True, index=True)
+    device_info = Column(String, nullable=True)
+    ip_address = Column(String, nullable=True)
+    fecha_inicio = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fecha_expiracion = Column(DateTime, nullable=False)
+    activa = Column(Boolean, default=True, nullable=False)

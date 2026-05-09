@@ -63,6 +63,7 @@ from models import (
     SolicitudTutoria,
     Tarea,
     Ubicacion,
+    UserSession,
 )
 
 
@@ -1409,10 +1410,24 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": get_user_id(user)},
-        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+        expires_delta=expires_delta,
     )
+
+    # Registrar la sesión en la base de datos
+    token_hash = hashlib.sha256(access_token.encode()).hexdigest()
+    session = UserSession(
+        id=generate_id(),
+        id_usuario=get_user_id(user),
+        token_hash=token_hash,
+        fecha_expiracion=datetime.utcnow() + expires_delta,
+        activa=True,
+    )
+    db.add(session)
+    db.commit()
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -1440,6 +1455,21 @@ def update_my_profile(
     db.commit()
     db.refresh(current_user)
     return {"mensaje": "Perfil actualizado correctamente"}
+
+
+@app.post("/api/v1/logout", tags=["Autenticacion"])
+def logout(
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+    current_user=Depends(get_current_user),
+):
+    """Cierra la sesión actual marcándola como inactiva"""
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    session = db.query(UserSession).filter(UserSession.token_hash == token_hash).first()
+    if session:
+        session.activa = False
+        db.commit()
+    return {"mensaje": "Sesión cerrada correctamente"}
 
 
 @app.put("/api/v1/users/me/photo", tags=["Perfil y Roles"])
