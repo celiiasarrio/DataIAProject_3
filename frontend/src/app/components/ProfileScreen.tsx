@@ -260,6 +260,7 @@ export function ProfileScreen() {
   const [profile, setProfile] = useState<ProfileFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<EditableSection | null>(null);
+  const [editingPhoto, setEditingPhoto] = useState(false);
   const [form, setForm] = useState<Record<string, string | boolean>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -390,6 +391,7 @@ export function ProfileScreen() {
       }
       setMessage('Foto actualizada');
       setError(null);
+      setEditingPhoto(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo subir la foto');
     }
@@ -404,6 +406,7 @@ export function ProfileScreen() {
       localStorage.removeItem('userPhoto');
       setMessage('Foto eliminada');
       setError(null);
+      setEditingPhoto(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo eliminar la foto');
     }
@@ -496,17 +499,34 @@ export function ProfileScreen() {
               )}
             </div>
             <button
-              onClick={() => avatarInputRef.current?.click()}
+              onClick={() => {
+                setEditingPhoto(!editingPhoto);
+                if (editingPhoto) {
+                  setError(null);
+                  setMessage(null);
+                }
+              }}
               className="absolute bottom-1 right-1 w-9 h-9 bg-white rounded-full border-2 border-[#008899] flex items-center justify-center shadow hover:bg-gray-100 transition-colors"
+              title={editingPhoto ? "Cancelar edición" : "Editar foto"}
             >
-              <Camera size={16} className="text-[#008899]" />
+              {editingPhoto ? <X size={16} className="text-[#008899]" /> : <Camera size={16} className="text-[#008899]" />}
             </button>
-            {photoUrl && (
+            {editingPhoto && photoUrl && (
               <button
                 onClick={deleteAvatar}
                 className="absolute top-1 right-1 w-8 h-8 bg-red-500 rounded-full border-2 border-white flex items-center justify-center shadow hover:bg-red-600 transition-colors"
+                title="Eliminar foto"
               >
-                <X size={16} className="text-white" />
+                <Trash2 size={16} className="text-white" />
+              </button>
+            )}
+            {editingPhoto && (
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                className="absolute top-1 left-1 w-8 h-8 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center shadow hover:bg-blue-600 transition-colors"
+                title="Subir nueva foto"
+              >
+                <Upload size={16} className="text-white" />
               </button>
             )}
             <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={uploadAvatar} />
