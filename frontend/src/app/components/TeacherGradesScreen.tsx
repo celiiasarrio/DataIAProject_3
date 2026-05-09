@@ -24,6 +24,11 @@ const calculateAverage = (rows: GradeRosterRow[]): number | null => {
   return grades.length > 0 ? grades.reduce((a, b) => a + b, 0) / grades.length : null;
 };
 
+const isGradableBlock = (blockName: string): boolean => {
+  const nonGradable = ['PPTX', 'Hitos', 'TFM', 'Hackatón', 'Hackatones', 'Experiencia internacional', 'Soft Skills', 'Soft skills'];
+  return !nonGradable.some(name => blockName.toLowerCase().includes(name.toLowerCase()));
+};
+
 export function TeacherGradesScreen() {
   const navigate = useNavigate();
   const [blocks, setBlocks] = useState<BlockOut[]>([]);
@@ -39,12 +44,55 @@ export function TeacherGradesScreen() {
 
   useEffect(() => {
     getMyBlocks()
-      .then((data) => {
-        setBlocks(data);
-        if (data[0]) setBlockId(data[0].id_bloque);
+      .then(async (data) => {
+        const gradableBlocks = data.filter(block => isGradableBlock(block.nombre));
+        setBlocks(gradableBlocks);
+
+        if (gradableBlocks.length === 0) {
+          setLoading(false);
+          return;
+        }
+
+        let nextTaskBlockId = gradableBlocks[0].id_bloque;
+        let nextTaskId = '';
+
+        try {
+          const allTasks = await Promise.all(
+            gradableBlocks.map(block => getBlockTasks(block.id_bloque))
+          );
+
+          const now = new Date();
+          let closestTask: { blockId: string; taskId: number; fecha: string } | null = null;
+
+          gradableBlocks.forEach((block, blockIndex) => {
+            const blockTasks = allTasks[blockIndex];
+            blockTasks.forEach(task => {
+              if (!task.fecha) return;
+              const taskDate = new Date(task.fecha);
+              if (taskDate > now) {
+                if (!closestTask || taskDate < new Date(closestTask.fecha)) {
+                  closestTask = { blockId: block.id_bloque, taskId: task.id_tarea, fecha: task.fecha };
+                }
+              }
+            });
+          });
+
+          if (closestTask) {
+            nextTaskBlockId = closestTask.blockId;
+            nextTaskId = String(closestTask.taskId);
+          }
+        } catch (error) {
+          console.error('Error finding next task:', error);
+        }
+
+        setBlockId(nextTaskBlockId);
+        if (nextTaskId) setTaskId(nextTaskId);
+        setLoading(false);
       })
-      .catch(() => setBlocks([]))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        setBlocks([]);
+        setLoading(false);
+      });
   }, []);
 
   useEffect(() => {

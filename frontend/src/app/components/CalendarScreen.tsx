@@ -237,7 +237,7 @@ export function CalendarScreen() {
 
   const canManageAttendance = userRole === 'admin';
   const canEditSessions = userRole === 'admin';
-  const canManageAcademicEvents = userRole === 'professor';
+  const canManageAcademicEvents = userRole === 'professor' || userRole === 'admin';
   const todayKey = getDayKey(new Date());
 
   const eventsByDay = useMemo(() => {
