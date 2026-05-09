@@ -47,6 +47,44 @@ export function TeacherGradesScreen() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  const findNextTask = async (blocksData: BlockOut[]) => {
+    if (blocksData.length === 0) return { blockId: '', taskId: '' };
+
+    let nextTaskBlockId = blocksData[0].id_bloque;
+    let nextTaskId = '';
+
+    try {
+      const allTasks = await Promise.all(
+        blocksData.map(block => getBlockTasks(block.id_bloque))
+      );
+
+      const now = new Date();
+      let closestTask: { blockId: string; taskId: number; fecha: string } | null = null;
+
+      blocksData.forEach((block, blockIndex) => {
+        const blockTasks = allTasks[blockIndex].filter(task => isGradableTask(task.nombre));
+        blockTasks.forEach(task => {
+          if (!task.fecha) return;
+          const taskDate = new Date(task.fecha);
+          if (taskDate > now) {
+            if (!closestTask || taskDate < new Date(closestTask.fecha)) {
+              closestTask = { blockId: block.id_bloque, taskId: task.id_tarea, fecha: task.fecha };
+            }
+          }
+        });
+      });
+
+      if (closestTask) {
+        nextTaskBlockId = closestTask.blockId;
+        nextTaskId = String(closestTask.taskId);
+      }
+    } catch (error) {
+      console.error('Error finding next task:', error);
+    }
+
+    return { blockId: nextTaskBlockId, taskId: nextTaskId };
+  };
+
   useEffect(() => {
     getMyBlocks()
       .then(async (data) => {
@@ -58,39 +96,8 @@ export function TeacherGradesScreen() {
           return;
         }
 
-        let nextTaskBlockId = gradableBlocks[0].id_bloque;
-        let nextTaskId = '';
-
-        try {
-          const allTasks = await Promise.all(
-            gradableBlocks.map(block => getBlockTasks(block.id_bloque))
-          );
-
-          const now = new Date();
-          let closestTask: { blockId: string; taskId: number; fecha: string } | null = null;
-
-          gradableBlocks.forEach((block, blockIndex) => {
-            const blockTasks = allTasks[blockIndex].filter(task => isGradableTask(task.nombre));
-            blockTasks.forEach(task => {
-              if (!task.fecha) return;
-              const taskDate = new Date(task.fecha);
-              if (taskDate > now) {
-                if (!closestTask || taskDate < new Date(closestTask.fecha)) {
-                  closestTask = { blockId: block.id_bloque, taskId: task.id_tarea, fecha: task.fecha };
-                }
-              }
-            });
-          });
-
-          if (closestTask) {
-            nextTaskBlockId = closestTask.blockId;
-            nextTaskId = String(closestTask.taskId);
-          }
-        } catch (error) {
-          console.error('Error finding next task:', error);
-        }
-
-        setBlockId(nextTaskBlockId);
+        const { blockId: nextBlockId, taskId: nextTaskId } = await findNextTask(gradableBlocks);
+        setBlockId(nextBlockId);
         if (nextTaskId) setTaskId(nextTaskId);
         setLoading(false);
       })
@@ -99,6 +106,33 @@ export function TeacherGradesScreen() {
         setLoading(false);
       });
   }, []);
+
+  // Actualizar próxima tarea cada hora y cuando el usuario vuelve a la ventana
+  useEffect(() => {
+    if (blocks.length === 0) return;
+
+    const updateNextTask = async () => {
+      const { blockId: nextBlockId, taskId: nextTaskId } = await findNextTask(blocks);
+      setBlockId(nextBlockId);
+      if (nextTaskId) setTaskId(nextTaskId);
+    };
+
+    // Actualizar cada hora
+    const hourInterval = setInterval(updateNextTask, 3600000);
+
+    // Actualizar cuando el usuario vuelve a la ventana
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        updateNextTask();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(hourInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [blocks]);
 
   useEffect(() => {
     if (!blockId) return;
