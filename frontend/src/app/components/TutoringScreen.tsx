@@ -77,18 +77,16 @@ export function TutoringScreen() {
   const isStudent = role === 'student';
 
   useEffect(() => {
-    Promise.all([getProfessors(), getTutoringSlots(), getReservations()])
-      .then(([professorData, slotData, reservationData]) => {
+    Promise.allSettled([getProfessors(), getTutoringSlots(), getReservations()])
+      .then(([professorRes, slotRes, reservationRes]) => {
+        const professorData = professorRes.status === 'fulfilled' ? professorRes.value : [];
+        const slotData = slotRes.status === 'fulfilled' ? slotRes.value : [];
+        const reservationData = reservationRes.status === 'fulfilled' ? reservationRes.value : [];
         setProfessors(professorData);
         setSlots(slotData.filter((slot) => slot.disponible));
         setReservations(reservationData);
         const firstProfessor = professorData[0]?.id_profesor ?? '';
         setProfessorId(firstProfessor);
-      })
-      .catch(() => {
-        setProfessors([]);
-        setSlots([]);
-        setReservations([]);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -185,17 +183,17 @@ export function TutoringScreen() {
         </div>
       </div>
 
-      <div className="bg-white rounded-t-3xl px-5 pt-5 pb-6 min-h-[70vh]">
+      <div className="bg-white dark:bg-gray-900 rounded-t-3xl px-5 pt-5 pb-6 min-h-[70vh]">
         {loading ? (
           <CenteredLoadingSpinner />
         ) : (
           <>
             {isStudent && (
-              <div className="bg-gray-50 rounded-2xl p-4 mb-5 space-y-3">
-                <h2 className="text-[#008899] text-sm" style={{ fontWeight: 800 }}>Solicitar tutoría</h2>
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 mb-5 space-y-3">
+                <h2 className="text-[#008899] dark:text-cyan-300 text-sm" style={{ fontWeight: 800 }}>Solicitar tutoría</h2>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-gray-500" style={{ fontWeight: 600 }}>Profesor</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400" style={{ fontWeight: 600 }}>Profesor</label>
                   <div className="relative">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                     <input
@@ -206,14 +204,17 @@ export function TutoringScreen() {
                         setProfessorOpen(true);
                         setProfessorSearch('');
                       }}
+                      onClick={() => setProfessorOpen(true)}
                       onBlur={() => window.setTimeout(() => setProfessorOpen(false), 150)}
                       onChange={(event) => setProfessorSearch(event.target.value)}
-                      className="w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899]"
+                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899]"
                     />
                     {professorOpen && (
-                      <ul className="absolute z-20 left-0 right-0 mt-1 max-h-52 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                      <ul className="absolute z-20 left-0 right-0 mt-1 max-h-52 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg">
                         {filteredProfessors.length === 0 ? (
-                          <li className="px-3 py-2 text-sm text-gray-400">Sin coincidencias</li>
+                          <li className="px-3 py-2 text-sm text-gray-400">
+                            {professors.length === 0 ? 'No hay profesores cargados' : 'Sin coincidencias'}
+                          </li>
                         ) : (
                           filteredProfessors.map((p) => {
                             const isSel = p.id_profesor === professorId;
@@ -226,7 +227,7 @@ export function TutoringScreen() {
                                   setProfessorOpen(false);
                                   setProfessorSearch('');
                                 }}
-                                className={`px-3 py-2 text-sm cursor-pointer ${isSel ? 'bg-[#008899]/10 text-[#008899]' : 'hover:bg-gray-100 text-gray-800'}`}
+                                className={`px-3 py-2 text-sm cursor-pointer ${isSel ? 'bg-[#008899]/10 text-[#008899] dark:text-cyan-300' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-100'}`}
                                 style={{ fontWeight: isSel ? 700 : 500 }}
                               >
                                 {p.nombre} {p.apellido}
@@ -240,13 +241,13 @@ export function TutoringScreen() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-gray-500" style={{ fontWeight: 600 }}>Franja horaria</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400" style={{ fontWeight: 600 }}>Franja horaria</label>
                   <div className="relative">
                     <select
                       value={slotId}
                       onChange={(event) => setSlotId(event.target.value)}
                       disabled={professorSlots.length === 0}
-                      className="w-full appearance-none rounded-lg border border-gray-200 bg-white pl-3 pr-10 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899] disabled:bg-gray-100 disabled:text-gray-400"
+                      className="w-full appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-3 pr-10 py-2 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899] disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
                     >
                       {professorSlots.length === 0 ? (
                         <option value="">Sin franjas disponibles</option>
@@ -261,7 +262,7 @@ export function TutoringScreen() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-gray-500" style={{ fontWeight: 600 }}>Fecha</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400" style={{ fontWeight: 600 }}>Fecha</label>
                   <div className="relative">
                     <select
                       value={date}
@@ -282,13 +283,13 @@ export function TutoringScreen() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-gray-500" style={{ fontWeight: 600 }}>Motivo de la tutoría</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400" style={{ fontWeight: 600 }}>Motivo de la tutoría</label>
                   <textarea
                     value={notes}
                     onChange={(event) => setNotes(event.target.value)}
                     rows={3}
                     placeholder="Cuéntale al profesor en qué necesitas ayuda"
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899]"
+                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#008899]/40 focus:border-[#008899]"
                   />
                 </div>
 
@@ -307,11 +308,11 @@ export function TutoringScreen() {
               </div>
             )}
 
-            {message && <p className="mb-4 text-center text-sm text-gray-500">{message}</p>}
+            {message && <p className="mb-4 text-center text-sm text-gray-500 dark:text-gray-400">{message}</p>}
 
             <div className="space-y-3">
               {reservations.length === 0 ? (
-                <p className="text-gray-400 text-sm text-center py-8">No hay solicitudes de tutoría.</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">No hay solicitudes de tutoría.</p>
               ) : (
                 reservations.map((reservation) => {
                   const slot = reservationSlot(reservation);
@@ -319,17 +320,17 @@ export function TutoringScreen() {
                   const selectedAltSlot = slots.find((item) => item.id === alternativeSlot[reservation.id]) ?? altSlots[0];
                   const altDates = selectedAltSlot ? nextDatesForWeekday(selectedAltSlot.dia_semana) : [];
                   return (
-                    <div key={reservation.id} className="bg-gray-50 rounded-2xl p-4">
+                    <div key={reservation.id} className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-gray-800 text-sm" style={{ fontWeight: 700 }}>{professorName(professors, reservation.id_profesor)}</p>
-                          <p className="text-xs text-gray-500 mt-1">{formatDate(reservation.fecha)} · {slotLabel(slot)}</p>
+                          <p className="text-gray-800 dark:text-gray-100 text-sm" style={{ fontWeight: 700 }}>{professorName(professors, reservation.id_profesor)}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{formatDate(reservation.fecha)} · {slotLabel(slot)}</p>
                         </div>
                         <span className={`text-xs px-2 py-1 rounded-full ${statusClass[reservation.estado] ?? statusClass.pending}`}>
                           {statusLabel[reservation.estado] ?? reservation.estado}
                         </span>
                       </div>
-                      {reservation.notas && <p className="text-sm text-gray-600 mt-3">{reservation.notas}</p>}
+                      {reservation.notas && <p className="text-sm text-gray-600 dark:text-gray-300 mt-3">{reservation.notas}</p>}
 
                       {isStudent && reservation.estado === 'pending' && (
                         <button onClick={() => respond(reservation, 'cancelled')} disabled={saving} className="mt-3 text-sm text-red-600" style={{ fontWeight: 700 }}>
