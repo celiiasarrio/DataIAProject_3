@@ -29,6 +29,7 @@ import {
   changeProfilePassword,
   deleteProfileCv,
   deleteProfileDocument,
+  deleteProfilePhoto,
   getFullProfile,
   replaceProfileDocument,
   updateProfileSection,
@@ -382,10 +383,29 @@ export function ProfileScreen() {
     if (!file || !profile) return;
     try {
       const updated = await uploadProfilePhoto(file);
-      setProfile({ ...profile, url_foto: updated.url_foto });
+      const newProfile = { ...profile, url_foto: updated.url_foto };
+      setProfile(newProfile);
+      if (updated.url_foto) {
+        localStorage.setItem('userPhoto', updated.url_foto);
+      }
       setMessage('Foto actualizada');
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo subir la foto');
+    }
+  };
+
+  const deleteAvatar = async () => {
+    if (!profile) return;
+    try {
+      await deleteProfilePhoto();
+      const newProfile = { ...profile, url_foto: null };
+      setProfile(newProfile);
+      localStorage.removeItem('userPhoto');
+      setMessage('Foto eliminada');
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar la foto');
     }
   };
 
@@ -477,10 +497,18 @@ export function ProfileScreen() {
             </div>
             <button
               onClick={() => avatarInputRef.current?.click()}
-              className="absolute bottom-1 right-1 w-9 h-9 bg-white rounded-full border-2 border-[#008899] flex items-center justify-center shadow"
+              className="absolute bottom-1 right-1 w-9 h-9 bg-white rounded-full border-2 border-[#008899] flex items-center justify-center shadow hover:bg-gray-100 transition-colors"
             >
               <Camera size={16} className="text-[#008899]" />
             </button>
+            {photoUrl && (
+              <button
+                onClick={deleteAvatar}
+                className="absolute top-1 right-1 w-8 h-8 bg-red-500 rounded-full border-2 border-white flex items-center justify-center shadow hover:bg-red-600 transition-colors"
+              >
+                <X size={16} className="text-white" />
+              </button>
+            )}
             <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={uploadAvatar} />
           </div>
           <div className="text-center sm:text-left flex-1">
