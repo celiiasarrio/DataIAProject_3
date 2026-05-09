@@ -454,6 +454,59 @@ export async function deleteContent(contentId: string): Promise<void> {
   return apiFetch<void>(`/api/v1/content/${contentId}`, { method: 'DELETE' });
 }
 
+export interface TutoringSlot {
+  id: string;
+  id_profesor: string;
+  id_bloque: string | null;
+  dia_semana: number;
+  hora_inicio: string;
+  hora_fin: string;
+  ubicacion: string;
+  disponible: boolean;
+}
+
+export interface ReservationOut {
+  id: string;
+  id_alumno: string;
+  id_profesor: string;
+  id_franja: string;
+  fecha: string;
+  notas: string | null;
+  estado: string;
+  fecha_creacion: string;
+}
+
+export async function getTutoringSlots(professorId?: string): Promise<TutoringSlot[]> {
+  const query = professorId ? `?id_profesor=${encodeURIComponent(professorId)}` : '';
+  return apiFetch<TutoringSlot[]>(`/api/v1/tutorings/slots${query}`);
+}
+
+export async function createReservation(payload: {
+  id_profesor: string;
+  id_franja: string;
+  fecha: string;
+  notas?: string | null;
+}): Promise<ReservationOut> {
+  return apiFetch<ReservationOut>('/api/v1/reservations', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getReservations(): Promise<ReservationOut[]> {
+  return apiFetch<ReservationOut[]>('/api/v1/reservations');
+}
+
+export async function updateReservation(
+  reservationId: string,
+  payload: { estado: string; id_franja?: string; fecha?: string; notas?: string | null },
+): Promise<ReservationOut> {
+  return apiFetch<ReservationOut>(`/api/v1/reservations/${reservationId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
 export interface AgentChatMessage {
   role: 'user' | 'assistant';
   content: string;

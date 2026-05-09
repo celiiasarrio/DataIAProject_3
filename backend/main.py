@@ -636,6 +636,9 @@ class ReservationCreate(BaseModel):
 
 class ReservationUpdate(BaseModel):
     estado: str
+    id_franja: Optional[str] = None
+    fecha: Optional[date] = None
+    notas: Optional[str] = None
 
 
 class ReservationOut(ORMModel):
@@ -2060,7 +2063,7 @@ def list_my_sessions(
 @app.get("/api/v1/professors", response_model=List[ProfesorListOut], tags=["Profesores"])
 def list_professors(
     db: Session = Depends(get_db),
-    current_user=Depends(require_staff),
+    current_user=Depends(get_current_user),
 ):
     return db.query(Profesor).order_by(Profesor.nombre, Profesor.apellido).all()
 
@@ -2525,6 +2528,9 @@ def list_tutoring_slots(
     current_user=Depends(get_current_user),
 ):
     query = db.query(FranjaTutoria)
+    role = get_user_role(current_user)
+    if role == "profesor":
+        query = query.filter(FranjaTutoria.id_profesor == current_user.id_profesor)
     if id_profesor:
         query = query.filter(FranjaTutoria.id_profesor == id_profesor)
     if id_bloque:
@@ -2568,12 +2574,13 @@ def list_my_reservations(
     current_user=Depends(get_current_user),
 ):
     user_id = get_user_id(current_user)
-    return (
-        db.query(Reserva)
-        .filter(or_(Reserva.id_alumno == user_id, Reserva.id_profesor == user_id))
-        .order_by(Reserva.fecha.desc())
-        .all()
-    )
+    query = db.query(Reserva)
+    role = get_user_role(current_user)
+    if role == "alumno":
+        query = query.filter(Reserva.id_alumno == user_id)
+    elif role == "profesor":
+        query = query.filter(Reserva.id_profesor == user_id)
+    return query.order_by(Reserva.fecha.desc(), Reserva.fecha_creacion.desc()).all()
 
 
 @app.post("/api/v1/reservations", response_model=ReservationOut, tags=["Reservas y Tutorias"], status_code=201)
@@ -2585,6 +2592,19 @@ def create_reservation(
     slot = db.query(FranjaTutoria).filter(FranjaTutoria.id == reservation_in.id_franja).first()
     if not slot:
         raise HTTPException(status_code=404, detail="Franja no encontrada")
+    if not slot.disponible:
+        raise HTTPException(status_code=422, detail="Franja no disponible")
+    if slot.id_profesor != reservation_in.id_profesor:
+        raise HTTPException(status_code=422, detail="La franja no pertenece al profesor seleccionado")
+    if reservation_in.fecha.weekday() != slot.dia_semana:
+        raise HTTPException(status_code=422, detail="La fecha no coincide con el dia disponible")
+    existing = db.query(Reserva).filter(
+        Reserva.id_franja == reservation_in.id_franja,
+        Reserva.fecha == reservation_in.fecha,
+        Reserva.estado.in_(["pending", "approved", "alternative"]),
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Esa franja ya tiene una solicitud activa")
     reservation = Reserva(
         id=str(uuid.uuid4()),
         id_alumno=current_user.id_alumno,
@@ -2605,12 +2625,56 @@ def update_reservation(
     reservation_id: str,
     reservation_in: ReservationUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(require_professor_or_staff),
+    current_user=Depends(get_current_user),
 ):
     reservation = db.query(Reserva).filter(Reserva.id == reservation_id).first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    role = get_user_role(current_user)
+    user_id = get_user_id(current_user)
+    allowed_states = {"pending", "approved", "rejected", "alternative", "cancelled"}
+    if reservation_in.estado not in allowed_states:
+        raise HTTPException(status_code=422, detail="Estado no permitido")
+    if role == "profesor" and reservation.id_profesor != user_id:
+        raise HTTPException(status_code=403, detail="No puedes gestionar esta tutoria")
+    if role == "alumno":
+        if reservation.id_alumno != user_id:
+            raise HTTPException(status_code=403, detail="No puedes gestionar esta tutoria")
+        if reservation_in.estado not in {"approved", "cancelled", "rejected"}:
+            raise HTTPException(status_code=403, detail="Estado no permitido para alumno")
+        if reservation.estado == "alternative" and reservation_in.estado in {"approved", "rejected"}:
+            reservation.estado = reservation_in.estado
+        elif reservation.estado == "pending" and reservation_in.estado == "cancelled":
+            reservation.estado = "cancelled"
+        else:
+            raise HTTPException(status_code=422, detail="No se puede aplicar ese cambio")
+        db.commit()
+        db.refresh(reservation)
+        return reservation
+
+    if reservation_in.estado == "alternative":
+        if not reservation_in.id_franja or not reservation_in.fecha:
+            raise HTTPException(status_code=422, detail="La propuesta alternativa necesita franja y fecha")
+        slot = db.query(FranjaTutoria).filter(FranjaTutoria.id == reservation_in.id_franja).first()
+        if not slot:
+            raise HTTPException(status_code=404, detail="Franja no encontrada")
+        if slot.id_profesor != reservation.id_profesor:
+            raise HTTPException(status_code=422, detail="La franja no pertenece al profesor de la tutoria")
+        if reservation_in.fecha.weekday() != slot.dia_semana:
+            raise HTTPException(status_code=422, detail="La fecha no coincide con el dia disponible")
+        existing = db.query(Reserva).filter(
+            Reserva.id != reservation.id,
+            Reserva.id_franja == reservation_in.id_franja,
+            Reserva.fecha == reservation_in.fecha,
+            Reserva.estado.in_(["pending", "approved", "alternative"]),
+        ).first()
+        if existing:
+            raise HTTPException(status_code=409, detail="Esa franja ya tiene una solicitud activa")
+        reservation.id_franja = reservation_in.id_franja
+        reservation.fecha = reservation_in.fecha
     reservation.estado = reservation_in.estado
+    if reservation_in.notas is not None:
+        reservation.notas = reservation_in.notas
     db.commit()
     db.refresh(reservation)
     return reservation

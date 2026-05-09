@@ -1,4 +1,4 @@
-import { Bell, BookOpen, CheckCircle, Calendar, DoorOpen, Users, Clock, FileText, Trophy, FolderOpen } from 'lucide-react';
+import { BookOpen, CheckCircle, Calendar, Users, Clock, FileText, Trophy, FolderOpen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
@@ -152,7 +152,6 @@ export function DashboardScreen() {
               <h1 className="text-white text-2xl mb-1" style={{ fontWeight: 300, fontFamily: 'Didot, Bodoni, serif' }}>EDEM</h1>
               <p className="text-white text-xs opacity-90">Panel de coordinación</p>
             </div>
-            <Bell className="text-white cursor-pointer" size={24} onClick={() => navigate('/notifications')} />
           </div>
           <p className="text-white text-lg">Hola{userName ? `, ${userName.split(' ')[0]}` : ''}</p>
         </div>
@@ -196,7 +195,6 @@ export function DashboardScreen() {
             <h1 className="text-white text-2xl mb-1" style={{ fontWeight: 300, fontFamily: 'Didot, Bodoni, serif' }}>EDEM</h1>
             <p className="text-white text-xs opacity-90">EDEM STUDENT HUB</p>
           </div>
-          <Bell className="text-white cursor-pointer" size={24} onClick={() => navigate('/notifications')} />
         </div>
         <p className="text-white text-lg mb-2">Hola{userName ? `, ${userName.split(' ')[0]}` : ''}</p>
       </div>
@@ -209,8 +207,7 @@ export function DashboardScreen() {
             {userRole === 'student' && [
               { icon: BookOpen, label: 'Notas', route: '/grades' },
               { icon: CheckCircle, label: 'Asistencia', route: '/attendance' },
-              { icon: DoorOpen, label: 'Salas', route: '/rooms' },
-              { icon: Users, label: 'Tutorías', route: null },
+              { icon: Users, label: 'Tutorías', route: '/tutoring' },
             ].map((item) => (
               <button
                 key={item.label}
@@ -332,27 +329,13 @@ export function DashboardScreen() {
 
         {userRole === 'student' && (
           <>
-            {/* Room Booking */}
-            <div className="bg-[#008899] rounded-xl p-4 mb-4 shadow-sm">
-              <h3 className="text-white mb-2" style={{ fontWeight: 600 }}>RESERVA DE SALAS</h3>
-              <p className="text-white text-xs opacity-90 mb-3">Encuentra un espacio para estudiar, reunirte o trabajar en equipo</p>
-              <button
-                onClick={() => navigate('/rooms')}
-                className="bg-white text-[#008899] px-4 py-2 rounded-lg text-sm w-full hover:bg-gray-50 transition-colors"
-                style={{ fontWeight: 500 }}
-              >
-                Reservar sala
-              </button>
-            </div>
-
-            {/* Tutoring */}
             <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
               <h3 className="text-[#008899] mb-2" style={{ fontWeight: 600 }}>TUTORÍAS</h3>
               <p className="text-gray-500 text-xs mb-3">Reserva una tutoría con tu profesor o tutor académico</p>
               <p className="text-sm text-gray-500 mb-3">No tienes tutorías programadas.</p>
               <button
-                disabled
-                className="bg-gray-200 text-gray-500 px-4 py-2 rounded-lg text-sm w-full opacity-60"
+                onClick={() => navigate('/tutoring')}
+                className="bg-[#008899] text-white px-4 py-2 rounded-lg text-sm w-full hover:bg-[#007788] transition-colors"
                 style={{ fontWeight: 500 }}
               >
                 Pedir tutoría

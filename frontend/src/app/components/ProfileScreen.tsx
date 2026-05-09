@@ -364,7 +364,7 @@ export function ProfileScreen() {
         personal: ['nombre', 'apellido', 'telefono', 'ciudad', 'idioma_preferido', 'contacto_emergencia'],
         contact: ['correo_personal', 'telefono', 'linkedin', 'github', 'portfolio', 'preferencia_contacto'],
         professional: ['area_interes', 'stack_tecnologico', 'experiencia_actual', 'disponibilidad', 'preferencia_jornada', 'linkedin', 'github', 'portfolio'],
-        preferences: ['idioma_app', 'notificaciones_email', 'notificaciones_push', 'visibilidad_profesional', 'permitir_cv_empleabilidad', 'permitir_links_profesores', 'tema'],
+        preferences: ['idioma_app', 'visibilidad_profesional', 'permitir_cv_empleabilidad', 'permitir_links_profesores', 'tema'],
       };
       const payload = Object.fromEntries(fieldsBySection[editing].map((key) => [key, form[key]]));
       const updatedProfile = await updateProfileSection(editing, payload);
@@ -693,8 +693,6 @@ export function ProfileScreen() {
                   { value: 'oscuro', label: 'Oscuro' },
                 ]}
               />
-              <ToggleRow label="Notificaciones email" checked={Boolean(form.notificaciones_email)} onChange={(v) => setField('notificaciones_email', v)} />
-              <ToggleRow label="Notificaciones push" checked={Boolean(form.notificaciones_push)} onChange={(v) => setField('notificaciones_push', v)} />
               <ToggleRow label="Perfil profesional visible" checked={Boolean(form.visibilidad_profesional)} onChange={(v) => setField('visibilidad_profesional', v)} />
               <ToggleRow label="Empleabilidad/coordinacion puede ver CV" checked={Boolean(form.permitir_cv_empleabilidad)} onChange={(v) => setField('permitir_cv_empleabilidad', v)} />
               <ToggleRow label="Profesores pueden ver LinkedIn/GitHub" checked={Boolean(form.permitir_links_profesores)} onChange={(v) => setField('permitir_links_profesores', v)} />
@@ -704,8 +702,6 @@ export function ProfileScreen() {
               items={[
                 ['Idioma app', profile.idioma_app],
                 ['Tema', profile.tema],
-                ['Email', profile.notificaciones_email ? 'Activado' : 'Desactivado'],
-                ['Push', profile.notificaciones_push ? 'Activado' : 'Desactivado'],
                 ['Perfil profesional', profile.visibilidad_profesional ? 'Visible' : 'Privado'],
                 ['CV para empleabilidad', profile.permitir_cv_empleabilidad ? 'Permitido' : 'No permitido'],
                 ['Links para profesores', profile.permitir_links_profesores ? 'Permitido' : 'No permitido'],

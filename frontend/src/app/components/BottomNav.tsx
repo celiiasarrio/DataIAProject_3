@@ -1,4 +1,4 @@
-import { Home, Calendar, User, BookOpen, FolderOpen } from 'lucide-react';
+import { Home, Calendar, User, BookOpen, FolderOpen, MessageSquare } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 
 export function BottomNav() {
@@ -15,6 +15,7 @@ export function BottomNav() {
       return [
         ...baseItems,
         { icon: Calendar, path: '/calendar', label: 'Calendario' },
+        { icon: MessageSquare, path: '/tutoring', label: 'Tutorías' },
         { icon: User, path: '/profile', label: 'Perfil' },
       ];
     } else if (userRole === 'professor') {
@@ -23,6 +24,7 @@ export function BottomNav() {
         { icon: Calendar, path: '/calendar', label: 'Mis Clases' },
         { icon: BookOpen, path: '/teacher/grades', label: 'Notas' },
         { icon: FolderOpen, path: '/teacher/content', label: 'Material' },
+        { icon: MessageSquare, path: '/tutoring', label: 'Tutorías' },
         { icon: User, path: '/profile', label: 'Perfil' },
       ];
     } else {
