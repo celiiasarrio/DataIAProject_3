@@ -1,4 +1,4 @@
-import { ChevronLeft, BookOpen, Save } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronUp, BookOpen, Save } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -10,6 +10,19 @@ import {
   type GradeRosterRow,
   type TaskOut,
 } from '../api/client';
+import { CenteredLoadingSpinner } from './ui/LoadingSpinner';
+
+const formatGrade = (value: number | null): string =>
+  value == null
+    ? ''
+    : new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(value);
+
+const parseGrade = (value: string): number => Number(value.replace(',', '.'));
+
+const calculateAverage = (rows: GradeRosterRow[]): number | null => {
+  const grades = rows.map(r => r.nota).filter((n): n is number => n != null);
+  return grades.length > 0 ? grades.reduce((a, b) => a + b, 0) / grades.length : null;
+};
 
 export function TeacherGradesScreen() {
   const navigate = useNavigate();
@@ -19,6 +32,7 @@ export function TeacherGradesScreen() {
   const [blockId, setBlockId] = useState('');
   const [taskId, setTaskId] = useState('');
   const [grades, setGrades] = useState<Record<string, string>>({});
+  const [gradesOpen, setGradesOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -38,6 +52,7 @@ export function TeacherGradesScreen() {
     setTasks([]);
     setRows([]);
     setTaskId('');
+    setGradesOpen(false);
     getBlockTasks(blockId).then((data) => {
       setTasks(data);
       if (data[0]) setTaskId(String(data[0].id_tarea));
@@ -46,9 +61,10 @@ export function TeacherGradesScreen() {
 
   useEffect(() => {
     if (!taskId) return;
+    setGradesOpen(false);
     getTaskGrades(Number(taskId)).then((data) => {
       setRows(data);
-      setGrades(Object.fromEntries(data.map((row) => [row.id_alumno, row.nota?.toString() ?? ''])));
+      setGrades(Object.fromEntries(data.map((row) => [row.id_alumno, formatGrade(row.nota)])));
     });
   }, [taskId]);
 
@@ -59,8 +75,9 @@ export function TeacherGradesScreen() {
   );
 
   const handleGradeChange = (studentId: string, value: string) => {
-    if (value !== '') {
-      const parsed = Number(value);
+    if (!/^\d{0,2}([,.]\d{0,2})?$/.test(value)) return;
+    if (value !== '' && value !== ',' && value !== '.') {
+      const parsed = parseGrade(value);
       if (Number.isNaN(parsed) || parsed < 0 || parsed > 10) return;
     }
     setGrades((prev) => ({ ...prev, [studentId]: value }));
@@ -74,9 +91,11 @@ export function TeacherGradesScreen() {
       const changes = rows
         .map((row) => ({ row, raw: grades[row.id_alumno] }))
         .filter(({ raw }) => raw !== undefined && raw !== '')
-        .map(({ row, raw }) => saveGrade(row.id_alumno, Number(taskId), Number(raw)));
+        .map(({ row, raw }) => saveGrade(row.id_alumno, Number(taskId), parseGrade(raw)));
       await Promise.all(changes);
-      setRows(await getTaskGrades(Number(taskId)));
+      const updatedRows = await getTaskGrades(Number(taskId));
+      setRows(updatedRows);
+      setGrades(Object.fromEntries(updatedRows.map((row) => [row.id_alumno, formatGrade(row.nota)])));
       setMessage('Notas guardadas');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No se han podido guardar las notas');
@@ -133,32 +152,60 @@ export function TeacherGradesScreen() {
         </div>
 
         {loading ? (
-          <p className="text-gray-400 text-sm text-center py-8">Cargando...</p>
+          <CenteredLoadingSpinner />
         ) : rows.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-8">No hay alumnos para esta tarea.</p>
         ) : (
-          <div className="space-y-3">
-            {rows.map((student) => (
-              <div key={student.id_alumno} className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-gray-800 text-sm truncate" style={{ fontWeight: 600 }}>
-                    {student.nombre} {student.apellido}
-                  </p>
-                  <p className="text-xs text-gray-400">{student.id_alumno}</p>
+          <>
+            {(() => {
+              const avg = calculateAverage(rows);
+              return avg !== null ? (
+                <div className="mb-5 flex justify-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-24 h-24 rounded-full bg-[#008899] flex items-center justify-center">
+                      <span className="text-white text-3xl" style={{ fontWeight: 800 }}>
+                        {formatGrade(avg)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">Media del grupo</p>
+                  </div>
                 </div>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="10"
-                  value={grades[student.id_alumno] ?? ''}
-                  onChange={(e) => handleGradeChange(student.id_alumno, e.target.value)}
-                  placeholder="-"
-                  className="w-20 text-center text-sm font-semibold bg-white border border-gray-300 rounded-md py-1 px-2 focus:outline-none focus:ring-2 focus:ring-[#008899]"
-                />
+              ) : null;
+            })()}
+            <button
+              onClick={() => setGradesOpen((open) => !open)}
+              className="w-full bg-gray-50 rounded-2xl p-4 flex items-center justify-between text-left"
+            >
+              <div>
+                <p className="text-gray-800 text-sm" style={{ fontWeight: 700 }}>Notas de alumnos</p>
+                <p className="text-xs text-gray-400">{rows.length} alumnos</p>
               </div>
-            ))}
-          </div>
+              {gradesOpen ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
+            </button>
+
+            {gradesOpen && (
+              <div className="space-y-3 mt-3">
+                {rows.map((student) => (
+                  <div key={student.id_alumno} className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-gray-800 text-sm truncate" style={{ fontWeight: 600 }}>
+                        {student.nombre} {student.apellido}
+                      </p>
+                      <p className="text-xs text-gray-400">{student.id_alumno}</p>
+                    </div>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={grades[student.id_alumno] ?? ''}
+                      onChange={(e) => handleGradeChange(student.id_alumno, e.target.value)}
+                      placeholder="-"
+                      className="w-20 text-center text-sm font-semibold bg-white border border-gray-300 rounded-md py-1 px-2 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {message && <p className="mt-4 text-center text-sm text-gray-500">{message}</p>}

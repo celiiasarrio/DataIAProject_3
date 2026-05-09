@@ -233,6 +233,13 @@ export interface BlockOut {
   nombre: string;
 }
 
+export interface ProfessorOut {
+  id_profesor: string;
+  nombre: string;
+  apellido: string;
+  correo: string;
+}
+
 export interface TaskOut {
   id_tarea: number;
   id_bloque: string;
@@ -259,8 +266,16 @@ export async function getMyBlocks(): Promise<BlockOut[]> {
   return apiFetch<BlockOut[]>('/api/v1/blocks/me');
 }
 
+export async function getProfessors(): Promise<ProfessorOut[]> {
+  return apiFetch<ProfessorOut[]>('/api/v1/professors');
+}
+
 export async function getBlockTasks(blockId: string): Promise<TaskOut[]> {
   return apiFetch<TaskOut[]>(`/api/v1/blocks/${blockId}/tasks`);
+}
+
+export async function getBlockStudents(blockId: string): Promise<AlumnoOut[]> {
+  return apiFetch<AlumnoOut[]>(`/api/v1/blocks/${blockId}/students`);
 }
 
 export async function getTaskGrades(taskId: number): Promise<GradeRosterRow[]> {
@@ -338,6 +353,8 @@ export interface CalendarEvent {
   bloque_nombre: string | null;
   id_sesion: string | null;
   aula: string | null;
+  edificio: string | null;
+  planta: string | null;
   id_profesor: string | null;
   profesor_nombre: string | null;
   fecha_inicio: string;
@@ -347,6 +364,151 @@ export interface CalendarEvent {
 
 export async function getCalendarEvents(): Promise<CalendarEvent[]> {
   return apiFetch<CalendarEvent[]>('/api/v1/calendar/events');
+}
+
+export interface SessionUpdatePayload {
+  id_bloque?: string;
+  nombre?: string;
+  fecha?: string;
+  hora_inicio?: string;
+  hora_fin?: string;
+  aula?: string;
+  edificio?: string;
+  planta?: string;
+}
+
+export async function updateSession(sessionId: string, payload: SessionUpdatePayload): Promise<void> {
+  return apiFetch<void>(`/api/v1/sessions/${sessionId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export interface CalendarEventUpdatePayload {
+  tipo?: string;
+  titulo?: string;
+  id_bloque?: string;
+  aula?: string;
+  id_profesor?: string | null;
+  fecha_inicio?: string;
+  fecha_fin?: string;
+  descripcion?: string | null;
+}
+
+export async function createCalendarEvent(payload: CalendarEventUpdatePayload): Promise<CalendarEvent> {
+  return apiFetch<CalendarEvent>('/api/v1/calendar/events', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateCalendarEvent(eventId: string, payload: CalendarEventUpdatePayload): Promise<CalendarEvent> {
+  return apiFetch<CalendarEvent>(`/api/v1/calendar/events/${eventId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteCalendarEvent(eventId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/calendar/events/${eventId}`, { method: 'DELETE' });
+}
+
+export interface ContentOut {
+  id: string;
+  id_bloque: string;
+  id_profesor: string;
+  titulo: string;
+  descripcion: string | null;
+  tipo: string;
+  url: string;
+  fecha_subida: string;
+}
+
+export interface ContentCreatePayload {
+  titulo: string;
+  descripcion?: string | null;
+  tipo: string;
+  url: string;
+}
+
+export async function getBlockContent(blockId: string): Promise<ContentOut[]> {
+  return apiFetch<ContentOut[]>(`/api/v1/blocks/${blockId}/content`);
+}
+
+export async function createBlockContent(blockId: string, payload: ContentCreatePayload): Promise<ContentOut> {
+  return apiFetch<ContentOut>(`/api/v1/blocks/${blockId}/content`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function uploadBlockContentFile(
+  blockId: string,
+  payload: { titulo: string; descripcion?: string | null; tipo: string; file: File },
+): Promise<ContentOut> {
+  const formData = new FormData();
+  formData.append('titulo', payload.titulo);
+  if (payload.descripcion) formData.append('descripcion', payload.descripcion);
+  formData.append('tipo', payload.tipo);
+  formData.append('file', payload.file);
+  return uploadForm<ContentOut>(`/api/v1/blocks/${blockId}/content/file`, formData);
+}
+
+export async function deleteContent(contentId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/content/${contentId}`, { method: 'DELETE' });
+}
+
+export interface TutoringSlot {
+  id: string;
+  id_profesor: string;
+  id_bloque: string | null;
+  dia_semana: number;
+  hora_inicio: string;
+  hora_fin: string;
+  ubicacion: string;
+  disponible: boolean;
+}
+
+export interface ReservationOut {
+  id: string;
+  id_alumno: string;
+  id_profesor: string;
+  id_franja: string;
+  fecha: string;
+  notas: string | null;
+  estado: string;
+  fecha_creacion: string;
+}
+
+export async function getTutoringSlots(professorId?: string): Promise<TutoringSlot[]> {
+  const query = professorId ? `?id_profesor=${encodeURIComponent(professorId)}` : '';
+  return apiFetch<TutoringSlot[]>(`/api/v1/tutorings/slots${query}`);
+}
+
+export async function createReservation(payload: {
+  id_profesor: string;
+  id_franja: string;
+  fecha: string;
+  notas?: string | null;
+}): Promise<ReservationOut> {
+  return apiFetch<ReservationOut>('/api/v1/reservations', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getReservations(): Promise<ReservationOut[]> {
+  return apiFetch<ReservationOut[]>('/api/v1/reservations');
+}
+
+export async function updateReservation(
+  reservationId: string,
+  payload: { estado: string; id_franja?: string; fecha?: string; notas?: string | null },
+): Promise<ReservationOut> {
+  return apiFetch<ReservationOut>(`/api/v1/reservations/${reservationId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
 }
 
 export interface AgentChatMessage {
