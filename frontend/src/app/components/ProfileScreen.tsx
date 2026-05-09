@@ -702,7 +702,7 @@ export function ProfileScreen() {
             <InfoGrid
               items={[
                 ['Idioma app', profile.idioma_app],
-                ['Tema', profile.tema],
+                ['Tema', profile.tema ? profile.tema.charAt(0).toUpperCase() + profile.tema.slice(1) : profile.tema],
                 ['Email', profile.notificaciones_email ? 'Activado' : 'Desactivado'],
                 ['Push', profile.notificaciones_push ? 'Activado' : 'Desactivado'],
                 ['Perfil profesional', profile.visibilidad_profesional ? 'Visible' : 'Privado'],

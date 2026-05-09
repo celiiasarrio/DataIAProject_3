@@ -3,10 +3,18 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   getDashboard,
+  updateProfileSection,
   type GradeOut,
   type AttendanceMetrics,
   type CalendarEvent,
 } from '../api/client';
+import { ThemeToggleFish } from './ThemeToggleFish';
+
+type Theme = 'claro' | 'oscuro';
+
+function readStoredTheme(): Theme {
+  return (localStorage.getItem('profileTheme') as Theme) || 'claro';
+}
 
 const EVENT_TYPE_CONFIG: Record<string, { label: string; bgColor: string; chipColor: string }> = {
   class: { label: 'Sesión', bgColor: 'bg-blue-50', chipColor: 'bg-blue-500' },
@@ -39,6 +47,8 @@ export function DashboardScreen() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string>('');
+  const [theme, setTheme] = useState<Theme>(readStoredTheme);
+  const [themeBusy, setThemeBusy] = useState(false);
 
   useEffect(() => {
     setUserName(localStorage.getItem('userName') || '');
@@ -51,6 +61,27 @@ export function DashboardScreen() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'oscuro');
+  }, [theme]);
+
+  const handleToggleTheme = async () => {
+    if (themeBusy) return;
+    const previous = theme;
+    const next: Theme = previous === 'claro' ? 'oscuro' : 'claro';
+    setTheme(next);
+    localStorage.setItem('profileTheme', next);
+    setThemeBusy(true);
+    try {
+      await updateProfileSection('preferences', { tema: next });
+    } catch {
+      setTheme(previous);
+      localStorage.setItem('profileTheme', previous);
+    } finally {
+      setThemeBusy(false);
+    }
+  };
 
   const userRole = localStorage.getItem('userRole') || 'student';
 
@@ -110,6 +141,7 @@ export function DashboardScreen() {
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] pb-20">
+      <ThemeToggleFish theme={theme} onToggle={handleToggleTheme} busy={themeBusy} />
       {/* Header */}
       <div className="bg-[#008899] px-6 pt-12 pb-6 rounded-b-3xl">
         <div className="flex items-center justify-between mb-4">
