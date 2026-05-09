@@ -233,6 +233,13 @@ export interface BlockOut {
   nombre: string;
 }
 
+export interface ProfessorOut {
+  id_profesor: string;
+  nombre: string;
+  apellido: string;
+  correo: string;
+}
+
 export interface TaskOut {
   id_tarea: number;
   id_bloque: string;
@@ -257,6 +264,10 @@ export async function getMyGrades(): Promise<GradeOut[]> {
 
 export async function getMyBlocks(): Promise<BlockOut[]> {
   return apiFetch<BlockOut[]>('/api/v1/blocks/me');
+}
+
+export async function getProfessors(): Promise<ProfessorOut[]> {
+  return apiFetch<ProfessorOut[]>('/api/v1/professors');
 }
 
 export async function getBlockTasks(blockId: string): Promise<TaskOut[]> {
@@ -349,6 +360,40 @@ export interface CalendarEvent {
 
 export async function getCalendarEvents(): Promise<CalendarEvent[]> {
   return apiFetch<CalendarEvent[]>('/api/v1/calendar/events');
+}
+
+export interface SessionUpdatePayload {
+  id_bloque?: string;
+  nombre?: string;
+  fecha?: string;
+  hora_inicio?: string;
+  hora_fin?: string;
+  aula?: string;
+  edificio?: string;
+  planta?: string;
+}
+
+export async function updateSession(sessionId: string, payload: SessionUpdatePayload): Promise<void> {
+  return apiFetch<void>(`/api/v1/sessions/${sessionId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export interface CalendarEventUpdatePayload {
+  titulo?: string;
+  id_bloque?: string;
+  aula?: string;
+  id_profesor?: string | null;
+  fecha_inicio?: string;
+  fecha_fin?: string;
+}
+
+export async function updateCalendarEvent(eventId: string, payload: CalendarEventUpdatePayload): Promise<CalendarEvent> {
+  return apiFetch<CalendarEvent>(`/api/v1/calendar/events/${eventId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
 }
 
 export interface AgentChatMessage {

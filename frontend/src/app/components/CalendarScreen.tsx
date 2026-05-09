@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Edit3,
   FileText,
   GraduationCap,
   MapPin,
@@ -15,7 +16,16 @@ import {
   X,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import { getCalendarEvents, type CalendarEvent } from '../api/client';
+import {
+  getCalendarEvents,
+  getMyBlocks,
+  getProfessors,
+  updateCalendarEvent,
+  updateSession,
+  type BlockOut,
+  type CalendarEvent,
+  type ProfessorOut,
+} from '../api/client';
 import { CenteredLoadingSpinner } from './ui/LoadingSpinner';
 
 const EVENT_META: Record<string, { label: string; icon: React.ElementType; bg: string; text: string; chip: string }> = {
@@ -55,6 +65,15 @@ const getDayKey = (value: string | Date) => {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
+
+const toDateInput = (value: string) => getDayKey(value);
+
+const toTimeInput = (value: string) => {
+  const date = new Date(value);
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+};
+
+const buildDateTime = (date: string, time: string) => `${date}T${time}:00`;
 
 const monthStart = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1);
 const addMonths = (date: Date, amount: number) => new Date(date.getFullYear(), date.getMonth() + amount, 1);
@@ -141,6 +160,30 @@ const shouldShowEvent = (event: CalendarEvent) => {
   return event.tipo === 'class' || event.tipo === 'delivery' || event.tipo === 'international';
 };
 
+type SessionEditForm = {
+  titulo: string;
+  id_bloque: string;
+  id_profesor: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  aula: string;
+  edificio: string;
+  planta: string;
+};
+
+const buildSessionEditForm = (event: CalendarEvent): SessionEditForm => ({
+  titulo: event.titulo ?? '',
+  id_bloque: event.id_bloque ?? '',
+  id_profesor: event.id_profesor ?? '',
+  fecha: toDateInput(event.fecha_inicio),
+  hora_inicio: toTimeInput(event.fecha_inicio),
+  hora_fin: toTimeInput(event.fecha_fin),
+  aula: event.aula ?? '',
+  edificio: event.edificio ?? '',
+  planta: event.planta ?? '',
+});
+
 export function CalendarScreen() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -149,9 +192,20 @@ export function CalendarScreen() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [selectedDayEvents, setSelectedDayEvents] = useState<CalendarEvent[] | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [blocks, setBlocks] = useState<BlockOut[]>([]);
+  const [professors, setProfessors] = useState<ProfessorOut[]>([]);
+  const [editingSession, setEditingSession] = useState(false);
+  const [editForm, setEditForm] = useState<SessionEditForm | null>(null);
+  const [editMessage, setEditMessage] = useState<string | null>(null);
+  const [savingSession, setSavingSession] = useState(false);
 
   useEffect(() => {
-    setUserRole(localStorage.getItem('userRole'));
+    const role = localStorage.getItem('userRole');
+    setUserRole(role);
+    if (role === 'admin') {
+      getMyBlocks().then(setBlocks).catch(() => setBlocks([]));
+      getProfessors().then(setProfessors).catch(() => setProfessors([]));
+    }
     getCalendarEvents()
       .then((data) => {
         const sorted = data
@@ -169,6 +223,7 @@ export function CalendarScreen() {
   }, []);
 
   const canManageAttendance = userRole === 'admin';
+  const canEditSessions = userRole === 'admin';
   const todayKey = getDayKey(new Date());
 
   const eventsByDay = useMemo(() => {
@@ -184,6 +239,71 @@ export function CalendarScreen() {
   const monthDays = useMemo(() => buildMonthDays(visibleMonth), [visibleMonth]);
 
   const nextEvent = events.find((event) => new Date(event.fecha_inicio).getTime() >= Date.now());
+
+  const startEditingSession = (event: CalendarEvent) => {
+    setEditForm(buildSessionEditForm(event));
+    setEditMessage(null);
+    setEditingSession(true);
+  };
+
+  const cancelEditingSession = () => {
+    setEditingSession(false);
+    setEditForm(selectedEvent ? buildSessionEditForm(selectedEvent) : null);
+    setEditMessage(null);
+  };
+
+  const updateEditField = (key: keyof SessionEditForm, value: string) => {
+    setEditForm((current) => (current ? { ...current, [key]: value } : current));
+  };
+
+  const saveSessionChanges = async () => {
+    if (!selectedEvent?.id_sesion || !editForm) return;
+    const requiredFields: Array<keyof SessionEditForm> = ['titulo', 'id_bloque', 'fecha', 'hora_inicio', 'hora_fin', 'aula', 'edificio', 'planta'];
+    if (requiredFields.some((field) => !editForm[field].trim())) {
+      setEditMessage('Completa todos los campos obligatorios.');
+      return;
+    }
+    if (editForm.hora_fin <= editForm.hora_inicio) {
+      setEditMessage('La hora de fin debe ser posterior a la hora de inicio.');
+      return;
+    }
+
+    setSavingSession(true);
+    setEditMessage(null);
+    try {
+      await updateSession(selectedEvent.id_sesion, {
+        nombre: editForm.titulo.trim(),
+        id_bloque: editForm.id_bloque,
+        fecha: editForm.fecha,
+        hora_inicio: editForm.hora_inicio,
+        hora_fin: editForm.hora_fin,
+        aula: editForm.aula.trim(),
+        edificio: editForm.edificio.trim(),
+        planta: editForm.planta.trim(),
+      });
+      const updatedEvent = await updateCalendarEvent(selectedEvent.id, {
+        titulo: editForm.titulo.trim(),
+        id_bloque: editForm.id_bloque,
+        id_profesor: editForm.id_profesor || null,
+        aula: editForm.aula.trim(),
+        fecha_inicio: buildDateTime(editForm.fecha, editForm.hora_inicio),
+        fecha_fin: buildDateTime(editForm.fecha, editForm.hora_fin),
+      });
+      setEvents((current) =>
+        current
+          .map((event) => (event.id === updatedEvent.id ? updatedEvent : event))
+          .filter(shouldShowEvent)
+          .sort((a, b) => new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime()),
+      );
+      setSelectedEvent(updatedEvent);
+      setEditingSession(false);
+      setEditMessage('Sesión actualizada');
+    } catch (error) {
+      setEditMessage(error instanceof Error ? error.message : 'No se ha podido guardar la sesión');
+    } finally {
+      setSavingSession(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#008899] pb-20">
@@ -284,7 +404,12 @@ export function CalendarScreen() {
                       return (
                         <button
                           key={event.id}
-                          onClick={() => setSelectedEvent(event)}
+                          onClick={() => {
+                            setSelectedEvent(event);
+                            setEditingSession(false);
+                            setEditForm(null);
+                            setEditMessage(null);
+                          }}
                           className={`w-full rounded-md px-1.5 py-1 text-left ${meta.bg} hover:brightness-95 transition`}
                         >
                           <div className="flex items-center gap-1 min-w-0">
@@ -318,7 +443,7 @@ export function CalendarScreen() {
           onClick={() => setSelectedEvent(null)}
         >
           <div
-            className="bg-white rounded-2xl p-5 w-full max-w-md shadow-xl"
+            className="bg-white rounded-2xl p-5 w-full max-w-md shadow-xl max-h-[85vh] overflow-y-auto"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 mb-4">
@@ -341,56 +466,197 @@ export function CalendarScreen() {
                   </h3>
                 </div>
               </div>
-              <button onClick={() => setSelectedEvent(null)} className="p-1 text-gray-400">
+              <button
+                onClick={() => {
+                  setSelectedEvent(null);
+                  setEditingSession(false);
+                  setEditForm(null);
+                  setEditMessage(null);
+                }}
+                className="p-1 text-gray-400"
+              >
                 <X size={20} />
               </button>
             </div>
 
-            <div className="space-y-3 bg-gray-50 rounded-2xl p-4">
-              <div>
-                <p className="text-xs text-gray-400">Asignatura / bloque</p>
-                <p className="text-sm text-gray-800" style={{ fontWeight: 700 }}>
-                  {selectedEvent.bloque_nombre ?? selectedEvent.id_bloque ?? 'Sin bloque'}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-gray-400">Fecha</p>
-                  <p className="text-sm text-gray-800 capitalize">{formatLongDate(selectedEvent.fecha_inicio)}</p>
+            {editingSession && editForm ? (
+              <div className="space-y-3 bg-gray-50 rounded-2xl p-4">
+                <label className="block">
+                  <span className="text-xs text-gray-400">Sesión</span>
+                  <input
+                    value={editForm.titulo}
+                    onChange={(event) => updateEditField('titulo', event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs text-gray-400">Asignatura / bloque</span>
+                  <select
+                    value={editForm.id_bloque}
+                    onChange={(event) => updateEditField('id_bloque', event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                  >
+                    <option value="">Selecciona bloque</option>
+                    {blocks.map((block) => (
+                      <option key={block.id_bloque} value={block.id_bloque}>{block.nombre}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-xs text-gray-400">Profesor</span>
+                  <select
+                    value={editForm.id_profesor}
+                    onChange={(event) => updateEditField('id_profesor', event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                  >
+                    <option value="">Profesor pendiente</option>
+                    {professors.map((professor) => (
+                      <option key={professor.id_profesor} value={professor.id_profesor}>
+                        {professor.nombre} {professor.apellido}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="text-xs text-gray-400">Fecha</span>
+                    <input
+                      type="date"
+                      value={editForm.fecha}
+                      onChange={(event) => updateEditField('fecha', event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs text-gray-400">Aula</span>
+                    <input
+                      value={editForm.aula}
+                      onChange={(event) => updateEditField('aula', event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                    />
+                  </label>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="text-xs text-gray-400">Hora inicio</span>
+                    <input
+                      type="time"
+                      value={editForm.hora_inicio}
+                      onChange={(event) => updateEditField('hora_inicio', event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs text-gray-400">Hora fin</span>
+                    <input
+                      type="time"
+                      value={editForm.hora_fin}
+                      onChange={(event) => updateEditField('hora_fin', event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                    />
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="text-xs text-gray-400">Edificio</span>
+                    <input
+                      value={editForm.edificio}
+                      onChange={(event) => updateEditField('edificio', event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs text-gray-400">Planta</span>
+                    <input
+                      value={editForm.planta}
+                      onChange={(event) => updateEditField('planta', event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                    />
+                  </label>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 bg-gray-50 rounded-2xl p-4">
                 <div>
-                  <p className="text-xs text-gray-400">Hora</p>
-                  <p className="text-sm text-gray-800">
-                    {formatTime(selectedEvent.fecha_inicio)} - {formatTime(selectedEvent.fecha_fin)}
+                  <p className="text-xs text-gray-400">Asignatura / bloque</p>
+                  <p className="text-sm text-gray-800" style={{ fontWeight: 700 }}>
+                    {selectedEvent.bloque_nombre ?? selectedEvent.id_bloque ?? 'Sin bloque'}
                   </p>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-start gap-2">
-                  <UserRound size={15} className="text-gray-400 mt-0.5" />
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-xs text-gray-400">Profesor</p>
-                    <p className="text-sm text-gray-800">{selectedEvent.profesor_nombre ?? 'Profesor pendiente'}</p>
+                    <p className="text-xs text-gray-400">Fecha</p>
+                    <p className="text-sm text-gray-800 capitalize">{formatLongDate(selectedEvent.fecha_inicio)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Hora</p>
+                    <p className="text-sm text-gray-800">
+                      {formatTime(selectedEvent.fecha_inicio)} - {formatTime(selectedEvent.fecha_fin)}
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-start gap-2">
-                  <MapPin size={15} className="text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="text-xs text-gray-400">Aula</p>
-                    <p className="text-sm text-gray-800">{formatEventLocation(selectedEvent) ?? 'Aula pendiente'}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-start gap-2">
+                    <UserRound size={15} className="text-gray-400 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-gray-400">Profesor</p>
+                      <p className="text-sm text-gray-800">{selectedEvent.profesor_nombre ?? 'Profesor pendiente'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MapPin size={15} className="text-gray-400 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-gray-400">Aula</p>
+                      <p className="text-sm text-gray-800">{formatEventLocation(selectedEvent) ?? 'Aula pendiente'}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {canManageAttendance && selectedEvent.tipo === 'class' && selectedEvent.id_sesion && (
-              <button
-                onClick={() => navigate(`/sessions/${selectedEvent.id_sesion}/attendance`)}
-                className="w-full mt-4 bg-[#008899] text-white py-3 rounded-xl text-sm hover:bg-[#007788] transition-colors"
-                style={{ fontWeight: 700 }}
-              >
-                Pasar asistencia
-              </button>
+            {editMessage && <p className="mt-3 text-center text-sm text-gray-500">{editMessage}</p>}
+
+            {canEditSessions && selectedEvent.tipo === 'class' && selectedEvent.id_sesion && (
+              editingSession ? (
+                <div className="grid grid-cols-2 gap-2 mt-4">
+                  <button
+                    onClick={cancelEditingSession}
+                    disabled={savingSession}
+                    className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl text-sm"
+                    style={{ fontWeight: 700 }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={saveSessionChanges}
+                    disabled={savingSession}
+                    className="w-full bg-[#008899] disabled:bg-gray-300 text-white py-3 rounded-xl text-sm hover:bg-[#007788] transition-colors"
+                    style={{ fontWeight: 700 }}
+                  >
+                    {savingSession ? 'Guardando...' : 'Guardar'}
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 mt-4">
+                  <button
+                    onClick={() => startEditingSession(selectedEvent)}
+                    className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl text-sm flex items-center justify-center gap-2"
+                    style={{ fontWeight: 700 }}
+                  >
+                    <Edit3 size={15} />
+                    Editar
+                  </button>
+                  {canManageAttendance && (
+                    <button
+                      onClick={() => navigate(`/sessions/${selectedEvent.id_sesion}/attendance`)}
+                      className="w-full bg-[#008899] text-white py-3 rounded-xl text-sm hover:bg-[#007788] transition-colors"
+                      style={{ fontWeight: 700 }}
+                    >
+                      Pasar asistencia
+                    </button>
+                  )}
+                </div>
+              )
             )}
           </div>
         </div>
@@ -428,6 +694,9 @@ export function CalendarScreen() {
                     onClick={() => {
                       setSelectedDayEvents(null);
                       setSelectedEvent(event);
+                      setEditingSession(false);
+                      setEditForm(null);
+                      setEditMessage(null);
                     }}
                     className={`w-full rounded-xl px-3 py-3 text-left ${meta.bg}`}
                   >

@@ -53,6 +53,9 @@ export function ClassAttendanceScreen() {
           saveAttendance(student.id_alumno, sessionId, attendance[student.id_alumno] === true, student.fecha),
         ),
       );
+      const updatedRows = await getSessionAttendanceRoster(sessionId);
+      setStudents(updatedRows);
+      setAttendance(Object.fromEntries(updatedRows.map((row) => [row.id_alumno, row.presente !== false])));
       setMessage('Asistencia guardada');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No se ha podido guardar la asistencia');

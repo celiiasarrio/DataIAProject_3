@@ -283,6 +283,13 @@ class BloqueOut(ORMModel):
     nombre: str
 
 
+class ProfesorListOut(ORMModel):
+    id_profesor: str
+    nombre: str
+    apellido: str
+    correo: str
+
+
 class SesionCreate(BaseModel):
     id_sesion: Optional[str] = None
     id_bloque: Optional[str] = None
@@ -1694,8 +1701,29 @@ def update_event(
     if not event:
         raise HTTPException(status_code=404, detail="Evento no encontrado")
     payload = enrich_event_block(db, model_dump(event_in, exclude_unset=True))
+    fecha_inicio = payload.get("fecha_inicio", event.fecha_inicio)
+    fecha_fin = payload.get("fecha_fin", event.fecha_fin)
+    if fecha_inicio and fecha_fin and fecha_fin <= fecha_inicio:
+        raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior a la hora de inicio")
+    for required in ("titulo",):
+        if required in payload and not str(payload[required] or "").strip():
+            raise HTTPException(status_code=422, detail="El titulo no puede estar vacio")
     for key, value in payload.items():
         setattr(event, key, value)
+    if event.id_sesion:
+        session_row = db.query(Sesion).filter(Sesion.id_sesion == event.id_sesion).first()
+        if session_row:
+            if "titulo" in payload:
+                session_row.nombre = event.titulo
+            if "id_bloque" in payload and event.id_bloque:
+                session_row.id_bloque = event.id_bloque
+            if "aula" in payload:
+                session_row.aula = event.aula
+            if "fecha_inicio" in payload:
+                session_row.fecha = event.fecha_inicio.date()
+                session_row.hora_inicio = event.fecha_inicio.time().replace(second=0, microsecond=0)
+            if "fecha_fin" in payload:
+                session_row.hora_fin = event.fecha_fin.time().replace(second=0, microsecond=0)
     db.commit()
     invalidate_calendar_cache()
     db.refresh(event)
@@ -1937,6 +1965,14 @@ def list_my_sessions(
     )
 
 
+@app.get("/api/v1/professors", response_model=List[ProfesorListOut], tags=["Profesores"])
+def list_professors(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_staff),
+):
+    return db.query(Profesor).order_by(Profesor.nombre, Profesor.apellido).all()
+
+
 @app.post("/api/v1/sessions", response_model=SesionOut, tags=["Sesiones"], status_code=201)
 def create_session(
     session_in: SesionCreate,
@@ -1987,9 +2023,32 @@ def update_session(
     session_row = db.query(Sesion).filter(Sesion.id_sesion == session_id).first()
     if not session_row:
         raise HTTPException(status_code=404, detail="Sesion no encontrada")
-    for key, value in model_dump(session_in, exclude_unset=True).items():
+    payload = model_dump(session_in, exclude_unset=True)
+    for required in ("id_bloque", "nombre", "aula", "edificio", "planta"):
+        if required in payload and not str(payload[required] or "").strip():
+            raise HTTPException(status_code=422, detail=f"{required} no puede estar vacio")
+    if "id_bloque" in payload and not db.query(Bloque).filter(Bloque.id_bloque == payload["id_bloque"]).first():
+        raise HTTPException(status_code=404, detail="Bloque no encontrado")
+    hora_inicio = payload.get("hora_inicio", session_row.hora_inicio)
+    hora_fin = payload.get("hora_fin", session_row.hora_fin)
+    if hora_inicio and hora_fin and hora_fin <= hora_inicio:
+        raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior a la hora de inicio")
+    for key, value in payload.items():
         setattr(session_row, key, value)
+    related_events = db.query(Evento).filter(Evento.id_sesion == session_id).all()
+    for event in related_events:
+        if "nombre" in payload:
+            event.titulo = session_row.nombre
+        if "id_bloque" in payload:
+            event.id_bloque = session_row.id_bloque
+        if "aula" in payload:
+            event.aula = session_row.aula
+        if session_row.fecha and session_row.hora_inicio and ("fecha" in payload or "hora_inicio" in payload):
+            event.fecha_inicio = datetime.combine(session_row.fecha, session_row.hora_inicio)
+        if session_row.fecha and session_row.hora_fin and ("fecha" in payload or "hora_fin" in payload):
+            event.fecha_fin = datetime.combine(session_row.fecha, session_row.hora_fin)
     db.commit()
+    invalidate_calendar_cache()
     db.refresh(session_row)
     return session_row
 
