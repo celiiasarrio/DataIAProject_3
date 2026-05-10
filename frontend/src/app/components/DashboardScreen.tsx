@@ -45,6 +45,7 @@ const formatEventLocation = (event: CalendarEvent): string | null => {
 
 export function DashboardScreen() {
   const navigate = useNavigate();
+  const userRole = localStorage.getItem('userRole') || 'student';
   const [grades, setGrades] = useState<GradeOut[]>([]);
   const [attendance, setAttendance] = useState<AttendanceMetrics | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -53,6 +54,10 @@ export function DashboardScreen() {
 
   useEffect(() => {
     setUserName(localStorage.getItem('userName') || '');
+    if (userRole === 'developer') {
+      navigate('/metrics', { replace: true });
+      return;
+    }
 
     getDashboard()
       .then((data) => {
@@ -61,9 +66,7 @@ export function DashboardScreen() {
         setEvents(data.events);
       })
       .finally(() => setLoading(false));
-  }, []);
-
-  const userRole = localStorage.getItem('userRole') || 'student';
+  }, [navigate, userRole]);
 
   const calculateGradeAverage = (): number | null => {
     if (!grades || grades.length === 0) return null;
@@ -175,6 +178,10 @@ export function DashboardScreen() {
       route: '/tutoring',
     },
   ];
+
+  if (userRole === 'developer') {
+    return null;
+  }
 
   if (userRole !== 'student' && userRole !== 'professor') {
     return (

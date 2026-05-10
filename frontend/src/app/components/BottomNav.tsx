@@ -1,4 +1,4 @@
-import { Home, Calendar, User } from 'lucide-react';
+import { Home, Calendar, User, BarChart3 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 
 export function BottomNav() {
@@ -10,6 +10,12 @@ export function BottomNav() {
     const baseItems = [
       { icon: Home, path: '/dashboard', label: 'Inicio' },
     ];
+
+    if (userRole === 'developer') {
+      return [
+        { icon: BarChart3, path: '/metrics', label: 'Metricas' },
+      ];
+    }
 
     if (userRole === 'student') {
       return [

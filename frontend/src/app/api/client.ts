@@ -195,6 +195,71 @@ export async function getDashboard(): Promise<DashboardData> {
   return apiFetch<DashboardData>('/api/v1/dashboard/me');
 }
 
+export interface MetricValue {
+  value: number | string | boolean | null;
+  status: 'ok' | 'empty' | 'error' | string;
+  message: string | null;
+}
+
+export interface MetricsSummary {
+  total_estudiantes: MetricValue;
+  total_profesores: MetricValue;
+  total_coordinadores: MetricValue;
+  sesiones_proximas: MetricValue;
+  notas_pendientes: MetricValue;
+  tutorias_pendientes: MetricValue;
+  asistencia_media: MetricValue;
+  ultima_actualizacion: string;
+}
+
+export interface AcademicMetricRow {
+  id: string;
+  nombre: string;
+  estudiantes: number;
+  bloques: number;
+  sesiones_proximas: number;
+  asistencia_media: number | null;
+}
+
+export interface RecentActivityItem {
+  tipo: string;
+  titulo: string;
+  detalle: string | null;
+  fecha: string | null;
+}
+
+export interface MetricsAcademic {
+  por_grupo: AcademicMetricRow[];
+  por_asignatura: AcademicMetricRow[];
+  actividad_reciente: RecentActivityItem[];
+}
+
+export interface ServiceHealth {
+  name: string;
+  status: string;
+  message: string | null;
+  checked_at: string;
+}
+
+export interface MetricsHealth {
+  backend: ServiceHealth;
+  database: ServiceHealth;
+  agent: ServiceHealth;
+  ultima_actualizacion: string;
+}
+
+export async function getMetricsSummary(): Promise<MetricsSummary> {
+  return apiFetch<MetricsSummary>('/api/metrics/summary');
+}
+
+export async function getMetricsAcademic(): Promise<MetricsAcademic> {
+  return apiFetch<MetricsAcademic>('/api/metrics/academic');
+}
+
+export async function getMetricsHealth(): Promise<MetricsHealth> {
+  return apiFetch<MetricsHealth>('/api/metrics/system-health');
+}
+
 export async function updateProfileSection(section: 'personal' | 'contact' | 'professional' | 'preferences', data: Record<string, unknown>): Promise<ProfileFull> {
   return apiFetch<ProfileFull>(`/api/profile/me/${section}`, {
     method: 'PUT',
@@ -703,5 +768,6 @@ export async function sendAgentMessage(
 export function mapRol(rol: string): string {
   if (rol === 'alumno') return 'student';
   if (rol === 'profesor') return 'professor';
+  if (rol === 'developer') return 'developer';
   return 'admin';
 }

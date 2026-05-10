@@ -22,13 +22,14 @@ export function LoginScreen() {
       localStorage.setItem('token', tokenData.access_token);
 
       const profile = await getMyProfile();
-      localStorage.setItem('userRole', mapRol(profile.rol));
+      const mappedRole = mapRol(profile.rol);
+      localStorage.setItem('userRole', mappedRole);
       localStorage.setItem('userId', profile.id);
       localStorage.setItem('userName', `${profile.nombre} ${profile.apellido}`);
       localStorage.setItem('userEmail', profile.correo);
       if (profile.url_foto) localStorage.setItem('userPhoto', profile.url_foto);
 
-      navigate('/dashboard');
+      navigate(mappedRole === 'developer' ? '/metrics' : '/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
     } finally {
