@@ -1,4 +1,4 @@
-import { Home, Calendar, User, BookOpen, FolderOpen } from 'lucide-react';
+import { Home, Calendar, User } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 
 export function BottomNav() {
@@ -21,8 +21,6 @@ export function BottomNav() {
       return [
         ...baseItems,
         { icon: Calendar, path: '/calendar', label: 'Mis Clases' },
-        { icon: BookOpen, path: '/teacher/grades', label: 'Notas' },
-        { icon: FolderOpen, path: '/teacher/content', label: 'Material' },
         { icon: User, path: '/profile', label: 'Perfil' },
       ];
     } else {
@@ -43,7 +41,7 @@ export function BottomNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-4 py-2 safe-area-inset-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 safe-area-inset-bottom">
       <div className="flex items-center justify-around max-w-md mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -57,9 +55,9 @@ export function BottomNav() {
             >
               <Icon
                 size={24}
-                className={isActive ? 'text-[#008899] dark:text-cyan-300' : 'text-gray-400 dark:text-gray-500'}
+                className={isActive ? 'text-[#008899]' : 'text-gray-400'}
               />
-              <span className={`text-xs ${isActive ? 'text-[#008899] dark:text-cyan-300' : 'text-gray-400 dark:text-gray-500'}`}>
+              <span className={`text-xs ${isActive ? 'text-[#008899]' : 'text-gray-400'}`}>
                 {item.label}
               </span>
             </button>

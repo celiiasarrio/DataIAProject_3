@@ -22,11 +22,17 @@ import {
   getCalendarEvents,
   getMyBlocks,
   getProfessors,
+  acceptCalendarChangeRequest,
   createCalendarEvent,
+  createCalendarChangeRequest,
   deleteCalendarEvent,
+  getCalendarChangeRequests,
+  proposeCalendarChangeAlternative,
+  rejectCalendarChangeRequest,
   updateCalendarEvent,
   updateSession,
   type BlockOut,
+  type CalendarChangeRequest,
   type CalendarEvent,
   type ProfessorOut,
 } from '../api/client';
@@ -182,6 +188,13 @@ type SessionEditForm = {
   descripcion: string;
 };
 
+type ChangeRequestForm = {
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  comentario: string;
+};
+
 const buildSessionEditForm = (event: CalendarEvent): SessionEditForm => ({
   tipo: event.tipo === 'exam' || event.tipo === 'notice' ? event.tipo : 'delivery',
   titulo: event.titulo ?? '',
@@ -196,11 +209,19 @@ const buildSessionEditForm = (event: CalendarEvent): SessionEditForm => ({
   descripcion: event.descripcion ?? '',
 });
 
+const buildChangeRequestForm = (event: CalendarEvent): ChangeRequestForm => ({
+  fecha: toDateInput(event.fecha_inicio),
+  hora_inicio: toTimeInput(event.fecha_inicio),
+  hora_fin: toTimeInput(event.fecha_fin),
+  comentario: '',
+});
+
 export function CalendarScreen() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleMonth, setVisibleMonth] = useState(() => monthStart(new Date()));
+  const [today, setToday] = useState(() => new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [selectedDayEvents, setSelectedDayEvents] = useState<CalendarEvent[] | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -211,6 +232,14 @@ export function CalendarScreen() {
   const [editForm, setEditForm] = useState<SessionEditForm | null>(null);
   const [editMessage, setEditMessage] = useState<string | null>(null);
   const [savingSession, setSavingSession] = useState(false);
+  const [changeRequests, setChangeRequests] = useState<CalendarChangeRequest[]>([]);
+  const [showChangeRequests, setShowChangeRequests] = useState(false);
+  const [proposingChange, setProposingChange] = useState(false);
+  const [changeForm, setChangeForm] = useState<ChangeRequestForm | null>(null);
+  const [changeMessage, setChangeMessage] = useState<string | null>(null);
+  const [savingChangeRequest, setSavingChangeRequest] = useState(false);
+  const [alternativeFor, setAlternativeFor] = useState<string | null>(null);
+  const [alternativeForm, setAlternativeForm] = useState<ChangeRequestForm | null>(null);
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -218,6 +247,9 @@ export function CalendarScreen() {
     if (role === 'admin') {
       getMyBlocks().then(setBlocks).catch(() => setBlocks([]));
       getProfessors().then(setProfessors).catch(() => setProfessors([]));
+    }
+    if (role === 'admin' || role === 'professor') {
+      getCalendarChangeRequests().then(setChangeRequests).catch(() => setChangeRequests([]));
     }
     getCalendarEvents()
       .then((data) => {
@@ -229,16 +261,37 @@ export function CalendarScreen() {
         const nextEvent =
           sorted.find((event) => new Date(event.fecha_inicio).getTime() >= Date.now()) ??
           sorted[0];
-        if (nextEvent) setVisibleMonth(monthStart(new Date(nextEvent.fecha_inicio)));
+        setVisibleMonth(monthStart(role === 'professor' ? new Date() : nextEvent ? new Date(nextEvent.fecha_inicio) : new Date()));
       })
       .catch(() => setEvents([]))
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    const refreshToday = () => {
+      const nextToday = new Date();
+      setToday(nextToday);
+      if (localStorage.getItem('userRole') === 'professor') {
+        setVisibleMonth(monthStart(nextToday));
+      }
+    };
+
+    const interval = window.setInterval(refreshToday, 60_000);
+    document.addEventListener('visibilitychange', refreshToday);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshToday);
+    };
+  }, []);
+
   const canManageAttendance = userRole === 'admin';
   const canEditSessions = userRole === 'admin';
-  const canManageAcademicEvents = userRole === 'professor';
-  const todayKey = getDayKey(new Date());
+  const canManageAcademicEvents = userRole === 'admin';
+  const canProposeSessionChange = userRole === 'professor';
+  const todayKey = getDayKey(today);
+  const pendingChangeRequests = changeRequests.filter((request) =>
+    request.estado === 'Pendiente' || request.estado === 'Propuesta alternativa'
+  );
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
@@ -413,6 +466,108 @@ export function CalendarScreen() {
     }
   };
 
+  const reloadChangeRequests = async () => {
+    if (userRole !== 'admin' && userRole !== 'professor') return;
+    setChangeRequests(await getCalendarChangeRequests());
+  };
+
+  const startProposingChange = (event: CalendarEvent) => {
+    setChangeForm(buildChangeRequestForm(event));
+    setChangeMessage(null);
+    setProposingChange(true);
+  };
+
+  const submitChangeRequest = async () => {
+    if (!selectedEvent || !changeForm) return;
+    if (changeForm.hora_fin <= changeForm.hora_inicio) {
+      setChangeMessage('La hora de fin debe ser posterior a la hora de inicio.');
+      return;
+    }
+    setSavingChangeRequest(true);
+    setChangeMessage(null);
+    try {
+      const saved = await createCalendarChangeRequest({
+        id_evento: selectedEvent.id,
+        fecha_inicio_propuesta: buildDateTime(changeForm.fecha, changeForm.hora_inicio),
+        fecha_fin_propuesta: buildDateTime(changeForm.fecha, changeForm.hora_fin),
+        comentario_profesor: changeForm.comentario.trim() || null,
+      });
+      setChangeRequests((current) => [saved, ...current.filter((request) => request.id !== saved.id)]);
+      setProposingChange(false);
+      setChangeMessage('Propuesta enviada al coordinador');
+    } catch (error) {
+      setChangeMessage(error instanceof Error ? error.message : 'No se ha podido enviar la propuesta');
+    } finally {
+      setSavingChangeRequest(false);
+    }
+  };
+
+  const handleAcceptChange = async (requestId: string) => {
+    setSavingChangeRequest(true);
+    setChangeMessage(null);
+    try {
+      const updated = await acceptCalendarChangeRequest(requestId);
+      setChangeRequests((current) => current.map((request) => request.id === requestId ? updated : request));
+      const refreshedEvents = await getCalendarEvents();
+      setEvents(refreshedEvents.filter(shouldShowEvent).sort((a, b) => new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime()));
+      setChangeMessage('Cambio aceptado y calendario actualizado');
+    } catch (error) {
+      setChangeMessage(error instanceof Error ? error.message : 'No se ha podido aceptar la propuesta');
+    } finally {
+      setSavingChangeRequest(false);
+    }
+  };
+
+  const handleRejectChange = async (requestId: string) => {
+    setSavingChangeRequest(true);
+    setChangeMessage(null);
+    try {
+      const updated = await rejectCalendarChangeRequest(requestId);
+      setChangeRequests((current) => current.map((request) => request.id === requestId ? updated : request));
+      setChangeMessage('Propuesta rechazada');
+    } catch (error) {
+      setChangeMessage(error instanceof Error ? error.message : 'No se ha podido rechazar la propuesta');
+    } finally {
+      setSavingChangeRequest(false);
+    }
+  };
+
+  const startAlternative = (request: CalendarChangeRequest) => {
+    setAlternativeFor(request.id);
+    setAlternativeForm({
+      fecha: toDateInput(request.fecha_inicio_propuesta),
+      hora_inicio: toTimeInput(request.fecha_inicio_propuesta),
+      hora_fin: toTimeInput(request.fecha_fin_propuesta),
+      comentario: request.comentario_coordinador ?? '',
+    });
+    setChangeMessage(null);
+  };
+
+  const submitAlternative = async (requestId: string) => {
+    if (!alternativeForm) return;
+    if (alternativeForm.hora_fin <= alternativeForm.hora_inicio) {
+      setChangeMessage('La hora de fin debe ser posterior a la hora de inicio.');
+      return;
+    }
+    setSavingChangeRequest(true);
+    setChangeMessage(null);
+    try {
+      const updated = await proposeCalendarChangeAlternative(requestId, {
+        fecha_inicio_alternativa: buildDateTime(alternativeForm.fecha, alternativeForm.hora_inicio),
+        fecha_fin_alternativa: buildDateTime(alternativeForm.fecha, alternativeForm.hora_fin),
+        comentario_coordinador: alternativeForm.comentario.trim() || null,
+      });
+      setChangeRequests((current) => current.map((request) => request.id === requestId ? updated : request));
+      setAlternativeFor(null);
+      setAlternativeForm(null);
+      setChangeMessage('Fecha alternativa propuesta');
+    } catch (error) {
+      setChangeMessage(error instanceof Error ? error.message : 'No se ha podido proponer alternativa');
+    } finally {
+      setSavingChangeRequest(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#008899] pb-20">
       <div className="px-5 pt-12 pb-5">
@@ -424,6 +579,20 @@ export function CalendarScreen() {
             <h1 className="text-white text-xl" style={{ fontWeight: 600 }}>Calendario</h1>
             <p className="text-white text-xs opacity-80">Sesiones y entregas</p>
           </div>
+          {userRole === 'admin' && (
+            <button
+              onClick={() => setShowChangeRequests(true)}
+              className="relative rounded-full bg-white/15 px-3 py-2 text-xs text-white"
+              style={{ fontWeight: 700 }}
+            >
+              Solicitudes
+              {pendingChangeRequests.length > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full bg-amber-400 px-1 text-[10px] text-white flex items-center justify-center">
+                  {pendingChangeRequests.length}
+                </span>
+              )}
+            </button>
+          )}
           {canManageAcademicEvents && (
             <button
               onClick={startCreatingAcademicEvent}
@@ -448,20 +617,20 @@ export function CalendarScreen() {
         )}
       </div>
 
-      <div className="bg-white dark:bg-gray-900 rounded-t-3xl px-4 pt-5 pb-6 min-h-[70vh]">
+      <div className="bg-white rounded-t-3xl px-4 pt-5 pb-6 min-h-[70vh]">
         <div className="flex items-center justify-between mb-4 px-1">
           <button
             onClick={() => setVisibleMonth((current) => addMonths(current, -1))}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600"
           >
             <ChevronLeft size={18} />
           </button>
-          <h2 className="text-[#008899] dark:text-cyan-300 capitalize" style={{ fontWeight: 800 }}>
+          <h2 className="text-[#008899] capitalize" style={{ fontWeight: 800 }}>
             {formatMonth(visibleMonth)}
           </h2>
           <button
             onClick={() => setVisibleMonth((current) => addMonths(current, 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600"
           >
             <ChevronRight size={18} />
           </button>
@@ -469,7 +638,7 @@ export function CalendarScreen() {
 
         <div className="grid grid-cols-7 mb-1">
           {WEEK_DAYS.map((day) => (
-            <div key={day} className="text-center text-xs text-gray-400 dark:text-gray-500 py-2">
+            <div key={day} className="text-center text-xs text-gray-400 py-2">
               {day}
             </div>
           ))}
@@ -478,7 +647,7 @@ export function CalendarScreen() {
         {loading ? (
           <CenteredLoadingSpinner />
         ) : (
-          <div className="grid grid-cols-7 border-t border-l border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+          <div className="grid grid-cols-7 border-t border-l border-gray-100 rounded-xl overflow-hidden">
             {monthDays.map((day) => {
               const key = getDayKey(day);
               const dayEvents = eventsByDay.get(key) ?? [];
@@ -492,26 +661,26 @@ export function CalendarScreen() {
                   key={key}
                   className={`min-h-[104px] border-r border-b p-1.5 ${
                     isToday
-                      ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 ring-1 ring-inset ring-gray-400 dark:ring-gray-500'
+                      ? 'bg-gray-100 border-gray-300 ring-1 ring-inset ring-gray-400'
                       : inMonth
-                        ? 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800'
-                        : 'bg-gray-50 dark:bg-gray-950 border-gray-100 dark:border-gray-800'
+                        ? 'bg-white border-gray-100'
+                        : 'bg-gray-50 border-gray-100'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span
                       className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs ${
                         isToday
-                          ? 'bg-gray-700 dark:bg-gray-300 text-white dark:text-gray-900'
+                          ? 'bg-gray-700 text-white'
                           : inMonth
-                            ? 'text-gray-700 dark:text-gray-200'
-                            : 'text-gray-300 dark:text-gray-600'
+                            ? 'text-gray-700'
+                            : 'text-gray-300'
                       }`}
                     >
                       {day.getDate()}
                     </span>
                     {dayEvents.length > 0 && (
-                      <CalendarDays size={11} className="text-gray-300 dark:text-gray-600" />
+                      <CalendarDays size={11} className="text-gray-300" />
                     )}
                   </div>
 
@@ -799,6 +968,18 @@ export function CalendarScreen() {
                 </div>
               )
             )}
+
+            {canProposeSessionChange && selectedEvent.tipo === 'class' && selectedEvent.id_sesion && (
+              <div className="mt-4">
+                <button
+                  onClick={() => startProposingChange(selectedEvent)}
+                  className="w-full bg-[#008899] text-white py-3 rounded-xl text-sm hover:bg-[#007788] transition-colors"
+                  style={{ fontWeight: 700 }}
+                >
+                  Proponer cambio al coordinador
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -930,6 +1111,217 @@ export function CalendarScreen() {
                 {savingSession ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {proposingChange && selectedEvent && changeForm && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 px-4 flex items-center justify-center"
+          onClick={() => setProposingChange(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-5 w-full max-w-md shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <p className="text-xs text-gray-400 uppercase" style={{ fontWeight: 800 }}>Propuesta de cambio</p>
+                <h3 className="text-lg text-gray-900 leading-tight" style={{ fontWeight: 800 }}>{selectedEvent.titulo}</h3>
+              </div>
+              <button onClick={() => setProposingChange(false)} className="p-1 text-gray-400">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="space-y-3 bg-gray-50 rounded-2xl p-4">
+              <label className="block">
+                <span className="text-xs text-gray-400">Nueva fecha</span>
+                <input
+                  type="date"
+                  value={changeForm.fecha}
+                  onChange={(event) => setChangeForm({ ...changeForm, fecha: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-xs text-gray-400">Hora inicio</span>
+                  <input
+                    type="time"
+                    value={changeForm.hora_inicio}
+                    onChange={(event) => setChangeForm({ ...changeForm, hora_inicio: event.target.value })}
+                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs text-gray-400">Hora fin</span>
+                  <input
+                    type="time"
+                    value={changeForm.hora_fin}
+                    onChange={(event) => setChangeForm({ ...changeForm, hora_fin: event.target.value })}
+                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                  />
+                </label>
+              </div>
+              <label className="block">
+                <span className="text-xs text-gray-400">Motivo</span>
+                <textarea
+                  value={changeForm.comentario}
+                  onChange={(event) => setChangeForm({ ...changeForm, comentario: event.target.value })}
+                  rows={3}
+                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008899]"
+                />
+              </label>
+            </div>
+            {changeMessage && <p className="mt-3 text-center text-sm text-gray-500">{changeMessage}</p>}
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              <button
+                onClick={() => setProposingChange(false)}
+                disabled={savingChangeRequest}
+                className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl text-sm"
+                style={{ fontWeight: 700 }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={submitChangeRequest}
+                disabled={savingChangeRequest}
+                className="w-full bg-[#008899] disabled:bg-gray-300 text-white py-3 rounded-xl text-sm"
+                style={{ fontWeight: 700 }}
+              >
+                {savingChangeRequest ? 'Enviando...' : 'Enviar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showChangeRequests && userRole === 'admin' && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 px-4 flex items-center justify-center"
+          onClick={() => setShowChangeRequests(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-5 w-full max-w-lg shadow-xl max-h-[85vh] overflow-y-auto"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <p className="text-xs text-gray-400 uppercase" style={{ fontWeight: 800 }}>Coordinacion</p>
+                <h3 className="text-lg text-gray-900 leading-tight" style={{ fontWeight: 800 }}>Cambios propuestos</h3>
+              </div>
+              <button onClick={() => setShowChangeRequests(false)} className="p-1 text-gray-400">
+                <X size={20} />
+              </button>
+            </div>
+
+            {changeMessage && <p className="mb-3 text-center text-sm text-gray-500">{changeMessage}</p>}
+            {changeRequests.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-8">No hay propuestas de cambio.</p>
+            ) : (
+              <div className="space-y-3">
+                {changeRequests.map((request) => {
+                  const isOpen = request.estado === 'Pendiente' || request.estado === 'Propuesta alternativa';
+                  const activeStart = request.fecha_inicio_alternativa ?? request.fecha_inicio_propuesta;
+                  const activeEnd = request.fecha_fin_alternativa ?? request.fecha_fin_propuesta;
+                  return (
+                    <div key={request.id} className="rounded-2xl bg-gray-50 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-gray-900 text-sm" style={{ fontWeight: 800 }}>{request.titulo_evento ?? 'Sesion'}</p>
+                          <p className="text-xs text-gray-500">{request.profesor_nombre ?? request.id_profesor}</p>
+                        </div>
+                        <span className={`rounded-full px-2 py-1 text-xs ${isOpen ? 'bg-amber-100 text-amber-700' : 'bg-gray-200 text-gray-600'}`}>
+                          {request.estado}
+                        </span>
+                      </div>
+                      <div className="mt-3 grid gap-2 text-xs text-gray-600">
+                        <p><span className="text-gray-400">Actual:</span> {formatLongDate(request.fecha_inicio_actual)} · {formatTime(request.fecha_inicio_actual)} - {formatTime(request.fecha_fin_actual)}</p>
+                        <p><span className="text-gray-400">Propuesta profesor:</span> {formatLongDate(request.fecha_inicio_propuesta)} · {formatTime(request.fecha_inicio_propuesta)} - {formatTime(request.fecha_fin_propuesta)}</p>
+                        {request.fecha_inicio_alternativa && request.fecha_fin_alternativa && (
+                          <p><span className="text-gray-400">Alternativa coordinador:</span> {formatLongDate(request.fecha_inicio_alternativa)} · {formatTime(request.fecha_inicio_alternativa)} - {formatTime(request.fecha_fin_alternativa)}</p>
+                        )}
+                        {request.comentario_profesor && <p><span className="text-gray-400">Motivo:</span> {request.comentario_profesor}</p>}
+                        {request.comentario_coordinador && <p><span className="text-gray-400">Comentario:</span> {request.comentario_coordinador}</p>}
+                      </div>
+
+                      {alternativeFor === request.id && alternativeForm && (
+                        <div className="mt-3 rounded-xl bg-white p-3 space-y-2">
+                          <input
+                            type="date"
+                            value={alternativeForm.fecha}
+                            onChange={(event) => setAlternativeForm({ ...alternativeForm, fecha: event.target.value })}
+                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="time"
+                              value={alternativeForm.hora_inicio}
+                              onChange={(event) => setAlternativeForm({ ...alternativeForm, hora_inicio: event.target.value })}
+                              className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                            />
+                            <input
+                              type="time"
+                              value={alternativeForm.hora_fin}
+                              onChange={(event) => setAlternativeForm({ ...alternativeForm, hora_fin: event.target.value })}
+                              className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                            />
+                          </div>
+                          <textarea
+                            value={alternativeForm.comentario}
+                            onChange={(event) => setAlternativeForm({ ...alternativeForm, comentario: event.target.value })}
+                            placeholder="Comentario opcional"
+                            rows={2}
+                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                          />
+                          <button
+                            onClick={() => submitAlternative(request.id)}
+                            disabled={savingChangeRequest}
+                            className="w-full rounded-xl bg-[#008899] py-2 text-sm text-white"
+                          >
+                            Guardar alternativa
+                          </button>
+                        </div>
+                      )}
+
+                      {isOpen && (
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                          <button
+                            onClick={() => handleAcceptChange(request.id)}
+                            disabled={savingChangeRequest}
+                            className="rounded-xl bg-green-50 py-2 text-xs text-green-700"
+                            style={{ fontWeight: 700 }}
+                          >
+                            Aceptar
+                          </button>
+                          <button
+                            onClick={() => handleRejectChange(request.id)}
+                            disabled={savingChangeRequest}
+                            className="rounded-xl bg-red-50 py-2 text-xs text-red-600"
+                            style={{ fontWeight: 700 }}
+                          >
+                            Rechazar
+                          </button>
+                          <button
+                            onClick={() => startAlternative(request)}
+                            disabled={savingChangeRequest}
+                            className="rounded-xl bg-gray-100 py-2 text-xs text-gray-700"
+                            style={{ fontWeight: 700 }}
+                          >
+                            Otra fecha
+                          </button>
+                        </div>
+                      )}
+                      {request.estado === 'Propuesta alternativa' && (
+                        <p className="mt-2 text-xs text-gray-400">
+                          Si aceptas, se aplicara la fecha alternativa: {formatLongDate(activeStart)} · {formatTime(activeStart)} - {formatTime(activeEnd)}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}

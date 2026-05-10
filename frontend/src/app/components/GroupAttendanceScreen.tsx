@@ -19,7 +19,17 @@ export function GroupAttendanceScreen() {
       .then((data) => {
         const classSessions = data.filter(ev => ev.tipo === 'class' && ev.id_sesion);
         setSessions(classSessions);
-        if (classSessions[0]) setSessionId(classSessions[0].id_sesion || '');
+
+        const now = new Date();
+        const nextSession = classSessions
+          .filter(ev => new Date(ev.fecha_fin) > now)
+          .sort((a, b) => new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime())[0];
+
+        if (nextSession?.id_sesion) {
+          setSessionId(nextSession.id_sesion);
+        } else if (classSessions[0]) {
+          setSessionId(classSessions[0].id_sesion || '');
+        }
       })
       .catch(() => setSessions([]))
       .finally(() => setLoading(false));

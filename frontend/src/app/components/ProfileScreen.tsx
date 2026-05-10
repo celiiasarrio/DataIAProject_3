@@ -29,6 +29,7 @@ import {
   changeProfilePassword,
   deleteProfileCv,
   deleteProfileDocument,
+  deleteProfilePhoto,
   getFullProfile,
   replaceProfileDocument,
   updateProfileSection,
@@ -43,7 +44,7 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 
 const DOC_TYPES = ['DNI/NIE', 'Matricula', 'Certificado', 'Convenio practicas', 'Autorizacion', 'Otro'];
 
-type EditableSection = 'personal' | 'contact' | 'professional' | 'preferences';
+type EditableSection = 'personal' | 'contact' | 'professional';
 
 const TRANSLATIONS = {
   es: {
@@ -259,6 +260,7 @@ export function ProfileScreen() {
   const [profile, setProfile] = useState<ProfileFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<EditableSection | null>(null);
+  const [editingPhoto, setEditingPhoto] = useState(false);
   const [form, setForm] = useState<Record<string, string | boolean>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -277,7 +279,7 @@ export function ProfileScreen() {
   const isStudent = profile?.rol === 'Alumno';
   const isProfessor = profile?.rol === 'Profesor';
   const fullName = `${profile?.nombre ?? ''} ${profile?.apellido ?? ''}`.trim();
-  const isDark = profile?.tema === 'oscuro';
+  const isDark = false;
   const locale = profile?.idioma_app === 'en' ? 'en-GB' : profile?.idioma_app === 'ca' ? 'ca-ES' : 'es-ES';
   const t = TRANSLATIONS[(profile?.idioma_app as keyof typeof TRANSLATIONS) || 'es'] ?? TRANSLATIONS.es;
   const formatDate = (value: string | null) => {
@@ -364,7 +366,6 @@ export function ProfileScreen() {
         personal: ['nombre', 'apellido', 'telefono', 'ciudad', 'idioma_preferido', 'contacto_emergencia'],
         contact: ['correo_personal', 'telefono', 'linkedin', 'github', 'portfolio', 'preferencia_contacto'],
         professional: ['area_interes', 'stack_tecnologico', 'experiencia_actual', 'disponibilidad', 'preferencia_jornada', 'linkedin', 'github', 'portfolio'],
-        preferences: ['idioma_app', 'visibilidad_profesional', 'permitir_cv_empleabilidad', 'permitir_links_profesores', 'tema'],
       };
       const payload = Object.fromEntries(fieldsBySection[editing].map((key) => [key, form[key]]));
       const updatedProfile = await updateProfileSection(editing, payload);
@@ -383,10 +384,31 @@ export function ProfileScreen() {
     if (!file || !profile) return;
     try {
       const updated = await uploadProfilePhoto(file);
-      setProfile({ ...profile, url_foto: updated.url_foto });
+      const newProfile = { ...profile, url_foto: updated.url_foto };
+      setProfile(newProfile);
+      if (updated.url_foto) {
+        localStorage.setItem('userPhoto', updated.url_foto);
+      }
       setMessage('Foto actualizada');
+      setError(null);
+      setEditingPhoto(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo subir la foto');
+    }
+  };
+
+  const deleteAvatar = async () => {
+    if (!profile) return;
+    try {
+      await deleteProfilePhoto();
+      const newProfile = { ...profile, url_foto: null };
+      setProfile(newProfile);
+      localStorage.removeItem('userPhoto');
+      setMessage('Foto eliminada');
+      setError(null);
+      setEditingPhoto(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar la foto');
     }
   };
 
@@ -477,11 +499,36 @@ export function ProfileScreen() {
               )}
             </div>
             <button
-              onClick={() => avatarInputRef.current?.click()}
-              className="absolute bottom-1 right-1 w-9 h-9 bg-white rounded-full border-2 border-[#008899] flex items-center justify-center shadow"
+              onClick={() => {
+                setEditingPhoto(!editingPhoto);
+                if (editingPhoto) {
+                  setError(null);
+                  setMessage(null);
+                }
+              }}
+              className="absolute bottom-1 right-1 w-9 h-9 bg-white rounded-full border-2 border-[#008899] flex items-center justify-center shadow hover:bg-gray-100 transition-colors"
+              title={editingPhoto ? "Cancelar edición" : "Editar foto"}
             >
-              <Camera size={16} className="text-[#008899]" />
+              {editingPhoto ? <X size={16} className="text-[#008899]" /> : <Camera size={16} className="text-[#008899]" />}
             </button>
+            {editingPhoto && photoUrl && (
+              <button
+                onClick={deleteAvatar}
+                className="absolute top-1 right-1 w-8 h-8 bg-red-500 rounded-full border-2 border-white flex items-center justify-center shadow hover:bg-red-600 transition-colors"
+                title="Eliminar foto"
+              >
+                <Trash2 size={16} className="text-white" />
+              </button>
+            )}
+            {editingPhoto && (
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                className="absolute top-1 left-1 w-8 h-8 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center shadow hover:bg-blue-600 transition-colors"
+                title="Subir nueva foto"
+              >
+                <Upload size={16} className="text-white" />
+              </button>
+            )}
             <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={uploadAvatar} />
           </div>
           <div className="text-center sm:text-left flex-1">
@@ -661,54 +708,6 @@ export function ProfileScreen() {
                 </div>
               ))}
             </div>
-          )}
-        </Card>
-
-        <Card
-          title={t.preferences}
-          icon={ShieldCheck}
-          onEdit={() => beginEdit('preferences')}
-          editing={editing === 'preferences'}
-          onCancel={() => setEditing(null)}
-          onSave={saveSection}
-        >
-          {editing === 'preferences' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <SelectInput
-                label="Idioma app"
-                value={String(form.idioma_app ?? 'es')}
-                onChange={(v) => setField('idioma_app', v)}
-                options={[
-                  { value: 'es', label: 'Español' },
-                  { value: 'en', label: 'English' },
-                  { value: 'ca', label: 'Valenciano' },
-                ]}
-              />
-              <SelectInput
-                label="Tema"
-                value={String(form.tema ?? 'claro')}
-                onChange={(v) => setField('tema', v)}
-                options={[
-                  { value: 'claro', label: 'Claro' },
-                  { value: 'oscuro', label: 'Oscuro' },
-                ]}
-              />
-              <ToggleRow label="Perfil profesional visible" checked={Boolean(form.visibilidad_profesional)} onChange={(v) => setField('visibilidad_profesional', v)} />
-              <ToggleRow label="Empleabilidad/coordinacion puede ver CV" checked={Boolean(form.permitir_cv_empleabilidad)} onChange={(v) => setField('permitir_cv_empleabilidad', v)} />
-              <ToggleRow label="Profesores pueden ver LinkedIn/GitHub" checked={Boolean(form.permitir_links_profesores)} onChange={(v) => setField('permitir_links_profesores', v)} />
-            </div>
-          ) : (
-            <InfoGrid
-              items={[
-                ['Idioma app', profile.idioma_app],
-                ['Tema', profile.tema ? profile.tema.charAt(0).toUpperCase() + profile.tema.slice(1) : profile.tema],
-                ['Email', profile.notificaciones_email ? 'Activado' : 'Desactivado'],
-                ['Push', profile.notificaciones_push ? 'Activado' : 'Desactivado'],
-                ['Perfil profesional', profile.visibilidad_profesional ? 'Visible' : 'Privado'],
-                ['CV para empleabilidad', profile.permitir_cv_empleabilidad ? 'Permitido' : 'No permitido'],
-                ['Links para profesores', profile.permitir_links_profesores ? 'Permitido' : 'No permitido'],
-              ]}
-            />
           )}
         </Card>
 
