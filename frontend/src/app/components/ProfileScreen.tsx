@@ -279,7 +279,7 @@ export function ProfileScreen() {
   const isStudent = profile?.rol === 'Alumno';
   const isProfessor = profile?.rol === 'Profesor';
   const fullName = `${profile?.nombre ?? ''} ${profile?.apellido ?? ''}`.trim();
-  const isDark = profile?.tema === 'oscuro';
+  const isDark = false;
   const locale = profile?.idioma_app === 'en' ? 'en-GB' : profile?.idioma_app === 'ca' ? 'ca-ES' : 'es-ES';
   const t = TRANSLATIONS[(profile?.idioma_app as keyof typeof TRANSLATIONS) || 'es'] ?? TRANSLATIONS.es;
   const formatDate = (value: string | null) => {

@@ -60,6 +60,7 @@ from models import (
     RelProfesoresBloques,
     Reserva,
     Sesion,
+    SolicitudCambioEvento,
     SolicitudTutoria,
     Tarea,
     Ubicacion,
@@ -378,6 +379,43 @@ class EventOut(ORMModel):
     fecha_inicio: datetime
     fecha_fin: datetime
     descripcion: Optional[str] = None
+
+
+class CalendarChangeRequestCreate(BaseModel):
+    id_evento: str
+    fecha_inicio_propuesta: datetime
+    fecha_fin_propuesta: datetime
+    comentario_profesor: Optional[str] = None
+
+
+class CalendarChangeRequestAlternative(BaseModel):
+    fecha_inicio_alternativa: datetime
+    fecha_fin_alternativa: datetime
+    comentario_coordinador: Optional[str] = None
+
+
+class CalendarChangeRequestReject(BaseModel):
+    comentario_coordinador: Optional[str] = None
+
+
+class CalendarChangeRequestOut(ORMModel):
+    id: str
+    id_evento: str
+    id_sesion: Optional[str] = None
+    id_profesor: str
+    profesor_nombre: Optional[str] = None
+    titulo_evento: Optional[str] = None
+    estado: str
+    fecha_inicio_actual: datetime
+    fecha_fin_actual: datetime
+    fecha_inicio_propuesta: datetime
+    fecha_fin_propuesta: datetime
+    fecha_inicio_alternativa: Optional[datetime] = None
+    fecha_fin_alternativa: Optional[datetime] = None
+    comentario_profesor: Optional[str] = None
+    comentario_coordinador: Optional[str] = None
+    fecha_creacion: datetime
+    fecha_actualizacion: datetime
 
 
 class GradeCreate(BaseModel):
@@ -1250,6 +1288,30 @@ def serialize_calendar_events(db: Session, events: List[Evento]) -> List[EventOu
     return [serialize_calendar_event(db, event, block_map, professor_map, session_map) for event in events]
 
 
+def serialize_change_request(db: Session, request: SolicitudCambioEvento) -> CalendarChangeRequestOut:
+    professor = db.query(Profesor).filter(Profesor.id_profesor == request.id_profesor).first()
+    event = db.query(Evento).filter(Evento.id == request.id_evento).first()
+    return CalendarChangeRequestOut(
+        id=request.id,
+        id_evento=request.id_evento,
+        id_sesion=request.id_sesion,
+        id_profesor=request.id_profesor,
+        profesor_nombre=f"{professor.nombre} {professor.apellido}" if professor else None,
+        titulo_evento=event.titulo if event else None,
+        estado=request.estado,
+        fecha_inicio_actual=request.fecha_inicio_actual,
+        fecha_fin_actual=request.fecha_fin_actual,
+        fecha_inicio_propuesta=request.fecha_inicio_propuesta,
+        fecha_fin_propuesta=request.fecha_fin_propuesta,
+        fecha_inicio_alternativa=request.fecha_inicio_alternativa,
+        fecha_fin_alternativa=request.fecha_fin_alternativa,
+        comentario_profesor=request.comentario_profesor,
+        comentario_coordinador=request.comentario_coordinador,
+        fecha_creacion=request.fecha_creacion,
+        fecha_actualizacion=request.fecha_actualizacion,
+    )
+
+
 CALENDAR_CACHE_TTL_SECONDS = 60
 _calendar_events_cache: dict[str, object] = {"expires_at": 0.0, "events": None}
 _dashboard_events_cache: dict[str, object] = {"expires_at": 0.0, "events": None}
@@ -1863,12 +1925,7 @@ def create_event(
     payload = enrich_event_block(db, model_dump(event_in))
     role = get_user_role(current_user)
     if role == "profesor":
-        payload["id_profesor"] = current_user.id_profesor
-        if payload.get("id_sesion"):
-            raise HTTPException(status_code=403, detail="No puedes crear sesiones oficiales")
-        if payload.get("tipo") not in {"delivery", "exam", "notice"}:
-            raise HTTPException(status_code=403, detail="Solo puedes crear entregas, examenes o avisos")
-        assert_professor_teaches_block(db, current_user, payload.get("id_bloque"))
+        raise HTTPException(status_code=403, detail="Los profesores deben proponer cambios al coordinador")
     if payload["fecha_fin"] <= payload["fecha_inicio"]:
         raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior a la hora de inicio")
     event = Evento(id=str(uuid.uuid4()), **payload)
@@ -1940,6 +1997,139 @@ def update_event(
     invalidate_calendar_cache()
     db.refresh(event)
     return serialize_calendar_event(db, event)
+
+
+def apply_event_datetime_change(db: Session, event: Evento, fecha_inicio: datetime, fecha_fin: datetime) -> None:
+    event.fecha_inicio = fecha_inicio
+    event.fecha_fin = fecha_fin
+    if event.id_sesion:
+        session_row = db.query(Sesion).filter(Sesion.id_sesion == event.id_sesion).first()
+        if session_row:
+            session_row.fecha = fecha_inicio.date()
+            session_row.hora_inicio = fecha_inicio.time().replace(second=0, microsecond=0)
+            session_row.hora_fin = fecha_fin.time().replace(second=0, microsecond=0)
+
+
+@app.get("/api/v1/calendar/change-requests", response_model=List[CalendarChangeRequestOut], tags=["Calendario"])
+def list_calendar_change_requests(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_professor_or_staff),
+):
+    query = db.query(SolicitudCambioEvento)
+    if get_user_role(current_user) == "profesor":
+        query = query.filter(SolicitudCambioEvento.id_profesor == current_user.id_profesor)
+    return [
+        serialize_change_request(db, request)
+        for request in query.order_by(SolicitudCambioEvento.fecha_creacion.desc()).all()
+    ]
+
+
+@app.post("/api/v1/calendar/change-requests", response_model=CalendarChangeRequestOut, tags=["Calendario"], status_code=201)
+def create_calendar_change_request(
+    request_in: CalendarChangeRequestCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_professor),
+):
+    event = db.query(Evento).filter(Evento.id == request_in.id_evento).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    if event.tipo != "class" or not event.id_sesion:
+        raise HTTPException(status_code=403, detail="Solo puedes proponer cambios sobre sesiones oficiales")
+    if event.id_profesor != current_user.id_profesor:
+        raise HTTPException(status_code=403, detail="Solo puedes proponer cambios sobre tus sesiones")
+    if request_in.fecha_fin_propuesta <= request_in.fecha_inicio_propuesta:
+        raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior a la hora de inicio")
+
+    existing = db.query(SolicitudCambioEvento).filter(
+        SolicitudCambioEvento.id_evento == event.id,
+        SolicitudCambioEvento.id_profesor == current_user.id_profesor,
+        SolicitudCambioEvento.estado.in_(["Pendiente", "Propuesta alternativa"]),
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Ya hay una propuesta pendiente para esta sesion")
+
+    request = SolicitudCambioEvento(
+        id=str(uuid.uuid4()),
+        id_evento=event.id,
+        id_sesion=event.id_sesion,
+        id_profesor=current_user.id_profesor,
+        fecha_inicio_actual=event.fecha_inicio,
+        fecha_fin_actual=event.fecha_fin,
+        fecha_inicio_propuesta=request_in.fecha_inicio_propuesta,
+        fecha_fin_propuesta=request_in.fecha_fin_propuesta,
+        comentario_profesor=request_in.comentario_profesor,
+    )
+    db.add(request)
+    db.commit()
+    db.refresh(request)
+    return serialize_change_request(db, request)
+
+
+@app.post("/api/v1/calendar/change-requests/{request_id}/accept", response_model=CalendarChangeRequestOut, tags=["Calendario"])
+def accept_calendar_change_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_staff),
+):
+    request = db.query(SolicitudCambioEvento).filter(SolicitudCambioEvento.id == request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Propuesta no encontrada")
+    if request.estado not in {"Pendiente", "Propuesta alternativa"}:
+        raise HTTPException(status_code=422, detail="La propuesta ya esta cerrada")
+    event = db.query(Evento).filter(Evento.id == request.id_evento).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+
+    fecha_inicio = request.fecha_inicio_alternativa or request.fecha_inicio_propuesta
+    fecha_fin = request.fecha_fin_alternativa or request.fecha_fin_propuesta
+    apply_event_datetime_change(db, event, fecha_inicio, fecha_fin)
+    request.estado = "Aceptada"
+    db.commit()
+    invalidate_calendar_cache()
+    db.refresh(request)
+    return serialize_change_request(db, request)
+
+
+@app.post("/api/v1/calendar/change-requests/{request_id}/reject", response_model=CalendarChangeRequestOut, tags=["Calendario"])
+def reject_calendar_change_request(
+    request_id: str,
+    reject_in: CalendarChangeRequestReject,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_staff),
+):
+    request = db.query(SolicitudCambioEvento).filter(SolicitudCambioEvento.id == request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Propuesta no encontrada")
+    if request.estado not in {"Pendiente", "Propuesta alternativa"}:
+        raise HTTPException(status_code=422, detail="La propuesta ya esta cerrada")
+    request.estado = "Rechazada"
+    request.comentario_coordinador = reject_in.comentario_coordinador
+    db.commit()
+    db.refresh(request)
+    return serialize_change_request(db, request)
+
+
+@app.post("/api/v1/calendar/change-requests/{request_id}/alternative", response_model=CalendarChangeRequestOut, tags=["Calendario"])
+def propose_calendar_change_alternative(
+    request_id: str,
+    alternative_in: CalendarChangeRequestAlternative,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_staff),
+):
+    request = db.query(SolicitudCambioEvento).filter(SolicitudCambioEvento.id == request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Propuesta no encontrada")
+    if request.estado not in {"Pendiente", "Propuesta alternativa"}:
+        raise HTTPException(status_code=422, detail="La propuesta ya esta cerrada")
+    if alternative_in.fecha_fin_alternativa <= alternative_in.fecha_inicio_alternativa:
+        raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior a la hora de inicio")
+    request.fecha_inicio_alternativa = alternative_in.fecha_inicio_alternativa
+    request.fecha_fin_alternativa = alternative_in.fecha_fin_alternativa
+    request.comentario_coordinador = alternative_in.comentario_coordinador
+    request.estado = "Propuesta alternativa"
+    db.commit()
+    db.refresh(request)
+    return serialize_change_request(db, request)
 
 
 @app.delete("/api/v1/calendar/events/{event_id}", status_code=204, tags=["Calendario"])
