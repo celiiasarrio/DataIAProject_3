@@ -2,6 +2,10 @@
 
 Aplicación Campus Virtual EDEM con frontend React, backend FastAPI, agente IA y despliegue en Google Cloud Run.
 
+## Arquitectura
+
+!Arquitectura.png
+
 ## Estructura
 
 - `frontend/`: aplicacion web React + Vite.
