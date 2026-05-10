@@ -394,6 +394,63 @@ export async function getCalendarEvents(): Promise<CalendarEvent[]> {
   return apiFetch<CalendarEvent[]>('/api/v1/calendar/events');
 }
 
+export interface CalendarChangeRequest {
+  id: string;
+  id_evento: string;
+  id_sesion: string | null;
+  id_profesor: string;
+  profesor_nombre: string | null;
+  titulo_evento: string | null;
+  estado: string;
+  fecha_inicio_actual: string;
+  fecha_fin_actual: string;
+  fecha_inicio_propuesta: string;
+  fecha_fin_propuesta: string;
+  fecha_inicio_alternativa: string | null;
+  fecha_fin_alternativa: string | null;
+  comentario_profesor: string | null;
+  comentario_coordinador: string | null;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
+}
+
+export async function getCalendarChangeRequests(): Promise<CalendarChangeRequest[]> {
+  return apiFetch<CalendarChangeRequest[]>('/api/v1/calendar/change-requests');
+}
+
+export async function createCalendarChangeRequest(payload: {
+  id_evento: string;
+  fecha_inicio_propuesta: string;
+  fecha_fin_propuesta: string;
+  comentario_profesor?: string | null;
+}): Promise<CalendarChangeRequest> {
+  return apiFetch<CalendarChangeRequest>('/api/v1/calendar/change-requests', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function acceptCalendarChangeRequest(requestId: string): Promise<CalendarChangeRequest> {
+  return apiFetch<CalendarChangeRequest>(`/api/v1/calendar/change-requests/${requestId}/accept`, { method: 'POST' });
+}
+
+export async function rejectCalendarChangeRequest(requestId: string, comentario_coordinador?: string | null): Promise<CalendarChangeRequest> {
+  return apiFetch<CalendarChangeRequest>(`/api/v1/calendar/change-requests/${requestId}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ comentario_coordinador }),
+  });
+}
+
+export async function proposeCalendarChangeAlternative(
+  requestId: string,
+  payload: { fecha_inicio_alternativa: string; fecha_fin_alternativa: string; comentario_coordinador?: string | null },
+): Promise<CalendarChangeRequest> {
+  return apiFetch<CalendarChangeRequest>(`/api/v1/calendar/change-requests/${requestId}/alternative`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export interface SessionUpdatePayload {
   id_bloque?: string;
   nombre?: string;

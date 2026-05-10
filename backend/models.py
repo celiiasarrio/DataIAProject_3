@@ -170,6 +170,26 @@ class Evento(Base):
     descripcion = Column(Text, nullable=True)
 
 
+class SolicitudCambioEvento(Base):
+    __tablename__ = "solicitudes_cambio_evento"
+
+    id = Column(String, primary_key=True, index=True)
+    id_evento = Column(String, ForeignKey("eventos.id"), nullable=False, index=True)
+    id_sesion = Column(String, ForeignKey("sesiones.id_sesion"), nullable=True, index=True)
+    id_profesor = Column(String, ForeignKey("profesores.id_profesor"), nullable=False, index=True)
+    estado = Column(String, default="Pendiente", nullable=False, index=True)
+    fecha_inicio_actual = Column(DateTime, nullable=False)
+    fecha_fin_actual = Column(DateTime, nullable=False)
+    fecha_inicio_propuesta = Column(DateTime, nullable=False)
+    fecha_fin_propuesta = Column(DateTime, nullable=False)
+    fecha_inicio_alternativa = Column(DateTime, nullable=True)
+    fecha_fin_alternativa = Column(DateTime, nullable=True)
+    comentario_profesor = Column(Text, nullable=True)
+    comentario_coordinador = Column(Text, nullable=True)
+    fecha_creacion = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
 class FranjaTutoria(Base):
     __tablename__ = "franja_tutoria"
 
