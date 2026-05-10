@@ -26,8 +26,6 @@ from typing import Any, Optional
 from urllib import error, parse, request
 
 
-DEFAULT_BACKEND_URL = "http://localhost:8080"
-DEFAULT_AGENT_URL = "http://localhost:8081"
 DEFAULT_USERNAME = "ahsoka.tano@edem.es"
 DEFAULT_PASSWORD = "demo123"
 DEFAULT_MESSAGE_1 = "¿Cómo voy de asistencia?"
@@ -238,7 +236,7 @@ def run_new_session(args: argparse.Namespace) -> int:
     print("Smoke test OK.")
     print(f"session_id guardado en: {args.session_file}")
     print("Para probar persistencia tras reiniciar el agente:")
-    print(f"  python3 smoke_test_agent.py --resume --session-file {args.session_file}")
+    print(f"  python3 agent/smoke_test_agent.py --resume --session-file {args.session_file}")
     return 0
 
 
@@ -287,8 +285,8 @@ def run_resume_session(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Smoke test de backend + agent")
-    parser.add_argument("--backend-url", default=DEFAULT_BACKEND_URL)
-    parser.add_argument("--agent-url", default=DEFAULT_AGENT_URL)
+    parser.add_argument("--backend-url", required=True)
+    parser.add_argument("--agent-url", required=True)
     parser.add_argument("--username", default=DEFAULT_USERNAME)
     parser.add_argument("--password", default=DEFAULT_PASSWORD)
     parser.add_argument("--message-1", default=DEFAULT_MESSAGE_1)
