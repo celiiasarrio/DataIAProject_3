@@ -4,7 +4,7 @@ Aplicación Campus Virtual EDEM con frontend React, backend FastAPI, agente IA y
 
 ## Arquitectura
 
-!Arquitectura.png
+!(Arquitectura.png)
 
 ## Estructura
 
