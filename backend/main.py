@@ -32,7 +32,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for thin local envs
 
     jwt = None
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import and_, create_engine, or_
+from sqlalchemy import and_, create_engine, func, or_
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool
 
@@ -707,6 +707,59 @@ class DashboardOut(BaseModel):
     grades: List[GradeOut]
     attendance: Optional[AttendanceMetricsOut] = None
     events: List[EventOut]
+
+
+class MetricValue(BaseModel):
+    value: Optional[float | int | str | bool] = None
+    status: str = "ok"
+    message: Optional[str] = None
+
+
+class MetricsSummaryOut(BaseModel):
+    total_estudiantes: MetricValue
+    total_profesores: MetricValue
+    total_coordinadores: MetricValue
+    sesiones_proximas: MetricValue
+    notas_pendientes: MetricValue
+    tutorias_pendientes: MetricValue
+    asistencia_media: MetricValue
+    ultima_actualizacion: str
+
+
+class AcademicMetricRow(BaseModel):
+    id: str
+    nombre: str
+    estudiantes: int = 0
+    bloques: int = 0
+    sesiones_proximas: int = 0
+    asistencia_media: Optional[float] = None
+
+
+class RecentActivityItem(BaseModel):
+    tipo: str
+    titulo: str
+    detalle: Optional[str] = None
+    fecha: Optional[datetime] = None
+
+
+class MetricsAcademicOut(BaseModel):
+    por_grupo: List[AcademicMetricRow]
+    por_asignatura: List[AcademicMetricRow]
+    actividad_reciente: List[RecentActivityItem]
+
+
+class ServiceHealthOut(BaseModel):
+    name: str
+    status: str
+    message: Optional[str] = None
+    checked_at: str
+
+
+class MetricsHealthOut(BaseModel):
+    backend: ServiceHealthOut
+    database: ServiceHealthOut
+    agent: ServiceHealthOut
+    ultima_actualizacion: str
 
 
 class TutoringSlotCreate(BaseModel):
@@ -1520,6 +1573,164 @@ def health():
     return {"status": "ok", "environment": settings.ENVIRONMENT}
 
 
+def metric_ok(value, message: Optional[str] = None) -> MetricValue:
+    return MetricValue(value=value, status="ok", message=message)
+
+
+def metric_empty(message: str) -> MetricValue:
+    return MetricValue(value=None, status="empty", message=message)
+
+
+def metric_error(exc: Exception) -> MetricValue:
+    return MetricValue(value=None, status="error", message=str(exc))
+
+
+def count_pending_grades(db: Session) -> MetricValue:
+    tasks = db.query(Tarea).all()
+    if not tasks:
+        return metric_empty("No hay tareas registradas todavia")
+
+    existing_pairs = {
+        (row.id_alumno, row.id_tarea)
+        for row in db.query(RelAlumnoTarea.id_alumno, RelAlumnoTarea.id_tarea).all()
+    }
+    pending = 0
+    for task in tasks:
+        student_ids = {
+            row.id_alumno
+            for row in (
+                db.query(RelAlumnosGrupos.id_alumno)
+                .join(RelBloquesGrupos, RelBloquesGrupos.id_grupo == RelAlumnosGrupos.id_grupo)
+                .filter(RelBloquesGrupos.id_bloque == task.id_bloque)
+                .all()
+            )
+        }
+        pending += sum(1 for student_id in student_ids if (student_id, task.id_tarea) not in existing_pairs)
+    return metric_ok(pending)
+
+
+def average_attendance_metric(db: Session) -> MetricValue:
+    total = db.query(Asistencia).count()
+    if total == 0:
+        return metric_empty("No hay registros de asistencia todavia")
+    present = db.query(Asistencia).filter(Asistencia.presente.is_(True)).count()
+    return metric_ok(round((present / total) * 100, 1))
+
+
+def build_group_metrics(db: Session) -> List[AcademicMetricRow]:
+    rows: List[AcademicMetricRow] = []
+    groups = db.query(Grupo).order_by(Grupo.nombre).all()
+    today = date.today()
+    for group in groups:
+        student_ids = [
+            row.id_alumno
+            for row in db.query(RelAlumnosGrupos.id_alumno).filter(RelAlumnosGrupos.id_grupo == group.id_grupo).all()
+        ]
+        block_ids = [
+            row.id_bloque
+            for row in db.query(RelBloquesGrupos.id_bloque).filter(RelBloquesGrupos.id_grupo == group.id_grupo).all()
+        ]
+        upcoming = 0
+        attendance = None
+        if block_ids:
+            upcoming = (
+                db.query(Sesion)
+                .filter(Sesion.id_bloque.in_(block_ids), Sesion.fecha.isnot(None), Sesion.fecha >= today)
+                .count()
+            )
+        if student_ids:
+            attendance_records = db.query(Asistencia).filter(Asistencia.id_alumno.in_(student_ids)).all()
+            if attendance_records:
+                present = sum(1 for item in attendance_records if item.presente)
+                attendance = round((present / len(attendance_records)) * 100, 1)
+        rows.append(
+            AcademicMetricRow(
+                id=group.id_grupo,
+                nombre=group.nombre,
+                estudiantes=len(set(student_ids)),
+                bloques=len(set(block_ids)),
+                sesiones_proximas=upcoming,
+                asistencia_media=attendance,
+            )
+        )
+    return rows
+
+
+def build_block_metrics(db: Session) -> List[AcademicMetricRow]:
+    rows: List[AcademicMetricRow] = []
+    today = date.today()
+    blocks = db.query(Bloque).order_by(Bloque.nombre).all()
+    for block in blocks:
+        group_ids = [
+            row.id_grupo
+            for row in db.query(RelBloquesGrupos.id_grupo).filter(RelBloquesGrupos.id_bloque == block.id_bloque).all()
+        ]
+        student_ids: set[str] = set()
+        if group_ids:
+            student_ids = {
+                row.id_alumno
+                for row in db.query(RelAlumnosGrupos.id_alumno).filter(RelAlumnosGrupos.id_grupo.in_(group_ids)).all()
+            }
+        session_ids = [
+            row.id_sesion
+            for row in db.query(Sesion.id_sesion).filter(Sesion.id_bloque == block.id_bloque).all()
+        ]
+        upcoming = (
+            db.query(Sesion)
+            .filter(Sesion.id_bloque == block.id_bloque, Sesion.fecha.isnot(None), Sesion.fecha >= today)
+            .count()
+        )
+        attendance = None
+        if session_ids:
+            attendance_records = db.query(Asistencia).filter(Asistencia.id_sesion.in_(session_ids)).all()
+            if attendance_records:
+                present = sum(1 for item in attendance_records if item.presente)
+                attendance = round((present / len(attendance_records)) * 100, 1)
+        rows.append(
+            AcademicMetricRow(
+                id=block.id_bloque,
+                nombre=block.nombre,
+                estudiantes=len(student_ids),
+                bloques=1,
+                sesiones_proximas=upcoming,
+                asistencia_media=attendance,
+            )
+        )
+    return rows
+
+
+def build_recent_activity(db: Session) -> List[RecentActivityItem]:
+    items: List[RecentActivityItem] = []
+    for session_row in db.query(UserSession).order_by(UserSession.fecha_inicio.desc()).limit(4).all():
+        items.append(
+            RecentActivityItem(
+                tipo="login",
+                titulo="Inicio de sesion",
+                detalle=session_row.id_usuario,
+                fecha=session_row.fecha_inicio,
+            )
+        )
+    for request_row in db.query(SolicitudTutoria).order_by(SolicitudTutoria.fecha_creacion.desc()).limit(4).all():
+        items.append(
+            RecentActivityItem(
+                tipo="tutoria",
+                titulo=f"Tutoria {request_row.estado}",
+                detalle=f"{request_row.id_alumno} -> {request_row.id_profesor}",
+                fecha=request_row.fecha_creacion,
+            )
+        )
+    for change_row in db.query(SolicitudCambioEvento).order_by(SolicitudCambioEvento.fecha_creacion.desc()).limit(4).all():
+        items.append(
+            RecentActivityItem(
+                tipo="calendario",
+                titulo=f"Cambio de evento {change_row.estado}",
+                detalle=change_row.id_profesor,
+                fecha=change_row.fecha_creacion,
+            )
+        )
+    return sorted(items, key=lambda item: item.fecha or datetime.min, reverse=True)[:8]
+
+
 @app.post("/api/v1/token", response_model=Token, tags=["Autenticacion"])
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -1891,6 +2102,99 @@ def get_my_dashboard(
         grades=grades,
         attendance=attendance,
         events=dashboard_events_for_user(db, current_user),
+    )
+
+
+@app.get("/api/metrics/summary", response_model=MetricsSummaryOut, tags=["Metricas Cloud"])
+@app.get("/api/v1/metrics/summary", response_model=MetricsSummaryOut, tags=["Metricas Cloud"])
+def get_metrics_summary(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_staff),
+):
+    del current_user
+    updated_at = datetime.utcnow().isoformat()
+    metrics: dict[str, MetricValue] = {}
+    calculations = {
+        "total_estudiantes": lambda: metric_ok(db.query(Alumno).count()),
+        "total_profesores": lambda: metric_ok(db.query(Profesor).count()),
+        "total_coordinadores": lambda: metric_ok(db.query(Coordinador).count()),
+        "sesiones_proximas": lambda: metric_ok(
+            db.query(Sesion).filter(Sesion.fecha.isnot(None), Sesion.fecha >= date.today()).count()
+        ),
+        "notas_pendientes": lambda: count_pending_grades(db),
+        "tutorias_pendientes": lambda: metric_ok(
+            db.query(SolicitudTutoria).filter(SolicitudTutoria.estado.in_(["Pendiente", "Propuesta alternativa"])).count()
+        ),
+        "asistencia_media": lambda: average_attendance_metric(db),
+    }
+    for key, calculation in calculations.items():
+        try:
+            metrics[key] = calculation()
+        except Exception as exc:
+            metrics[key] = metric_error(exc)
+    return MetricsSummaryOut(ultima_actualizacion=updated_at, **metrics)
+
+
+@app.get("/api/metrics/academic", response_model=MetricsAcademicOut, tags=["Metricas Cloud"])
+@app.get("/api/v1/metrics/academic", response_model=MetricsAcademicOut, tags=["Metricas Cloud"])
+def get_metrics_academic(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_staff),
+):
+    del current_user
+    groups: List[AcademicMetricRow] = []
+    blocks: List[AcademicMetricRow] = []
+    activity: List[RecentActivityItem] = []
+    try:
+        groups = build_group_metrics(db)
+    except Exception:
+        groups = []
+    try:
+        blocks = build_block_metrics(db)
+    except Exception:
+        blocks = []
+    try:
+        activity = build_recent_activity(db)
+    except Exception:
+        activity = []
+    return MetricsAcademicOut(por_grupo=groups, por_asignatura=blocks, actividad_reciente=activity)
+
+
+@app.get("/api/metrics/system-health", response_model=MetricsHealthOut, tags=["Metricas Cloud"])
+@app.get("/api/v1/metrics/system-health", response_model=MetricsHealthOut, tags=["Metricas Cloud"])
+def get_metrics_system_health(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_staff),
+):
+    del current_user
+    checked_at = datetime.utcnow().isoformat()
+    database_status = "connected"
+    database_message = "Cloud SQL responde correctamente"
+    try:
+        db.query(func.count(Alumno.id_alumno)).scalar()
+    except Exception as exc:
+        database_status = "error"
+        database_message = str(exc)
+    return MetricsHealthOut(
+        ultima_actualizacion=checked_at,
+        backend=ServiceHealthOut(
+            name="Backend",
+            status="active",
+            message=f"FastAPI activo en entorno {settings.ENVIRONMENT}",
+            checked_at=checked_at,
+        ),
+        database=ServiceHealthOut(
+            name="Cloud SQL",
+            status=database_status,
+            message=database_message,
+            checked_at=checked_at,
+        ),
+        agent=ServiceHealthOut(
+            name="Agente IA",
+            status="unknown",
+            message="El backend no tiene configurada una URL interna del agente para comprobarlo directamente",
+            checked_at=checked_at,
+        ),
     )
 
 
