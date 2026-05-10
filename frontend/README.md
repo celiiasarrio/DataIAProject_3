@@ -1,11 +1,22 @@
+# Frontend
 
-  # Recrear UI EDEM Student Hub
+Aplicacion React + Vite desplegada en Cloud Run.
 
-  This is a code bundle for Recrear UI EDEM Student Hub. The original project is available at https://www.figma.com/design/Xa4XvPrAPNr6wMbBWfnxMJ/Recrear-UI-EDEM-Student-Hub.
+## Build de validacion
 
-  ## Running the code
+```cmd
+npm install
+npm run build
+```
 
-  Run `npm i` to install the dependencies.
+## Despliegue
 
-  Run `npm run dev` to start the development server.
-  
+El frontend se despliega en cloud mediante:
+
+- GitHub Actions: `.github/workflows/deploy-cloud-run.yml`
+- despliegue manual: `deploy-frontend.cmd`
+
+El build de cloud recibe estas variables como build args:
+
+- `VITE_BACKEND_URL`
+- `VITE_AGENT_URL`

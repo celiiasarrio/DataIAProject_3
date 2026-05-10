@@ -1,7 +1,7 @@
 # ── Core del agente ──────────────────────────────────────────────────────────
 # Framework Google ADK (incluye el runner, session service y tool context)
 google-adk>=1.0.0
-# SDK de Google Gen AI (importado directamente en run_local.py: google.genai.types)
+# SDK de Google Gen AI
 google-genai>=1.5.0
 
 # ── Google Cloud ──────────────────────────────────────────────────────────────

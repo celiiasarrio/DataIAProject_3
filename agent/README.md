@@ -1,141 +1,30 @@
 # Agente Campus Virtual EDEM
 
-Asistente personal para el campus virtual construido con **Google ADK** y desplegable
-en **Cloud Run** dentro de GCP. El agente llama al backend FastAPI existente usando
-el **JWT del usuario** y se puede consumir desde el frontend de la app a través de
-`POST /api/v1/agent/chat`.
+Servicio FastAPI del asistente IA, desplegado en Cloud Run y consumido por el frontend.
 
-## Arquitectura
+## Funcionamiento
 
-```
-Frontend / CLI
-  └─> Agent service (Cloud Run o local)
-        ├─ Bearer JWT del usuario
-        ├─ GET  /api/v1/users/me            (role, nombre, id)
-        └─ ADK Runner + SessionService (memoria o Firestore)
-              └─ LlmAgent (gemini-2.5-flash)
-                    └─ tools (httpx) ─> FastAPI backend con Bearer JWT
+El frontend llama al agente en:
+
+```text
+POST /api/v1/agent/chat
 ```
 
-Los permisos reales los sigue aplicando FastAPI: el agente actúa **en nombre del
-usuario** reenviando su JWT. Si un alumno pide algo que sólo puede hacer un
-profesor, el agente se lo explica (prompt) y además el backend devolvería 403
-(defense in depth).
+El agente recibe el JWT del usuario, consulta el perfil en el backend y ejecuta herramientas contra la API respetando los permisos reales del backend.
 
-## Estructura
+## Archivos principales
 
-```
-agent/
-├── agent.py              # LlmAgent con todas las tools registradas
-├── prompts.py            # System instruction role-aware
-├── config.py             # Settings (BACKEND_BASE_URL, modelo, Vertex/API key)
-├── run_local.py          # CLI interactiva: login + chat
-├── service.py            # API FastAPI para Cloud Run (/health, /api/v1/agent/chat)
-├── firestore_session_service.py  # Persistencia opcional de sesiones en Firestore
-├── tools/
-│   ├── system.py         # fecha/hora actual del agente para referencias relativas
-│   ├── http_client.py    # httpx client con JWT desde session state
-│   ├── profile.py
-│   ├── academic.py       # notas, asistencia, asignaturas
-│   ├── scheduling.py     # calendario, tutorías, reservas
-│   └── communication.py  # correos, notificaciones
-├── requirements.txt
-└── .env.example
-```
+- `service.py`: API HTTP del agente para Cloud Run.
+- `agent.py`: definicion del `LlmAgent` y registro de herramientas.
+- `prompts.py`: instrucciones del sistema, privacidad y limites de uso.
+- `audit.py`: logs estructurados de uso del agente.
+- `firestore_session_service.py`: persistencia de sesiones en Firestore.
+- `tools/`: herramientas que llaman al backend.
+- `smoke_test_agent.py`: prueba manual contra servicios desplegados.
 
-## Puesta en marcha local
+## Variables de entorno en Cloud Run
 
-### 1. Backend corriendo
-
-En otra terminal, arranca el backend (`backend/` con su propio `.env` y base de
-datos local). Debe responder en `http://localhost:8080`.
-
-### 2. Credenciales del LLM
-
-Tienes dos opciones para llamar a `gemini-2.5-flash`:
-
-**Opción A — Vertex AI** (recomendada, ya estás en GCP):
-
-```bash
-gcloud auth application-default login
-gcloud config set project project3grupo6
-```
-
-Y en el `.env` del agente:
-```
-GOOGLE_GENAI_USE_VERTEXAI=true
-GOOGLE_CLOUD_PROJECT=project3grupo6
-GOOGLE_CLOUD_LOCATION=europe-west1
-FIRESTORE_PROJECT=project3grupo6
-FIRESTORE_DATABASE="(default)"
-```
-
-**Opción B — Gemini API** (más rápido para arrancar, sólo para local):
-
-```
-GOOGLE_GENAI_USE_VERTEXAI=FALSE
-GOOGLE_API_KEY=tu-api-key
-```
-
-### 3. Instalar dependencias
-
-```bash
-cd agent
-cp .env.example .env        # y edítalo
-pip install -r requirements.txt
-```
-
-### 4. Ejecutar
-
-Desde la raíz del repo:
-
-```bash
-python -m agent.run_local
-```
-
-Te pedirá email + contraseña de un usuario del campus. A partir de ahí, chat
-libre. Escribe `salir` para terminar.
-
-Si llamas al servicio HTTP, `POST /api/v1/agent/chat` acepta `session_id`
-opcional y devuelve siempre `reply` + `session_id` para reanudar el hilo.
-
-## Despliegue manual en GCP
-
-Si queréis desplegar **solo el agente** sin tocar Terraform del resto del stack:
-
-1. Preparad la configuración:
-
-```bash
-cp agent/.env.cloudrun.example agent/.env.cloudrun
-```
-
-2. Editad `agent/.env.cloudrun` con estos valores reales:
-
-- `BACKEND_BASE_URL`: URL pública del backend ya desplegado.
-- `AGENT_SERVICE_ACCOUNT`: cuenta de servicio del agente en Cloud Run.
-- `PROJECT_ID`, `REGION`, `REPOSITORY`, `SERVICE_NAME`: nombres reales en GCP.
-- `PLATFORM`: dejadlo en `linux/amd64` para Cloud Run.
-
-3. Verificad permisos mínimos de la service account del agente:
-
-- `roles/aiplatform.user`
-- `roles/datastore.user`
-
-4. Lanzad el despliegue:
-
-```bash
-bash agent/deploy_cloud_run.sh
-```
-
-El script:
-
-- construye la imagen Docker del agente,
-- la sube a Artifact Registry,
-- despliega un servicio de Cloud Run con las variables de entorno que usa el código.
-
-### Variables que necesita Cloud Run
-
-Estas son las variables que luego el equipo de data tendrá que reflejar en Terraform:
+Terraform configura las principales variables en `terraform/cloudrun.tf`:
 
 - `BACKEND_BASE_URL`
 - `GOOGLE_GENAI_USE_VERTEXAI`
@@ -146,89 +35,23 @@ Estas son las variables que luego el equipo de data tendrá que reflejar en Terr
 - `FIRESTORE_PROJECT`
 - `FIRESTORE_DATABASE`
 
-### Nota de acceso
+## Verificacion en cloud
 
-El frontend actual llama al agente **directamente** y le pasa el JWT del usuario.
-Por eso, si el tráfico va navegador -> Cloud Run, el servicio del agente debe estar
-invocable públicamente y la autenticación real la sigue haciendo el backend con el JWT.
+Healthcheck:
 
-### Verificación
-
-Una vez desplegado:
-
-```bash
-AGENT_URL="https://tu-agent-url"
-curl "${AGENT_URL}/health"
+```cmd
+curl https://URL_DEL_AGENT/health
 ```
 
-Y para probar el flujo completo con un usuario real:
+Smoke test contra servicios desplegados:
 
-```bash
-python3 smoke_test_agent.py \
-  --backend-url https://tu-backend-url \
-  --agent-url "${AGENT_URL}" \
-  --expect-session-backend firestore \
-  --username ahsoka.tano@edem.es \
-  --password demo123
+```cmd
+python agent\smoke_test_agent.py --backend-url https://URL_DEL_BACKEND --agent-url https://URL_DEL_AGENT
 ```
 
-## Ejemplos de conversación
+## Seguridad
 
-**Alumno:**
-- "¿Cómo voy de asistencia?"
-- "Dame mis notas de la asignatura ASIG01"
-- "¿Qué tutorías tiene disponibles el profesor X el jueves?"
-- "Resérvame la franja FRANJA_ID el día 2026-05-10"
-
-**Profesor:**
-- "Ponle un 8.5 al alumno A001 en la tarea 17"
-- "Crea una franja de tutoría los miércoles de 10:00 a 11:00 en el aula 3"
-- "Confirma la reserva RESERV_ID"
-
-**Coordinador:**
-- "Dame la asistencia de la asignatura ASIG01"
-- "¿Qué alumnos hay matriculados en ASIG02?"
-
-## Mapa de tools
-
-| Tool | Endpoint | Roles |
-|---|---|---|
-| `get_current_datetime` | local (sin backend) | todos |
-| `get_my_profile` | `GET /users/me` | todos |
-| `update_my_profile` | `PUT /users/me` | todos |
-| `get_user_by_id` | `GET /users/{id}` | todos |
-| `list_blocks` / `list_my_blocks` | `/blocks*` | todos |
-| `list_sessions` / `get_session_detail` | `/sessions*` | todos |
-| `list_students_in_session` | `GET /sessions/{id}/students` | profesor, coordinador |
-| `get_my_grades` / `get_my_grades_for_block` | `/grades/me*` | alumno |
-| `register_grade` / `update_grade` | `/grades*` | profesor |
-| `get_my_attendance` / `get_my_attendance_metrics` | `/attendance/me*` | alumno |
-| `mark_attendance` | `POST /attendance` | profesor |
-| `get_session_attendance` | `GET /attendance/sessions/{id}` | profesor, coordinador |
-| `list_calendar_events` / `get_event_detail` | `/calendar/events*` | todos |
-| `create_calendar_event` / `update_calendar_event` / `delete_calendar_event` | `/calendar/events*` | profesor, coordinador |
-| `list_tutoring_slots` | `GET /tutorings/slots` | todos |
-| `create_tutoring_slot` | `POST /tutorings/slots` | profesor |
-| `list_my_reservations` | `GET /reservations` | alumno, profesor |
-| `request_tutoring` | `POST /reservations` | alumno |
-| `update_reservation_status` | `PUT /reservations/{id}` | profesor |
-| `list_notifications` / `mark_notification_read` / `get_notification_settings` | `/notifications*` | todos |
-| `list_emails` / `read_email` / `send_email` | `/emails*` | todos |
-
-## Gaps detectados en el backend (para fases siguientes)
-
-- **No existe `POST /notifications`**: el coordinador no puede "broadcast"ear
-  notificaciones hasta que se añada un endpoint.
-- **No hay endpoint de tareas** (solo de notas): no se pueden listar las
-  `tareas` de una asignatura.
-- Varios endpoints de escritura (`POST /attendance`, `POST /tutorings/slots`,
-  `POST /calendar/events`, `POST /grades`) **no validan el rol del usuario
-  autenticado**. El agente lo controla por prompt, pero conviene reforzar en
-  FastAPI antes de producción.
-
-## Próximas fases
-
-1. **Memoria**: resumir conversaciones largas y guardar preferencias explícitas del usuario.
-2. **Terraform**: endurecer reglas de IAM y observabilidad del agente.
-3. **Vertex AI Agent Engine**: migrar desde Cloud Run si queréis runtime gestionado.
-4. **Frontend**: añadir streaming y mejor UX conversacional.
+- El agente no sustituye permisos del backend.
+- Todas las llamadas a herramientas reenvian el JWT del usuario.
+- Si el backend devuelve `403`, el agente no puede saltarse esa restriccion.
+- Los logs de auditoria registran peticiones de chat, llamadas a herramientas y accesos denegados.
