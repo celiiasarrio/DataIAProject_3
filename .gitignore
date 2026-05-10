@@ -19,6 +19,7 @@ build/
 # IDE
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 .devcontainer/
@@ -30,6 +31,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+.smoke_agent_session.json
 
 # GCP credentials
 spa-datajuniorsprogram-sdb-001-899009cc32ac.json
@@ -39,6 +41,7 @@ spa-datajuniorsprogram-sdb-001-899009cc32ac.json
 load_datos*.py
 load_data*.py
 fix_datos*.py
+gen_hashes.py
 
 # Terraform
 .terraform/
