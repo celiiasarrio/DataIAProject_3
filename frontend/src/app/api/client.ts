@@ -64,6 +64,22 @@ export async function login(email: string, password: string): Promise<{ access_t
   return res.json();
 }
 
+export async function logout(): Promise<void> {
+  try {
+    await apiFetch<{ mensaje: string }>('/api/v1/logout', { method: 'POST' });
+  } catch (error) {
+    // Log the logout error but don't throw - proceed with local cleanup
+    console.error('Logout error:', error);
+  }
+  // Clear local session regardless of API response
+  localStorage.removeItem('token');
+  localStorage.removeItem('userRole');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('userName');
+  localStorage.removeItem('userEmail');
+  localStorage.removeItem('userPhoto');
+}
+
 export interface UserProfile {
   id: string;
   nombre: string;
@@ -240,6 +256,14 @@ export interface ProfessorOut {
   correo: string;
 }
 
+export interface TutoringRecipientOut {
+  id: string;
+  nombre: string;
+  apellido: string;
+  correo: string;
+  rol: 'profesor' | 'coordinador';
+}
+
 export interface TaskOut {
   id_tarea: number;
   id_bloque: string;
@@ -268,6 +292,10 @@ export async function getMyBlocks(): Promise<BlockOut[]> {
 
 export async function getProfessors(): Promise<ProfessorOut[]> {
   return apiFetch<ProfessorOut[]>('/api/v1/professors');
+}
+
+export async function getTutoringRecipients(): Promise<TutoringRecipientOut[]> {
+  return apiFetch<TutoringRecipientOut[]>('/api/v1/tutoring-recipients');
 }
 
 export async function getBlockTasks(blockId: string): Promise<TaskOut[]> {
@@ -364,6 +392,63 @@ export interface CalendarEvent {
 
 export async function getCalendarEvents(): Promise<CalendarEvent[]> {
   return apiFetch<CalendarEvent[]>('/api/v1/calendar/events');
+}
+
+export interface CalendarChangeRequest {
+  id: string;
+  id_evento: string;
+  id_sesion: string | null;
+  id_profesor: string;
+  profesor_nombre: string | null;
+  titulo_evento: string | null;
+  estado: string;
+  fecha_inicio_actual: string;
+  fecha_fin_actual: string;
+  fecha_inicio_propuesta: string;
+  fecha_fin_propuesta: string;
+  fecha_inicio_alternativa: string | null;
+  fecha_fin_alternativa: string | null;
+  comentario_profesor: string | null;
+  comentario_coordinador: string | null;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
+}
+
+export async function getCalendarChangeRequests(): Promise<CalendarChangeRequest[]> {
+  return apiFetch<CalendarChangeRequest[]>('/api/v1/calendar/change-requests');
+}
+
+export async function createCalendarChangeRequest(payload: {
+  id_evento: string;
+  fecha_inicio_propuesta: string;
+  fecha_fin_propuesta: string;
+  comentario_profesor?: string | null;
+}): Promise<CalendarChangeRequest> {
+  return apiFetch<CalendarChangeRequest>('/api/v1/calendar/change-requests', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function acceptCalendarChangeRequest(requestId: string): Promise<CalendarChangeRequest> {
+  return apiFetch<CalendarChangeRequest>(`/api/v1/calendar/change-requests/${requestId}/accept`, { method: 'POST' });
+}
+
+export async function rejectCalendarChangeRequest(requestId: string, comentario_coordinador?: string | null): Promise<CalendarChangeRequest> {
+  return apiFetch<CalendarChangeRequest>(`/api/v1/calendar/change-requests/${requestId}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ comentario_coordinador }),
+  });
+}
+
+export async function proposeCalendarChangeAlternative(
+  requestId: string,
+  payload: { fecha_inicio_alternativa: string; fecha_fin_alternativa: string; comentario_coordinador?: string | null },
+): Promise<CalendarChangeRequest> {
+  return apiFetch<CalendarChangeRequest>(`/api/v1/calendar/change-requests/${requestId}/alternative`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
 export interface SessionUpdatePayload {
@@ -508,6 +593,83 @@ export async function updateReservation(
   return apiFetch<ReservationOut>(`/api/v1/reservations/${reservationId}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
+  });
+}
+
+export interface SolicitudTutoriaCreate {
+  id_profesor: string;
+  motivo: string;
+  opcion1_fecha_hora: string;
+  opcion2_fecha_hora: string;
+  opcion3_fecha_hora?: string;
+  comentario_alumno?: string;
+}
+
+export interface SolicitudTutoriaOut {
+  id: string;
+  id_alumno: string;
+  id_profesor: string;
+  motivo: string;
+  estado: string;
+  opcion1_fecha_hora: string;
+  opcion2_fecha_hora: string;
+  opcion3_fecha_hora?: string;
+  fecha_hora_confirmada?: string;
+  propuesta_alternativa_fecha_hora?: string;
+  comentario_profesor?: string;
+  comentario_alumno?: string;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
+}
+
+export async function createTutoringRequest(payload: SolicitudTutoriaCreate): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>('/api/v1/tutoring-requests', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getMyTutoringRequests(): Promise<SolicitudTutoriaOut[]> {
+  return apiFetch<SolicitudTutoriaOut[]>('/api/v1/tutoring-requests/me');
+}
+
+export async function getReceivedTutoringRequests(): Promise<SolicitudTutoriaOut[]> {
+  return apiFetch<SolicitudTutoriaOut[]>('/api/v1/tutoring-requests/received');
+}
+
+export async function acceptTutoringRequest(requestId: string, option: 1 | 2 | 3): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>(`/api/v1/tutoring-requests/${requestId}/accept/${option}`, {
+    method: 'POST',
+  });
+}
+
+export async function rejectTutoringRequest(requestId: string): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>(`/api/v1/tutoring-requests/${requestId}/reject`, {
+    method: 'POST',
+  });
+}
+
+export async function proposeAlternativeTutoring(requestId: string, propuesta: string): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>(`/api/v1/tutoring-requests/${requestId}/propose-alternative?propuesta=${encodeURIComponent(propuesta)}`, {
+    method: 'POST',
+  });
+}
+
+export async function acceptAlternativeTutoring(requestId: string): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>(`/api/v1/tutoring-requests/${requestId}/accept-alternative`, {
+    method: 'POST',
+  });
+}
+
+export async function rejectAlternativeTutoring(requestId: string): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>(`/api/v1/tutoring-requests/${requestId}/reject-alternative`, {
+    method: 'POST',
+  });
+}
+
+export async function cancelTutoringRequest(requestId: string): Promise<SolicitudTutoriaOut> {
+  return apiFetch<SolicitudTutoriaOut>(`/api/v1/tutoring-requests/${requestId}/cancel`, {
+    method: 'POST',
   });
 }
 

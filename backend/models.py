@@ -170,6 +170,26 @@ class Evento(Base):
     descripcion = Column(Text, nullable=True)
 
 
+class SolicitudCambioEvento(Base):
+    __tablename__ = "solicitudes_cambio_evento"
+
+    id = Column(String, primary_key=True, index=True)
+    id_evento = Column(String, ForeignKey("eventos.id"), nullable=False, index=True)
+    id_sesion = Column(String, ForeignKey("sesiones.id_sesion"), nullable=True, index=True)
+    id_profesor = Column(String, ForeignKey("profesores.id_profesor"), nullable=False, index=True)
+    estado = Column(String, default="Pendiente", nullable=False, index=True)
+    fecha_inicio_actual = Column(DateTime, nullable=False)
+    fecha_fin_actual = Column(DateTime, nullable=False)
+    fecha_inicio_propuesta = Column(DateTime, nullable=False)
+    fecha_fin_propuesta = Column(DateTime, nullable=False)
+    fecha_inicio_alternativa = Column(DateTime, nullable=True)
+    fecha_fin_alternativa = Column(DateTime, nullable=True)
+    comentario_profesor = Column(Text, nullable=True)
+    comentario_coordinador = Column(Text, nullable=True)
+    fecha_creacion = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
 class FranjaTutoria(Base):
     __tablename__ = "franja_tutoria"
 
@@ -286,3 +306,35 @@ class Contenido(Base):
     tipo = Column(String, nullable=False)
     url = Column(String, nullable=False)
     fecha_subida = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class SolicitudTutoria(Base):
+    __tablename__ = "solicitud_tutoria"
+
+    id = Column(String, primary_key=True, index=True)
+    id_alumno = Column(String, ForeignKey("alumnos.id_alumno"), nullable=False, index=True)
+    id_profesor = Column(String, nullable=False, index=True)
+    motivo = Column(Text, nullable=False)
+    estado = Column(String, default="Pendiente", nullable=False)
+    opcion1_fecha_hora = Column(DateTime, nullable=False)
+    opcion2_fecha_hora = Column(DateTime, nullable=False)
+    opcion3_fecha_hora = Column(DateTime, nullable=True)
+    fecha_hora_confirmada = Column(DateTime, nullable=True)
+    propuesta_alternativa_fecha_hora = Column(DateTime, nullable=True)
+    comentario_profesor = Column(Text, nullable=True)
+    comentario_alumno = Column(Text, nullable=True)
+    fecha_creacion = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+
+    id = Column(String, primary_key=True, index=True)
+    id_usuario = Column(String, nullable=False, index=True)
+    token_hash = Column(String, nullable=False, unique=True, index=True)
+    device_info = Column(String, nullable=True)
+    ip_address = Column(String, nullable=True)
+    fecha_inicio = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fecha_expiracion = Column(DateTime, nullable=False)
+    activa = Column(Boolean, default=True, nullable=False)

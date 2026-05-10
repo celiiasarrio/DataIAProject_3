@@ -1,4 +1,4 @@
-import { BookOpen, CheckCircle, Calendar, Users, Clock, FileText, Trophy, FolderOpen } from 'lucide-react';
+import { BookOpen, CheckCircle, Calendar, Users, Clock, MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
@@ -117,6 +117,15 @@ export function DashboardScreen() {
       .slice(0, 5);
   };
 
+  const getUpcomingClasses = (): CalendarEvent[] => {
+    if (!events) return [];
+    const now = new Date();
+    return events
+      .filter((ev) => ev.tipo === 'class' && new Date(ev.fecha_fin) >= now)
+      .sort((a, b) => new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime())
+      .slice(0, 6);
+  };
+
   const avgGrade = calculateGradeAverage();
 
   const coordinatorActions = [
@@ -134,11 +143,42 @@ export function DashboardScreen() {
       action: 'Gestionar asistencia',
       route: '/group-attendance',
     },
+    {
+      icon: MessageSquare,
+      title: 'Tutorias',
+      description: 'Revisa y responde solicitudes de tutoria.',
+      action: 'Ver tutorias',
+      route: '/tutoring',
+    },
+  ];
+
+  const professorActions = [
+    {
+      icon: BookOpen,
+      title: 'Notas alumnos',
+      description: 'Introduce y edita calificaciones de tus asignaturas.',
+      action: 'Gestionar notas',
+      route: '/teacher/grades',
+    },
+    {
+      icon: CheckCircle,
+      title: 'Mi asistencia',
+      description: 'Marca tu asistencia a las sesiones que impartes.',
+      action: 'Registrar asistencia',
+      route: '/attendance',
+    },
+    {
+      icon: MessageSquare,
+      title: 'Tutorias',
+      description: 'Revisa solicitudes y responde a tus alumnos.',
+      action: 'Gestionar tutorias',
+      route: '/tutoring',
+    },
   ];
 
   if (userRole !== 'student' && userRole !== 'professor') {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] dark:bg-gray-950 pb-24">
+      <div className="min-h-screen bg-[#f5f5f5] pb-24">
         <div className="bg-[#008899] px-6 pt-12 pb-16 rounded-b-3xl">
           <div className="flex items-center justify-between mb-5">
             <div>
@@ -150,19 +190,19 @@ export function DashboardScreen() {
         </div>
 
         <div className="px-6 -mt-10">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm">
+          <div className="bg-white rounded-2xl p-5 shadow-sm">
             <div className="text-center mb-5">
               <h2 className="text-[#008899] text-lg" style={{ fontWeight: 800 }}>Gestión académica</h2>
               <p className="text-gray-500 text-sm mt-1">Accesos principales de coordinación</p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-2 justify-items-center">
+            <div className="grid gap-3 sm:grid-cols-3 justify-items-center">
               {coordinatorActions.map(({ icon: Icon, title, description, action, route }) => (
-                <div key={title} className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 flex flex-col items-center text-center w-full max-w-xs">
+                <div key={title} className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center text-center w-full max-w-xs">
                   <div className="h-11 w-11 rounded-2xl bg-[#008899]/10 flex items-center justify-center mb-3">
                     <Icon size={22} className="text-[#008899]" />
                   </div>
-                  <h3 className="text-gray-900 dark:text-gray-100 text-sm" style={{ fontWeight: 800 }}>{title}</h3>
-                  <p className="text-gray-500 dark:text-gray-400 text-xs mt-2 flex-1">{description}</p>
+                  <h3 className="text-gray-900 text-sm" style={{ fontWeight: 800 }}>{title}</h3>
+                  <p className="text-gray-500 text-xs mt-2 flex-1">{description}</p>
                   <button
                     onClick={() => navigate(route)}
                     className="mt-4 w-full bg-[#008899] text-white py-2.5 rounded-xl text-sm hover:bg-[#007788] transition-colors"
@@ -179,8 +219,88 @@ export function DashboardScreen() {
     );
   }
 
+  if (userRole === 'professor') {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5] pb-24">
+        <div className="bg-[#008899] px-6 pt-12 pb-16 rounded-b-3xl">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h1 className="text-white text-2xl mb-1" style={{ fontWeight: 300, fontFamily: 'Didot, Bodoni, serif' }}>EDEM</h1>
+              <p className="text-white text-xs opacity-90">Panel de profesor</p>
+            </div>
+          </div>
+          <p className="text-white text-lg">Hola{userName ? `, ${userName.split(' ')[0]}` : ''}</p>
+        </div>
+
+        <div className="px-6 -mt-10">
+          <div className="bg-white rounded-2xl p-5 shadow-sm">
+            <div className="text-center mb-5">
+              <h2 className="text-[#008899] text-lg" style={{ fontWeight: 800 }}>Gestion docente</h2>
+              <p className="text-gray-500 text-sm mt-1">Accesos principales de profesor</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {professorActions.map(({ icon: Icon, title, description, action, route }) => (
+                <div key={title} className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center text-center">
+                  <div className="h-11 w-11 rounded-2xl bg-[#008899]/10 flex items-center justify-center mb-3">
+                    <Icon size={22} className="text-[#008899]" />
+                  </div>
+                  <h3 className="text-gray-900 text-sm" style={{ fontWeight: 800 }}>{title}</h3>
+                  <p className="text-gray-500 text-xs mt-2 flex-1">{description}</p>
+                  <button
+                    onClick={() => navigate(route)}
+                    className="mt-4 w-full bg-[#008899] text-white py-2.5 rounded-xl text-sm hover:bg-[#007788] transition-colors"
+                    style={{ fontWeight: 700 }}
+                  >
+                    {action}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 bg-white rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar size={18} className="text-[#008899]" />
+              <h2 className="text-[#008899] text-base" style={{ fontWeight: 800 }}>Mis clases</h2>
+            </div>
+            {loading ? (
+              <CenteredLoadingSpinner className="py-5" />
+            ) : getUpcomingClasses().length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-5">No tienes clases próximas.</p>
+            ) : (
+              <div className="space-y-3">
+                {getUpcomingClasses().map((ev) => (
+                  <div key={ev.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-gray-900 text-sm truncate" style={{ fontWeight: 800 }}>
+                          {ev.titulo}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatEventDate(ev.fecha_inicio)} · {formatEventTime(ev.fecha_inicio)} - {formatEventTime(ev.fecha_fin)}
+                        </p>
+                        {formatEventLocation(ev) && (
+                          <p className="text-xs text-gray-400 mt-1">{formatEventLocation(ev)}</p>
+                        )}
+                      </div>
+                      {ev.bloque_nombre && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-white text-[#008899] flex-shrink-0" style={{ fontWeight: 700 }}>
+                          {ev.bloque_nombre}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#f5f5f5] dark:bg-gray-950 pb-20">
+    <div className="min-h-screen bg-[#f5f5f5] pb-20">
       {/* Header */}
       <div className="bg-[#008899] px-6 pt-12 pb-6 rounded-b-3xl">
         <div className="flex items-center justify-between mb-4">
@@ -195,7 +315,7 @@ export function DashboardScreen() {
       {/* Content */}
       <div className="px-6 -mt-4">
         {/* Quick Access */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl p-4 mb-4 shadow-sm">
+        <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
           <div className="flex gap-3 justify-center flex-wrap">
             {userRole === 'student' && [
               { icon: BookOpen, label: 'Notas', route: '/grades' },
@@ -205,33 +325,18 @@ export function DashboardScreen() {
               <button
                 key={item.label}
                 onClick={() => item.route && navigate(item.route)}
-                className="flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg hover:bg-[#f5f5f5] dark:hover:bg-gray-800 transition-colors"
+                className="flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg hover:bg-[#f5f5f5] transition-colors"
               >
-                <item.icon size={20} className="text-[#008899] dark:text-cyan-300" />
-                <span className="text-xs text-gray-700 dark:text-gray-300 text-center">{item.label}</span>
-              </button>
-            ))}
-            {userRole === 'professor' && [
-              { icon: Calendar, label: 'Mis Clases', route: '/calendar' },
-              { icon: BookOpen, label: 'Notas Alumnos', route: '/teacher/grades' },
-              { icon: FolderOpen, label: 'Material', route: '/teacher/content' },
-              { icon: CheckCircle, label: 'Pase de Lista', route: '/calendar' },
-            ].map((item) => (
-              <button
-                key={item.label}
-                onClick={() => item.route && navigate(item.route)}
-                className="flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg hover:bg-[#f5f5f5] dark:hover:bg-gray-800 transition-colors"
-              >
-                <item.icon size={20} className="text-[#008899] dark:text-cyan-300" />
-                <span className="text-xs text-gray-700 dark:text-gray-300 text-center">{item.label}</span>
+                <item.icon size={20} className="text-[#008899]" />
+                <span className="text-xs text-gray-700 text-center">{item.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Today Card */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl p-4 mb-4 shadow-sm">
-          <h3 className="text-[#008899] dark:text-cyan-300 mb-3" style={{ fontWeight: 600 }}>HOY</h3>
+        <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
+          <h3 className="text-[#008899] mb-3" style={{ fontWeight: 600 }}>HOY</h3>
           {loading ? (
             <CenteredLoadingSpinner className="py-5" />
           ) : getTodayEvents().length > 0 ? (
@@ -239,12 +344,12 @@ export function DashboardScreen() {
               {getTodayEvents().map((ev) => (
                 <div key={ev.id} className="border-l-4 border-[#008899] pl-3 pb-2">
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <span className="text-sm font-medium text-gray-800 dark:text-gray-100 flex-1">{ev.titulo}</span>
+                    <span className="text-sm font-medium text-gray-800 flex-1">{ev.titulo}</span>
                     <span className={`text-xs px-2 py-1 rounded text-white ${EVENT_TYPE_CONFIG[ev.tipo]?.chipColor || 'bg-gray-400'}`}>
                       {EVENT_TYPE_CONFIG[ev.tipo]?.label || ev.tipo}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
                     <span className="flex items-center gap-1">
                       <Clock size={14} /> {formatEventTime(ev.fecha_inicio)}
                     </span>
@@ -254,7 +359,7 @@ export function DashboardScreen() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">Hoy no tienes clases ni eventos programados.</p>
+            <p className="text-sm text-gray-500">Hoy no tienes clases ni eventos programados.</p>
           )}
         </div>
 
@@ -267,7 +372,7 @@ export function DashboardScreen() {
                 onClick={() => navigate('/grades')}
                 className="flex flex-col items-center gap-2 focus:outline-none"
               >
-                <div className="w-20 h-20 rounded-full bg-white dark:bg-gray-900 shadow-sm flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
+                <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow border border-gray-200">
                   {loading ? (
                     <div className="text-xs text-gray-400">...</div>
                   ) : avgGrade !== null ? (
@@ -278,7 +383,7 @@ export function DashboardScreen() {
                     <span className="text-xs text-gray-400" style={{ textAlign: 'center' }}>—</span>
                   )}
                 </div>
-                <span className="text-xs text-gray-600 dark:text-gray-300" style={{ fontWeight: 600 }}>Mis notas</span>
+                <span className="text-xs text-gray-600" style={{ fontWeight: 600 }}>Mis notas</span>
               </button>
 
               {/* Asistencia Indicator */}
@@ -286,7 +391,7 @@ export function DashboardScreen() {
                 onClick={() => navigate('/attendance')}
                 className="flex flex-col items-center gap-2 focus:outline-none"
               >
-                <div className="w-20 h-20 rounded-full bg-white dark:bg-gray-900 shadow-sm flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
+                <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow border border-gray-200">
                   {loading ? (
                     <div className="text-xs text-gray-400">...</div>
                   ) : attendance ? (
@@ -297,7 +402,7 @@ export function DashboardScreen() {
                     <span className="text-xs text-gray-400" style={{ textAlign: 'center' }}>—</span>
                   )}
                 </div>
-                <span className="text-xs text-gray-600 dark:text-gray-300" style={{ fontWeight: 600 }}>Asistencia</span>
+                <span className="text-xs text-gray-600" style={{ fontWeight: 600 }}>Asistencia</span>
               </button>
             </div>
           </div>
@@ -305,35 +410,29 @@ export function DashboardScreen() {
 
         {/* Upcoming Deliveries (Students only) */}
         {userRole === 'student' && (
-          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 mb-4 shadow-sm">
-            <h3 className="text-[#008899] dark:text-cyan-300 mb-3" style={{ fontWeight: 600 }}>PRÓXIMAS ENTREGAS</h3>
+          <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
+            <h3 className="text-[#008899] mb-3" style={{ fontWeight: 600 }}>PRÓXIMAS ENTREGAS</h3>
             {loading ? (
               <CenteredLoadingSpinner className="py-5" />
             ) : getUpcomingDeliveries().length > 0 ? (
               <div className="space-y-2">
                 {getUpcomingDeliveries().map((ev) => (
-                  <div key={ev.id} className="flex items-start justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                  <div key={ev.id} className="flex items-start justify-between p-2 rounded-lg bg-gray-50 border border-gray-100">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{ev.titulo}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{formatEventDate(ev.fecha_inicio)}</p>
+                      <p className="text-sm font-medium text-gray-800">{ev.titulo}</p>
+                      <p className="text-xs text-gray-500">{formatEventDate(ev.fecha_inicio)}</p>
                     </div>
                     <span className="text-xs px-2 py-1 rounded text-white bg-amber-400">Entrega</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400">No tienes entregas próximas.</p>
+              <p className="text-sm text-gray-500">No tienes entregas próximas.</p>
             )}
           </div>
         )}
 
 
-        {userRole === 'student' && (
-          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 mb-4 shadow-sm">
-            <h3 className="text-[#008899] dark:text-cyan-300 mb-3" style={{ fontWeight: 600 }}>CONTENIDO RECIENTE</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">No hay contenido reciente.</p>
-          </div>
-        )}
       </div>
     </div>
   );

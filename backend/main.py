@@ -60,8 +60,11 @@ from models import (
     RelProfesoresBloques,
     Reserva,
     Sesion,
+    SolicitudCambioEvento,
+    SolicitudTutoria,
     Tarea,
     Ubicacion,
+    UserSession,
 )
 
 
@@ -290,6 +293,14 @@ class ProfesorListOut(ORMModel):
     correo: str
 
 
+class TutoringRecipientOut(BaseModel):
+    id: str
+    nombre: str
+    apellido: str
+    correo: str
+    rol: str
+
+
 class SesionCreate(BaseModel):
     id_sesion: Optional[str] = None
     id_bloque: Optional[str] = None
@@ -368,6 +379,43 @@ class EventOut(ORMModel):
     fecha_inicio: datetime
     fecha_fin: datetime
     descripcion: Optional[str] = None
+
+
+class CalendarChangeRequestCreate(BaseModel):
+    id_evento: str
+    fecha_inicio_propuesta: datetime
+    fecha_fin_propuesta: datetime
+    comentario_profesor: Optional[str] = None
+
+
+class CalendarChangeRequestAlternative(BaseModel):
+    fecha_inicio_alternativa: datetime
+    fecha_fin_alternativa: datetime
+    comentario_coordinador: Optional[str] = None
+
+
+class CalendarChangeRequestReject(BaseModel):
+    comentario_coordinador: Optional[str] = None
+
+
+class CalendarChangeRequestOut(ORMModel):
+    id: str
+    id_evento: str
+    id_sesion: Optional[str] = None
+    id_profesor: str
+    profesor_nombre: Optional[str] = None
+    titulo_evento: Optional[str] = None
+    estado: str
+    fecha_inicio_actual: datetime
+    fecha_fin_actual: datetime
+    fecha_inicio_propuesta: datetime
+    fecha_fin_propuesta: datetime
+    fecha_inicio_alternativa: Optional[datetime] = None
+    fecha_fin_alternativa: Optional[datetime] = None
+    comentario_profesor: Optional[str] = None
+    comentario_coordinador: Optional[str] = None
+    fecha_creacion: datetime
+    fecha_actualizacion: datetime
 
 
 class GradeCreate(BaseModel):
@@ -479,6 +527,61 @@ def mandatory_attendance_sessions(db: Session, until: Optional[date] = None) -> 
         for session in query.order_by(Sesion.fecha, Sesion.hora_inicio, Sesion.id_sesion).all()
         if is_mandatory_attendance_session(session)
     ]
+
+
+def professor_attendance_sessions(db: Session, professor_id: str) -> List[Sesion]:
+    sessions = (
+        db.query(Sesion)
+        .join(Evento, Evento.id_sesion == Sesion.id_sesion)
+        .filter(
+            Evento.tipo == "class",
+            Evento.id_profesor == professor_id,
+            Evento.id_sesion.isnot(None),
+        )
+        .order_by(Sesion.fecha, Sesion.hora_inicio, Sesion.id_sesion)
+        .all()
+    )
+    unique: dict[str, Sesion] = {}
+    for session in sessions:
+        unique[session.id_sesion] = session
+    return list(unique.values())
+
+
+def ensure_professor_attendance_records(db: Session, professor_id: str) -> None:
+    sessions = professor_attendance_sessions(db, professor_id)
+    if not sessions:
+        return
+
+    existing = {
+        record.id_sesion: record
+        for record in db.query(Asistencia)
+        .filter(
+            Asistencia.id_alumno == professor_id,
+            Asistencia.id_sesion.in_([session.id_sesion for session in sessions]),
+        )
+        .all()
+    }
+
+    changed = False
+    for session in sessions:
+        attendance_date = session.fecha or date.today()
+        record = existing.get(session.id_sesion)
+        if record:
+            if record.fecha != attendance_date or not record.presente:
+                record.fecha = attendance_date
+                record.presente = True
+                changed = True
+        else:
+            db.add(Asistencia(
+                id_alumno=professor_id,
+                id_sesion=session.id_sesion,
+                fecha=attendance_date,
+                presente=True,
+            ))
+            changed = True
+
+    if changed:
+        db.commit()
 
 
 def build_attendance_metrics(db: Session, user_id: str) -> "AttendanceMetricsOut":
@@ -652,6 +755,32 @@ class ReservationOut(ORMModel):
     fecha_creacion: datetime
 
 
+class SolicitudTutoriaCreate(BaseModel):
+    id_profesor: str
+    motivo: str
+    opcion1_fecha_hora: datetime
+    opcion2_fecha_hora: datetime
+    opcion3_fecha_hora: Optional[datetime] = None
+    comentario_alumno: Optional[str] = None
+
+
+class SolicitudTutoriaOut(ORMModel):
+    id: str
+    id_alumno: str
+    id_profesor: str
+    motivo: str
+    estado: str
+    opcion1_fecha_hora: datetime
+    opcion2_fecha_hora: datetime
+    opcion3_fecha_hora: Optional[datetime] = None
+    fecha_hora_confirmada: Optional[datetime] = None
+    propuesta_alternativa_fecha_hora: Optional[datetime] = None
+    comentario_profesor: Optional[str] = None
+    comentario_alumno: Optional[str] = None
+    fecha_creacion: datetime
+    fecha_actualizacion: datetime
+
+
 class NotificationOut(ORMModel):
     id: str
     tipo: str
@@ -723,6 +852,10 @@ def model_dump(instance: BaseModel, **kwargs):
     if hasattr(instance, "model_dump"):
         return instance.model_dump(**kwargs)
     return instance.dict(**kwargs)
+
+
+def generate_id() -> str:
+    return str(uuid.uuid4())
 
 
 def verify_password(stored_password: str, provided_password: str) -> bool:
@@ -1155,6 +1288,30 @@ def serialize_calendar_events(db: Session, events: List[Evento]) -> List[EventOu
     return [serialize_calendar_event(db, event, block_map, professor_map, session_map) for event in events]
 
 
+def serialize_change_request(db: Session, request: SolicitudCambioEvento) -> CalendarChangeRequestOut:
+    professor = db.query(Profesor).filter(Profesor.id_profesor == request.id_profesor).first()
+    event = db.query(Evento).filter(Evento.id == request.id_evento).first()
+    return CalendarChangeRequestOut(
+        id=request.id,
+        id_evento=request.id_evento,
+        id_sesion=request.id_sesion,
+        id_profesor=request.id_profesor,
+        profesor_nombre=f"{professor.nombre} {professor.apellido}" if professor else None,
+        titulo_evento=event.titulo if event else None,
+        estado=request.estado,
+        fecha_inicio_actual=request.fecha_inicio_actual,
+        fecha_fin_actual=request.fecha_fin_actual,
+        fecha_inicio_propuesta=request.fecha_inicio_propuesta,
+        fecha_fin_propuesta=request.fecha_fin_propuesta,
+        fecha_inicio_alternativa=request.fecha_inicio_alternativa,
+        fecha_fin_alternativa=request.fecha_fin_alternativa,
+        comentario_profesor=request.comentario_profesor,
+        comentario_coordinador=request.comentario_coordinador,
+        fecha_creacion=request.fecha_creacion,
+        fecha_actualizacion=request.fecha_actualizacion,
+    )
+
+
 CALENDAR_CACHE_TTL_SECONDS = 60
 _calendar_events_cache: dict[str, object] = {"expires_at": 0.0, "events": None}
 _dashboard_events_cache: dict[str, object] = {"expires_at": 0.0, "events": None}
@@ -1314,13 +1471,7 @@ def assert_professor_teaches_block(db: Session, current_user, block_id: Optional
 def restrict_events_to_current_user(query, current_user):
     role = get_user_role(current_user)
     if role == "profesor":
-        teacher_blocks = query.session.query(RelProfesoresBloques.id_bloque).filter(
-            RelProfesoresBloques.id_profesor == current_user.id_profesor
-        )
-        query = query.filter(or_(
-            Evento.id_profesor == current_user.id_profesor,
-            and_(Evento.tipo == "class", Evento.id_bloque.in_(teacher_blocks)),
-        ))
+        query = query.filter(Evento.id_profesor == current_user.id_profesor)
     elif role == "alumno":
         query = (
             query
@@ -1382,10 +1533,24 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": get_user_id(user)},
-        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+        expires_delta=expires_delta,
     )
+
+    # Registrar la sesión en la base de datos
+    token_hash = hashlib.sha256(access_token.encode()).hexdigest()
+    session = UserSession(
+        id=generate_id(),
+        id_usuario=get_user_id(user),
+        token_hash=token_hash,
+        fecha_expiracion=datetime.utcnow() + expires_delta,
+        activa=True,
+    )
+    db.add(session)
+    db.commit()
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -1413,6 +1578,21 @@ def update_my_profile(
     db.commit()
     db.refresh(current_user)
     return {"mensaje": "Perfil actualizado correctamente"}
+
+
+@app.post("/api/v1/logout", tags=["Autenticacion"])
+def logout(
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+    current_user=Depends(get_current_user),
+):
+    """Cierra la sesión actual marcándola como inactiva"""
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    session = db.query(UserSession).filter(UserSession.token_hash == token_hash).first()
+    if session:
+        session.activa = False
+        db.commit()
+    return {"mensaje": "Sesión cerrada correctamente"}
 
 
 @app.put("/api/v1/users/me/photo", tags=["Perfil y Roles"])
@@ -1745,12 +1925,7 @@ def create_event(
     payload = enrich_event_block(db, model_dump(event_in))
     role = get_user_role(current_user)
     if role == "profesor":
-        payload["id_profesor"] = current_user.id_profesor
-        if payload.get("id_sesion"):
-            raise HTTPException(status_code=403, detail="No puedes crear sesiones oficiales")
-        if payload.get("tipo") not in {"delivery", "exam", "notice"}:
-            raise HTTPException(status_code=403, detail="Solo puedes crear entregas, examenes o avisos")
-        assert_professor_teaches_block(db, current_user, payload.get("id_bloque"))
+        raise HTTPException(status_code=403, detail="Los profesores deben proponer cambios al coordinador")
     if payload["fecha_fin"] <= payload["fecha_inicio"]:
         raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior a la hora de inicio")
     event = Evento(id=str(uuid.uuid4()), **payload)
@@ -1822,6 +1997,139 @@ def update_event(
     invalidate_calendar_cache()
     db.refresh(event)
     return serialize_calendar_event(db, event)
+
+
+def apply_event_datetime_change(db: Session, event: Evento, fecha_inicio: datetime, fecha_fin: datetime) -> None:
+    event.fecha_inicio = fecha_inicio
+    event.fecha_fin = fecha_fin
+    if event.id_sesion:
+        session_row = db.query(Sesion).filter(Sesion.id_sesion == event.id_sesion).first()
+        if session_row:
+            session_row.fecha = fecha_inicio.date()
+            session_row.hora_inicio = fecha_inicio.time().replace(second=0, microsecond=0)
+            session_row.hora_fin = fecha_fin.time().replace(second=0, microsecond=0)
+
+
+@app.get("/api/v1/calendar/change-requests", response_model=List[CalendarChangeRequestOut], tags=["Calendario"])
+def list_calendar_change_requests(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_professor_or_staff),
+):
+    query = db.query(SolicitudCambioEvento)
+    if get_user_role(current_user) == "profesor":
+        query = query.filter(SolicitudCambioEvento.id_profesor == current_user.id_profesor)
+    return [
+        serialize_change_request(db, request)
+        for request in query.order_by(SolicitudCambioEvento.fecha_creacion.desc()).all()
+    ]
+
+
+@app.post("/api/v1/calendar/change-requests", response_model=CalendarChangeRequestOut, tags=["Calendario"], status_code=201)
+def create_calendar_change_request(
+    request_in: CalendarChangeRequestCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_professor),
+):
+    event = db.query(Evento).filter(Evento.id == request_in.id_evento).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    if event.tipo != "class" or not event.id_sesion:
+        raise HTTPException(status_code=403, detail="Solo puedes proponer cambios sobre sesiones oficiales")
+    if event.id_profesor != current_user.id_profesor:
+        raise HTTPException(status_code=403, detail="Solo puedes proponer cambios sobre tus sesiones")
+    if request_in.fecha_fin_propuesta <= request_in.fecha_inicio_propuesta:
+        raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior a la hora de inicio")
+
+    existing = db.query(SolicitudCambioEvento).filter(
+        SolicitudCambioEvento.id_evento == event.id,
+        SolicitudCambioEvento.id_profesor == current_user.id_profesor,
+        SolicitudCambioEvento.estado.in_(["Pendiente", "Propuesta alternativa"]),
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Ya hay una propuesta pendiente para esta sesion")
+
+    request = SolicitudCambioEvento(
+        id=str(uuid.uuid4()),
+        id_evento=event.id,
+        id_sesion=event.id_sesion,
+        id_profesor=current_user.id_profesor,
+        fecha_inicio_actual=event.fecha_inicio,
+        fecha_fin_actual=event.fecha_fin,
+        fecha_inicio_propuesta=request_in.fecha_inicio_propuesta,
+        fecha_fin_propuesta=request_in.fecha_fin_propuesta,
+        comentario_profesor=request_in.comentario_profesor,
+    )
+    db.add(request)
+    db.commit()
+    db.refresh(request)
+    return serialize_change_request(db, request)
+
+
+@app.post("/api/v1/calendar/change-requests/{request_id}/accept", response_model=CalendarChangeRequestOut, tags=["Calendario"])
+def accept_calendar_change_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_staff),
+):
+    request = db.query(SolicitudCambioEvento).filter(SolicitudCambioEvento.id == request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Propuesta no encontrada")
+    if request.estado not in {"Pendiente", "Propuesta alternativa"}:
+        raise HTTPException(status_code=422, detail="La propuesta ya esta cerrada")
+    event = db.query(Evento).filter(Evento.id == request.id_evento).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+
+    fecha_inicio = request.fecha_inicio_alternativa or request.fecha_inicio_propuesta
+    fecha_fin = request.fecha_fin_alternativa or request.fecha_fin_propuesta
+    apply_event_datetime_change(db, event, fecha_inicio, fecha_fin)
+    request.estado = "Aceptada"
+    db.commit()
+    invalidate_calendar_cache()
+    db.refresh(request)
+    return serialize_change_request(db, request)
+
+
+@app.post("/api/v1/calendar/change-requests/{request_id}/reject", response_model=CalendarChangeRequestOut, tags=["Calendario"])
+def reject_calendar_change_request(
+    request_id: str,
+    reject_in: CalendarChangeRequestReject,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_staff),
+):
+    request = db.query(SolicitudCambioEvento).filter(SolicitudCambioEvento.id == request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Propuesta no encontrada")
+    if request.estado not in {"Pendiente", "Propuesta alternativa"}:
+        raise HTTPException(status_code=422, detail="La propuesta ya esta cerrada")
+    request.estado = "Rechazada"
+    request.comentario_coordinador = reject_in.comentario_coordinador
+    db.commit()
+    db.refresh(request)
+    return serialize_change_request(db, request)
+
+
+@app.post("/api/v1/calendar/change-requests/{request_id}/alternative", response_model=CalendarChangeRequestOut, tags=["Calendario"])
+def propose_calendar_change_alternative(
+    request_id: str,
+    alternative_in: CalendarChangeRequestAlternative,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_staff),
+):
+    request = db.query(SolicitudCambioEvento).filter(SolicitudCambioEvento.id == request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Propuesta no encontrada")
+    if request.estado not in {"Pendiente", "Propuesta alternativa"}:
+        raise HTTPException(status_code=422, detail="La propuesta ya esta cerrada")
+    if alternative_in.fecha_fin_alternativa <= alternative_in.fecha_inicio_alternativa:
+        raise HTTPException(status_code=422, detail="La hora de fin debe ser posterior a la hora de inicio")
+    request.fecha_inicio_alternativa = alternative_in.fecha_inicio_alternativa
+    request.fecha_fin_alternativa = alternative_in.fecha_fin_alternativa
+    request.comentario_coordinador = alternative_in.comentario_coordinador
+    request.estado = "Propuesta alternativa"
+    db.commit()
+    db.refresh(request)
+    return serialize_change_request(db, request)
 
 
 @app.delete("/api/v1/calendar/events/{event_id}", status_code=204, tags=["Calendario"])
@@ -2066,6 +2374,34 @@ def list_professors(
     current_user=Depends(get_current_user),
 ):
     return db.query(Profesor).order_by(Profesor.nombre, Profesor.apellido).all()
+
+
+@app.get("/api/v1/tutoring-recipients", response_model=List[TutoringRecipientOut], tags=["Solicitudes de TutorÃ­a"])
+def list_tutoring_recipients(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    professors = [
+        TutoringRecipientOut(
+            id=professor.id_profesor,
+            nombre=professor.nombre,
+            apellido=professor.apellido,
+            correo=professor.correo,
+            rol="profesor",
+        )
+        for professor in db.query(Profesor).order_by(Profesor.nombre, Profesor.apellido).all()
+    ]
+    coordinators = [
+        TutoringRecipientOut(
+            id=coordinator.id_coordinador,
+            nombre=coordinator.nombre,
+            apellido=coordinator.apellido,
+            correo=coordinator.correo,
+            rol="coordinador",
+        )
+        for coordinator in db.query(Coordinador).order_by(Coordinador.nombre, Coordinador.apellido).all()
+    ]
+    return professors + coordinators
 
 
 @app.post("/api/v1/sessions", response_model=SesionOut, tags=["Sesiones"], status_code=201)
@@ -2345,6 +2681,8 @@ def list_my_attendance(
     current_user=Depends(get_current_user),
 ):
     user_id = get_user_id(current_user)
+    if get_user_role(current_user) == "profesor":
+        ensure_professor_attendance_records(db, user_id)
     return (
         db.query(Asistencia)
         .filter(Asistencia.id_alumno == user_id)
@@ -2438,9 +2776,10 @@ def student_check_in(
             .first()
         )
     elif role == "profesor":
-        belongs_to_session_block = db.query(RelProfesoresBloques).filter(
-            RelProfesoresBloques.id_profesor == user_id,
-            RelProfesoresBloques.id_bloque == session_row.id_bloque,
+        belongs_to_session_block = db.query(Evento).filter(
+            Evento.tipo == "class",
+            Evento.id_profesor == user_id,
+            Evento.id_sesion == session_row.id_sesion,
         ).first()
     else:
         belongs_to_session_block = db.query(RelCoordinadoresGrupos).first()
@@ -2678,6 +3017,183 @@ def update_reservation(
     db.commit()
     db.refresh(reservation)
     return reservation
+
+
+@app.post("/api/v1/tutoring-requests", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"], status_code=201)
+def create_tutoring_request(
+    request_in: SolicitudTutoriaCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    recipient_exists = (
+        db.query(Profesor).filter(Profesor.id_profesor == request_in.id_profesor).first()
+        or db.query(Coordinador).filter(Coordinador.id_coordinador == request_in.id_profesor).first()
+    )
+    if not recipient_exists:
+        raise HTTPException(status_code=404, detail="Destinatario de tutoria no encontrado")
+    new_id = generate_id()
+    solicitud = SolicitudTutoria(
+        id=new_id,
+        id_alumno=user_id,
+        id_profesor=request_in.id_profesor,
+        motivo=request_in.motivo,
+        estado="Pendiente",
+        opcion1_fecha_hora=request_in.opcion1_fecha_hora,
+        opcion2_fecha_hora=request_in.opcion2_fecha_hora,
+        opcion3_fecha_hora=request_in.opcion3_fecha_hora,
+        comentario_alumno=request_in.comentario_alumno,
+    )
+    db.add(solicitud)
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
+
+
+@app.get("/api/v1/tutoring-requests/me", response_model=List[SolicitudTutoriaOut], tags=["Solicitudes de Tutoría"])
+def list_my_tutoring_requests(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    return db.query(SolicitudTutoria).filter(SolicitudTutoria.id_alumno == user_id).order_by(SolicitudTutoria.fecha_creacion.desc()).all()
+
+
+@app.get("/api/v1/tutoring-requests/received", response_model=List[SolicitudTutoriaOut], tags=["Solicitudes de Tutoría"])
+def list_received_tutoring_requests(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    user_id = get_user_id(current_user)
+    return db.query(SolicitudTutoria).filter(SolicitudTutoria.id_profesor == user_id).order_by(SolicitudTutoria.fecha_creacion.desc()).all()
+
+
+@app.post("/api/v1/tutoring-requests/{request_id}/accept/{option}", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"])
+def accept_tutoring_request(
+    request_id: str,
+    option: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    solicitud = db.query(SolicitudTutoria).filter(SolicitudTutoria.id == request_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    if solicitud.id_profesor != get_user_id(current_user):
+        raise HTTPException(status_code=403, detail="No puedes aceptar esta solicitud")
+    if solicitud.estado != "Pendiente":
+        raise HTTPException(status_code=422, detail="La solicitud no está pendiente")
+    if option == 1:
+        solicitud.fecha_hora_confirmada = solicitud.opcion1_fecha_hora
+    elif option == 2:
+        solicitud.fecha_hora_confirmada = solicitud.opcion2_fecha_hora
+    elif option == 3:
+        if not solicitud.opcion3_fecha_hora:
+            raise HTTPException(status_code=422, detail="No existe opción 3")
+        solicitud.fecha_hora_confirmada = solicitud.opcion3_fecha_hora
+    else:
+        raise HTTPException(status_code=422, detail="Opción no válida")
+    solicitud.estado = "Aceptada"
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
+
+
+@app.post("/api/v1/tutoring-requests/{request_id}/reject", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"])
+def reject_tutoring_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    solicitud = db.query(SolicitudTutoria).filter(SolicitudTutoria.id == request_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    if solicitud.id_profesor != get_user_id(current_user):
+        raise HTTPException(status_code=403, detail="No puedes rechazar esta solicitud")
+    if solicitud.estado != "Pendiente":
+        raise HTTPException(status_code=422, detail="La solicitud no está pendiente")
+    solicitud.estado = "Rechazada"
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
+
+
+@app.post("/api/v1/tutoring-requests/{request_id}/propose-alternative", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"])
+def propose_alternative_tutoring(
+    request_id: str,
+    propuesta: datetime,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    solicitud = db.query(SolicitudTutoria).filter(SolicitudTutoria.id == request_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    if solicitud.id_profesor != get_user_id(current_user):
+        raise HTTPException(status_code=403, detail="No puedes proponer alternativa en esta solicitud")
+    if solicitud.estado != "Pendiente":
+        raise HTTPException(status_code=422, detail="La solicitud no está pendiente")
+    solicitud.propuesta_alternativa_fecha_hora = propuesta
+    solicitud.estado = "Propuesta alternativa"
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
+
+
+@app.post("/api/v1/tutoring-requests/{request_id}/accept-alternative", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"])
+def accept_alternative_tutoring(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    solicitud = db.query(SolicitudTutoria).filter(SolicitudTutoria.id == request_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    if solicitud.id_alumno != get_user_id(current_user):
+        raise HTTPException(status_code=403, detail="No puedes aceptar esta propuesta")
+    if solicitud.estado != "Propuesta alternativa":
+        raise HTTPException(status_code=422, detail="No hay propuesta alternativa pendiente")
+    solicitud.fecha_hora_confirmada = solicitud.propuesta_alternativa_fecha_hora
+    solicitud.estado = "Aceptada"
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
+
+
+@app.post("/api/v1/tutoring-requests/{request_id}/reject-alternative", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"])
+def reject_alternative_tutoring(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    solicitud = db.query(SolicitudTutoria).filter(SolicitudTutoria.id == request_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    if solicitud.id_alumno != get_user_id(current_user):
+        raise HTTPException(status_code=403, detail="No puedes rechazar esta propuesta")
+    if solicitud.estado != "Propuesta alternativa":
+        raise HTTPException(status_code=422, detail="No hay propuesta alternativa pendiente")
+    solicitud.estado = "Rechazada"
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
+
+
+@app.post("/api/v1/tutoring-requests/{request_id}/cancel", response_model=SolicitudTutoriaOut, tags=["Solicitudes de Tutoría"])
+def cancel_tutoring_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    solicitud = db.query(SolicitudTutoria).filter(SolicitudTutoria.id == request_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    if solicitud.id_alumno != get_user_id(current_user):
+        raise HTTPException(status_code=403, detail="No puedes cancelar esta solicitud")
+    if solicitud.estado != "Pendiente":
+        raise HTTPException(status_code=422, detail="Solo se pueden cancelar solicitudes pendientes")
+    solicitud.estado = "Cancelada"
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
 
 
 @app.get("/api/v1/notifications", response_model=List[NotificationOut], tags=["Notificaciones"])

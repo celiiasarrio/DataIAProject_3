@@ -142,6 +142,28 @@ CREATE TABLE IF NOT EXISTS eventos (
 CREATE INDEX IF NOT EXISTS idx_eventos_bloque ON eventos(id_bloque);
 CREATE INDEX IF NOT EXISTS idx_eventos_sesion ON eventos(id_sesion);
 
+CREATE TABLE IF NOT EXISTS solicitudes_cambio_evento (
+    id VARCHAR PRIMARY KEY,
+    id_evento VARCHAR NOT NULL REFERENCES eventos(id),
+    id_sesion VARCHAR REFERENCES sesiones(id_sesion),
+    id_profesor VARCHAR NOT NULL REFERENCES profesores(id_profesor),
+    estado VARCHAR NOT NULL DEFAULT 'Pendiente',
+    fecha_inicio_actual TIMESTAMP NOT NULL,
+    fecha_fin_actual TIMESTAMP NOT NULL,
+    fecha_inicio_propuesta TIMESTAMP NOT NULL,
+    fecha_fin_propuesta TIMESTAMP NOT NULL,
+    fecha_inicio_alternativa TIMESTAMP,
+    fecha_fin_alternativa TIMESTAMP,
+    comentario_profesor TEXT,
+    comentario_coordinador TEXT,
+    fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_solicitudes_cambio_evento_evento ON solicitudes_cambio_evento(id_evento);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_cambio_evento_profesor ON solicitudes_cambio_evento(id_profesor);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_cambio_evento_estado ON solicitudes_cambio_evento(estado);
+
 CREATE TABLE IF NOT EXISTS franja_tutoria (
     id VARCHAR PRIMARY KEY,
     id_profesor VARCHAR NOT NULL REFERENCES profesores(id_profesor),

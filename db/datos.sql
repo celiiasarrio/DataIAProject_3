@@ -25,7 +25,9 @@ TRUNCATE TABLE
     perfil_detalles,
     perfil_documentos,
     correos,
-    contenidos
+    contenidos,
+    solicitud_tutoria,
+    user_sessions
 RESTART IDENTITY CASCADE;
 
 INSERT INTO "alumnos" ("id_alumno", "nombre", "apellido1", "apellido2", "correo", "contrasena", "url_foto", "rol", "grupo") VALUES
@@ -572,6 +574,21 @@ INSERT INTO "eventos" ("id", "tipo", "titulo", "id_bloque", "id_sesion", "aula",
 ('ics-extra-032', 'class', 'Defensa 2 TFM', '5-MDA', NULL, 'AULA 107', NULL, '2026-07-17 15:30:00', '2026-07-17 18:00:00', 'EDEM, PLANTA 1, AULA 107'),
 ('ics-extra-033', 'class', 'GRADUACIÓN MÁSTERS', '5-MDA', NULL, NULL, NULL, '2026-09-11 14:00:00', '2026-09-11 21:00:00', 'Graduación de másters');
 
+INSERT INTO "asistencia" ("id_alumno", "id_sesion", "fecha", "presente")
+SELECT DISTINCT
+    e.id_profesor,
+    s.id_sesion,
+    COALESCE(s.fecha, CURRENT_DATE),
+    TRUE
+FROM eventos e
+JOIN sesiones s ON s.id_sesion = e.id_sesion
+WHERE e.tipo = 'class'
+  AND e.id_profesor IS NOT NULL
+  AND e.id_sesion IS NOT NULL
+ON CONFLICT (id_alumno, id_sesion) DO UPDATE
+SET fecha = EXCLUDED.fecha,
+    presente = TRUE;
+
 -- Vista para unificar eventos del calendario desde sesiones y tareas
 CREATE OR REPLACE VIEW vista_eventos AS
 SELECT
@@ -695,3 +712,35 @@ SELECT
     (fecha || ' 23:59:59')::TIMESTAMP AS fecha_fin,
     COALESCE(descripcion, CONCAT('Entrega: ', nombre)) AS descripcion
 FROM tareas;
+
+-- Tabla de solicitudes de tutoría
+CREATE TABLE IF NOT EXISTS solicitud_tutoria (
+    id VARCHAR(255) PRIMARY KEY,
+    id_alumno VARCHAR(255) NOT NULL REFERENCES alumnos(id_alumno),
+    id_profesor VARCHAR(255) NOT NULL,
+    motivo TEXT NOT NULL,
+    estado VARCHAR(50) DEFAULT 'Pendiente' NOT NULL,
+    opcion1_fecha_hora TIMESTAMP NOT NULL,
+    opcion2_fecha_hora TIMESTAMP NOT NULL,
+    opcion3_fecha_hora TIMESTAMP,
+    fecha_hora_confirmada TIMESTAMP,
+    propuesta_alternativa_fecha_hora TIMESTAMP,
+    comentario_profesor TEXT,
+    comentario_alumno TEXT,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Tabla de sesiones de usuario para múltiples conexiones simultáneas
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id VARCHAR(255) PRIMARY KEY,
+    id_usuario VARCHAR(255) NOT NULL,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    device_info VARCHAR(255),
+    ip_address VARCHAR(45),
+    fecha_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    fecha_expiracion TIMESTAMP NOT NULL,
+    activa BOOLEAN DEFAULT true NOT NULL,
+    INDEX idx_id_usuario (id_usuario),
+    INDEX idx_token_hash (token_hash)
+);

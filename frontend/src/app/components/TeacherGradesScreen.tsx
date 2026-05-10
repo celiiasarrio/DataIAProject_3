@@ -24,6 +24,24 @@ const calculateAverage = (rows: GradeRosterRow[]): number | null => {
   return grades.length > 0 ? grades.reduce((a, b) => a + b, 0) / grades.length : null;
 };
 
+const isGradableBlock = (blockName: string): boolean => {
+  const nonGradable = ['PPTX', 'Hitos', 'TFM', 'Hackatón', 'Hackatones', 'Experiencia internacional', 'Soft Skills', 'Soft skills'];
+  return !nonGradable.some(name => blockName.toLowerCase().includes(name.toLowerCase()));
+};
+
+const isGradableTask = (taskName: string): boolean => {
+  const nonGradable = ['PPTX', 'Hito', 'hitos', 'Entregables', 'TFM', 'tfm'];
+  return !nonGradable.some(name => taskName.toLowerCase().includes(name.toLowerCase()));
+};
+
+const pickNextTask = (tasksData: TaskOut[]): TaskOut | undefined => {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  return [...tasksData]
+    .filter((task) => task.fecha && new Date(task.fecha) >= todayStart)
+    .sort((a, b) => new Date(a.fecha ?? '').getTime() - new Date(b.fecha ?? '').getTime())[0] ?? tasksData[0];
+};
+
 export function TeacherGradesScreen() {
   const navigate = useNavigate();
   const [blocks, setBlocks] = useState<BlockOut[]>([]);
@@ -37,15 +55,93 @@ export function TeacherGradesScreen() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  const findNextTask = async (blocksData: BlockOut[]) => {
+    if (blocksData.length === 0) return { blockId: '', taskId: '' };
+
+    let nextTaskBlockId = blocksData[0].id_bloque;
+    let nextTaskId = '';
+
+    try {
+      const allTasks = await Promise.all(
+        blocksData.map(block => getBlockTasks(block.id_bloque))
+      );
+
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      let closestTask: { blockId: string; taskId: number; fecha: string } | null = null;
+
+      blocksData.forEach((block, blockIndex) => {
+        const blockTasks = allTasks[blockIndex].filter(task => isGradableTask(task.nombre));
+        blockTasks.forEach(task => {
+          if (!task.fecha) return;
+          const taskDate = new Date(task.fecha);
+          if (taskDate >= todayStart) {
+            if (!closestTask || taskDate < new Date(closestTask.fecha)) {
+              closestTask = { blockId: block.id_bloque, taskId: task.id_tarea, fecha: task.fecha };
+            }
+          }
+        });
+      });
+
+      if (closestTask) {
+        nextTaskBlockId = closestTask.blockId;
+        nextTaskId = String(closestTask.taskId);
+      }
+    } catch (error) {
+      console.error('Error finding next task:', error);
+    }
+
+    return { blockId: nextTaskBlockId, taskId: nextTaskId };
+  };
+
   useEffect(() => {
     getMyBlocks()
-      .then((data) => {
-        setBlocks(data);
-        if (data[0]) setBlockId(data[0].id_bloque);
+      .then(async (data) => {
+        const gradableBlocks = data.filter(block => isGradableBlock(block.nombre));
+        setBlocks(gradableBlocks);
+
+        if (gradableBlocks.length === 0) {
+          setLoading(false);
+          return;
+        }
+
+        const { blockId: nextBlockId, taskId: nextTaskId } = await findNextTask(gradableBlocks);
+        setBlockId(nextBlockId);
+        if (nextTaskId) setTaskId(nextTaskId);
+        setLoading(false);
       })
-      .catch(() => setBlocks([]))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        setBlocks([]);
+        setLoading(false);
+      });
   }, []);
+
+  // Actualizar próxima tarea cada hora y cuando el usuario vuelve a la ventana
+  useEffect(() => {
+    if (blocks.length === 0) return;
+
+    const updateNextTask = async () => {
+      const { blockId: nextBlockId, taskId: nextTaskId } = await findNextTask(blocks);
+      setBlockId(nextBlockId);
+      if (nextTaskId) setTaskId(nextTaskId);
+    };
+
+    // Actualizar cada hora
+    const hourInterval = setInterval(updateNextTask, 3600000);
+
+    // Actualizar cuando el usuario vuelve a la ventana
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        updateNextTask();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(hourInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [blocks]);
 
   useEffect(() => {
     if (!blockId) return;
@@ -54,8 +150,10 @@ export function TeacherGradesScreen() {
     setTaskId('');
     setGradesOpen(false);
     getBlockTasks(blockId).then((data) => {
-      setTasks(data);
-      if (data[0]) setTaskId(String(data[0].id_tarea));
+      const gradableTasks = data.filter(task => isGradableTask(task.nombre));
+      setTasks(gradableTasks);
+      const nextTask = pickNextTask(gradableTasks);
+      if (nextTask) setTaskId(String(nextTask.id_tarea));
     });
   }, [blockId]);
 

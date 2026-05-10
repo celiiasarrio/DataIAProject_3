@@ -187,7 +187,7 @@ export function AttendanceScreen() {
     };
   });
 
-  const overallAttended = metrics?.clases_asistidas ?? records.filter((record) => record.presente).length;
+  const overallAttended = metrics?.clases_asistidas ?? sessionRows.filter((row) => row.attended).length;
   const overallTotal = metrics?.total_clases ?? totalMandatorySessions;
   const overallPct = metrics ? Math.round(metrics.porcentaje_asistencia) : overallTotal > 0 ? Math.round((overallAttended / overallTotal) * 100) : 0;
   const attendedSessionIds = new Set(records.filter((record) => record.presente).map((record) => record.id_sesion));
@@ -208,50 +208,46 @@ export function AttendanceScreen() {
           </div>
         </div>
 
-        {!isProfessor && (
-          <>
-            <div className="bg-white/15 rounded-2xl p-4 flex items-center gap-4">
-              <div className="relative flex-shrink-0">
-                <RingChart pct={overallPct} size={64} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-white text-xs" style={{ fontWeight: 800 }}>{overallPct}%</span>
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className="text-white/70 text-xs mb-0.5">Asistencia Global</p>
-                <p className="text-white text-base" style={{ fontWeight: 700 }}>
-                  {overallAttended}/{overallTotal} clases
-                </p>
-                <p className="text-white/60 text-xs">Curso 2025-26</p>
-                {metrics && (
-                  <p className="text-white/60 text-xs">
-                    Puedes faltar {metrics.faltas_restantes_80} de {metrics.faltas_permitidas_80} antes del 80%
-                  </p>
-                )}
-              </div>
+        <div className="bg-white/15 rounded-2xl p-4 flex items-center gap-4">
+          <div className="relative flex-shrink-0">
+            <RingChart pct={overallPct} size={64} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-white text-xs" style={{ fontWeight: 800 }}>{overallPct}%</span>
             </div>
-            {metrics?.aviso && (
-              <div className="mt-3 rounded-2xl bg-red-500/20 border border-red-200/40 px-4 py-3">
-                <p className="text-white text-sm" style={{ fontWeight: 700 }}>Aviso de asistencia</p>
-                <p className="text-white/80 text-xs mt-0.5">{metrics.aviso}</p>
-              </div>
+          </div>
+          <div className="flex-1">
+            <p className="text-white/70 text-xs mb-0.5">{isProfessor ? 'Mi asistencia' : 'Asistencia Global'}</p>
+            <p className="text-white text-base" style={{ fontWeight: 700 }}>
+              {overallAttended}/{overallTotal} clases
+            </p>
+            <p className="text-white/60 text-xs">Curso 2025-26</p>
+            {metrics && (
+              <p className="text-white/60 text-xs">
+                Puedes faltar {metrics.faltas_restantes_80} de {metrics.faltas_permitidas_80} antes del 80%
+              </p>
             )}
-
-            <div className="grid grid-cols-3 gap-2 mt-3">
-              {[
-                { icon: CheckCircle, label: 'Asistidas', value: overallAttended, color: 'text-green-300' },
-                { icon: XCircle, label: 'Faltas', value: overallTotal - overallAttended, color: 'text-red-300' },
-                { icon: Clock, label: 'Sesiones', value: overallTotal, color: 'text-amber-300' },
-              ].map(({ icon: Icon, label, value, color }) => (
-                <div key={label} className="bg-white/10 rounded-xl py-2 px-3 text-center">
-                  <Icon size={16} className={`mx-auto mb-0.5 ${color}`} />
-                  <p className="text-white text-sm" style={{ fontWeight: 700 }}>{value}</p>
-                  <p className="text-white/60 text-xs">{label}</p>
-                </div>
-              ))}
-            </div>
-          </>
+          </div>
+        </div>
+        {metrics?.aviso && (
+          <div className="mt-3 rounded-2xl bg-red-500/20 border border-red-200/40 px-4 py-3">
+            <p className="text-white text-sm" style={{ fontWeight: 700 }}>Aviso de asistencia</p>
+            <p className="text-white/80 text-xs mt-0.5">{metrics.aviso}</p>
+          </div>
         )}
+
+        <div className="grid grid-cols-3 gap-2 mt-3">
+          {[
+            { icon: CheckCircle, label: 'Asistidas', value: overallAttended, color: 'text-green-300' },
+            { icon: XCircle, label: 'Faltas', value: overallTotal - overallAttended, color: 'text-red-300' },
+            { icon: Clock, label: 'Sesiones', value: overallTotal, color: 'text-amber-300' },
+          ].map(({ icon: Icon, label, value, color }) => (
+            <div key={label} className="bg-white/10 rounded-xl py-2 px-3 text-center">
+              <Icon size={16} className={`mx-auto mb-0.5 ${color}`} />
+              <p className="text-white text-sm" style={{ fontWeight: 700 }}>{value}</p>
+              <p className="text-white/60 text-xs">{label}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="bg-white rounded-t-3xl px-5 pt-5 pb-6 min-h-[60vh]">
@@ -287,57 +283,55 @@ export function AttendanceScreen() {
           {checkInMessage && <p className="mt-3 text-center text-sm text-gray-500">{checkInMessage}</p>}
         </div>
 
-        {!isProfessor && (
-          <>
-            <div className="flex items-center gap-2 mb-5">
-              <Users size={18} className="text-[#008899]" />
-              <h2 className="text-[#008899]" style={{ fontWeight: 700 }}>ASISTENCIA POR SESION</h2>
-            </div>
+        <div className="flex items-center gap-2 mb-5">
+          <Users size={18} className="text-[#008899]" />
+          <h2 className="text-[#008899]" style={{ fontWeight: 700 }}>
+            {isProfessor ? 'MI ASISTENCIA POR SESION' : 'ASISTENCIA POR SESION'}
+          </h2>
+        </div>
 
-            {loading ? (
-              <CenteredLoadingSpinner />
-            ) : sessionRows.length === 0 ? (
-              <p className="text-gray-400 text-sm text-center py-8">No hay registros de asistencia.</p>
-            ) : (
-              <div className="space-y-3">
-                {sessionRows.map((row) => (
-                  <div key={row.id_sesion} className="bg-gray-50 rounded-2xl p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="relative flex-shrink-0">
-                        <RingChart pct={row.cumulativePct} size={44} />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-gray-700 text-xs" style={{ fontWeight: 700 }}>{row.cumulativePct}%</span>
-                        </div>
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <p className="text-gray-800 text-sm truncate" style={{ fontWeight: 600 }}>
-                          {row.title}
-                        </p>
-                        <p className="text-xs text-gray-400">{row.dateLabel}</p>
-                      </div>
-
-                      <span
-                        className="text-xs px-2 py-0.5 rounded-full flex-shrink-0 bg-white text-gray-500"
-                        style={{ fontWeight: 600 }}
-                      >
-                        {row.shortDateLabel}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between mt-1">
-                      <span className="text-xs text-gray-400">
-                        {row.sessionNumber}/{row.totalSessions} clases
-                      </span>
-                      <span className={`text-xs ${row.attended ? 'text-green-500' : 'text-red-400'}`}>
-                        {row.attended ? 'Asistida' : 'Falta'}
-                      </span>
+        {loading ? (
+          <CenteredLoadingSpinner />
+        ) : sessionRows.length === 0 ? (
+          <p className="text-gray-400 text-sm text-center py-8">No hay registros de asistencia.</p>
+        ) : (
+          <div className="space-y-3">
+            {sessionRows.map((row) => (
+              <div key={row.id_sesion} className="bg-gray-50 rounded-2xl p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="relative flex-shrink-0">
+                    <RingChart pct={row.cumulativePct} size={44} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-gray-700 text-xs" style={{ fontWeight: 700 }}>{row.cumulativePct}%</span>
                     </div>
                   </div>
-                ))}
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-gray-800 text-sm truncate" style={{ fontWeight: 600 }}>
+                      {row.title}
+                    </p>
+                    <p className="text-xs text-gray-400">{row.dateLabel}</p>
+                  </div>
+
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full flex-shrink-0 bg-white text-gray-500"
+                    style={{ fontWeight: 600 }}
+                  >
+                    {row.shortDateLabel}
+                  </span>
+                </div>
+
+                <div className="flex justify-between mt-1">
+                  <span className="text-xs text-gray-400">
+                    {row.sessionNumber}/{row.totalSessions} clases
+                  </span>
+                  <span className={`text-xs ${row.attended ? 'text-green-500' : 'text-red-400'}`}>
+                    {row.attended ? 'Asistida' : 'Falta'}
+                  </span>
+                </div>
               </div>
-            )}
-          </>
+            ))}
+          </div>
         )}
       </div>
     </div>
