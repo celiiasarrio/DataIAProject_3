@@ -24,17 +24,12 @@ export function FloatingAgent() {
   const [sending, setSending] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>(() => sessionStorage.getItem(FLOATING_AGENT_SESSION_KEY) || undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, open]);
-
-  useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
 
   async function handleSend() {
     const text = input.trim();
@@ -100,7 +95,7 @@ export function FloatingAgent() {
         <div
           role="dialog"
           aria-label="Asistente del campus"
-          className="fixed bottom-44 right-5 z-40 w-[min(92vw,380px)] h-[min(70vh,520px)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200"
+          className="fixed left-3 right-3 bottom-28 z-40 h-[min(58dvh,430px)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 sm:left-auto sm:right-5 sm:bottom-44 sm:w-[min(92vw,380px)] sm:h-[min(70vh,520px)]"
         >
           {/* Header */}
           <div className="bg-[#008899] px-4 py-3 flex items-center gap-3">
@@ -176,14 +171,14 @@ export function FloatingAgent() {
           <div className="px-3 py-2 border-t border-gray-200 bg-white">
             <div className="flex items-center gap-2">
               <input
-                ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Escribe un mensaje..."
                 disabled={sending}
-                className="flex-1 px-3 py-2 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#008899] disabled:opacity-60"
+                className="flex-1 min-w-0 px-3 py-2 bg-gray-100 rounded-full text-base focus:outline-none focus:ring-2 focus:ring-[#008899] disabled:opacity-60"
+                style={{ fontSize: 16 }}
               />
               <button
                 onClick={handleSend}

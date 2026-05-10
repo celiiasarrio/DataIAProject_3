@@ -16,6 +16,7 @@ import { TeacherContentScreen } from './components/TeacherContentScreen';
 import { ClassAttendanceScreen } from './components/ClassAttendanceScreen';
 import { GroupAttendanceScreen } from './components/GroupAttendanceScreen';
 import { TutoringScreen } from './components/TutoringScreen';
+import { CloudMetricsDashboard } from './components/CloudMetricsDashboard';
 import { Layout } from './components/Layout';
 
 
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
       { path: 'teacher/grades',                               Component: TeacherGradesScreen  },
       { path: 'teacher/content',                              Component: TeacherContentScreen },
       { path: 'group-attendance',                             Component: GroupAttendanceScreen},
+      { path: 'metrics',                                      Component: CloudMetricsDashboard},
       { path: 'sessions/:sessionId/attendance',               Component: ClassAttendanceScreen},
     ],
   },
