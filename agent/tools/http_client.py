@@ -3,6 +3,7 @@ from typing import Any, Optional
 import httpx
 from google.adk.tools import ToolContext
 
+from agent.audit import log_permission_denied, log_tool_call
 from agent.config import settings
 
 
@@ -46,10 +47,16 @@ def _error_payload(resp: httpx.Response) -> dict:
 
 
 def _safe_request(method: str, path: str, ctx: ToolContext, **kwargs) -> Any:
+    user_id: str = ctx.state.get("user_id", "unknown")
+    user_role: str = ctx.state.get("user_role", "unknown")
     try:
         resp = _client.request(method, path, headers=_auth_headers(ctx), **kwargs)
     except httpx.RequestError as exc:
+        log_tool_call(user_id, user_role, method, path, status_code=None, error=True)
         return {"error": True, "status": None, "detail": f"Fallo de red contra el backend: {exc}"}
+    log_tool_call(user_id, user_role, method, path, status_code=resp.status_code, error=resp.is_error)
+    if resp.status_code == 403:
+        log_permission_denied(user_id, user_role, method, path)
     if resp.is_error:
         return _error_payload(resp)
     return _to_result(resp)
