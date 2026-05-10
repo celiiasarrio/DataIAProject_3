@@ -1,6 +1,6 @@
-# DataIAProject_3
+# EDEM Student HUB
 
-Aplicacion Campus Virtual EDEM con frontend React, backend FastAPI, agente IA y despliegue en Google Cloud Run.
+Aplicación Campus Virtual EDEM con frontend React, backend FastAPI, agente IA y despliegue en Google Cloud Run.
 
 ## Estructura
 

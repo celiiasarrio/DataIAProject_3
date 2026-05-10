@@ -123,7 +123,7 @@ export function CloudMetricsDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (userRole !== 'admin') {
+    if (userRole !== 'developer') {
       setLoading(false);
       return;
     }
