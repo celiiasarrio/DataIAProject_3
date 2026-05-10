@@ -140,14 +140,14 @@ export function CloudMetricsDashboard() {
 
   const lastUpdated = useMemo(() => summary?.ultima_actualizacion || health?.ultima_actualizacion || null, [summary, health]);
 
-  if (userRole !== 'admin') {
+  if (userRole !== 'developer') {
     return (
       <div className="min-h-screen bg-[#f5f5f5] px-6 pt-12 pb-24">
         <button onClick={() => navigate('/dashboard')} className="text-[#008899] text-sm mb-6">Volver</button>
         <div className="bg-white rounded-2xl p-6 border border-gray-100">
           <AlertCircle className="text-amber-600 mb-3" size={28} />
           <h1 className="text-gray-900 text-xl" style={{ fontWeight: 800 }}>Acceso no autorizado</h1>
-          <p className="text-gray-500 text-sm mt-2">Este dashboard esta disponible solo para coordinadores.</p>
+          <p className="text-gray-500 text-sm mt-2">Este dashboard esta disponible solo para la cuenta de desarrollador.</p>
         </div>
       </div>
     );

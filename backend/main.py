@@ -1000,6 +1000,8 @@ def get_user_role(user) -> str:
     if getattr(user, "id_profesor", None):
         return "profesor"
     if getattr(user, "id_coordinador", None):
+        if str(getattr(user, "rol", "")).lower() == "desarrollador":
+            return "developer"
         return "personal"
     return "desconocido"
 
@@ -1122,6 +1124,8 @@ def apply_detail_update(detail: PerfilDetalle, payload: BaseModel, fields: list[
 def role_display(role: str) -> str:
     if role == "profesor":
         return "Profesor"
+    if role == "developer":
+        return "Desarrollador"
     if role == "personal":
         return "Coordinador"
     return "Alumno"
@@ -1498,6 +1502,12 @@ def require_professor(current_user=Depends(get_current_user)):
 def require_staff(current_user=Depends(get_current_user)):
     if get_user_role(current_user) != "personal":
         raise HTTPException(status_code=403, detail="Solo el personal puede acceder.")
+    return current_user
+
+
+def require_developer(current_user=Depends(get_current_user)):
+    if get_user_role(current_user) != "developer":
+        raise HTTPException(status_code=403, detail="Solo desarrolladores pueden acceder.")
     return current_user
 
 
@@ -2109,7 +2119,7 @@ def get_my_dashboard(
 @app.get("/api/v1/metrics/summary", response_model=MetricsSummaryOut, tags=["Metricas Cloud"])
 def get_metrics_summary(
     db: Session = Depends(get_db),
-    current_user=Depends(require_staff),
+    current_user=Depends(require_developer),
 ):
     del current_user
     updated_at = datetime.utcnow().isoformat()
@@ -2117,7 +2127,7 @@ def get_metrics_summary(
     calculations = {
         "total_estudiantes": lambda: metric_ok(db.query(Alumno).count()),
         "total_profesores": lambda: metric_ok(db.query(Profesor).count()),
-        "total_coordinadores": lambda: metric_ok(db.query(Coordinador).count()),
+        "total_coordinadores": lambda: metric_ok(db.query(Coordinador).filter(Coordinador.rol != "Desarrollador").count()),
         "sesiones_proximas": lambda: metric_ok(
             db.query(Sesion).filter(Sesion.fecha.isnot(None), Sesion.fecha >= date.today()).count()
         ),
@@ -2139,7 +2149,7 @@ def get_metrics_summary(
 @app.get("/api/v1/metrics/academic", response_model=MetricsAcademicOut, tags=["Metricas Cloud"])
 def get_metrics_academic(
     db: Session = Depends(get_db),
-    current_user=Depends(require_staff),
+    current_user=Depends(require_developer),
 ):
     del current_user
     groups: List[AcademicMetricRow] = []
@@ -2164,7 +2174,7 @@ def get_metrics_academic(
 @app.get("/api/v1/metrics/system-health", response_model=MetricsHealthOut, tags=["Metricas Cloud"])
 def get_metrics_system_health(
     db: Session = Depends(get_db),
-    current_user=Depends(require_staff),
+    current_user=Depends(require_developer),
 ):
     del current_user
     checked_at = datetime.utcnow().isoformat()

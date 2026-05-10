@@ -1,4 +1,4 @@
-import { BookOpen, CheckCircle, Calendar, Users, Clock, MessageSquare, BarChart3 } from 'lucide-react';
+import { BookOpen, CheckCircle, Calendar, Users, Clock, MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
@@ -45,6 +45,7 @@ const formatEventLocation = (event: CalendarEvent): string | null => {
 
 export function DashboardScreen() {
   const navigate = useNavigate();
+  const userRole = localStorage.getItem('userRole') || 'student';
   const [grades, setGrades] = useState<GradeOut[]>([]);
   const [attendance, setAttendance] = useState<AttendanceMetrics | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -53,6 +54,10 @@ export function DashboardScreen() {
 
   useEffect(() => {
     setUserName(localStorage.getItem('userName') || '');
+    if (userRole === 'developer') {
+      navigate('/metrics', { replace: true });
+      return;
+    }
 
     getDashboard()
       .then((data) => {
@@ -61,9 +66,7 @@ export function DashboardScreen() {
         setEvents(data.events);
       })
       .finally(() => setLoading(false));
-  }, []);
-
-  const userRole = localStorage.getItem('userRole') || 'student';
+  }, [navigate, userRole]);
 
   const calculateGradeAverage = (): number | null => {
     if (!grades || grades.length === 0) return null;
@@ -150,13 +153,6 @@ export function DashboardScreen() {
       action: 'Ver tutorias',
       route: '/tutoring',
     },
-    {
-      icon: BarChart3,
-      title: 'Metricas cloud',
-      description: 'Monitoriza KPIs academicos y estado tecnico.',
-      action: 'Ver metricas',
-      route: '/metrics',
-    },
   ];
 
   const professorActions = [
@@ -183,6 +179,10 @@ export function DashboardScreen() {
     },
   ];
 
+  if (userRole === 'developer') {
+    return null;
+  }
+
   if (userRole !== 'student' && userRole !== 'professor') {
     return (
       <div className="min-h-screen bg-[#f5f5f5] pb-24">
@@ -202,7 +202,7 @@ export function DashboardScreen() {
               <h2 className="text-[#008899] text-lg" style={{ fontWeight: 800 }}>Gestión académica</h2>
               <p className="text-gray-500 text-sm mt-1">Accesos principales de coordinación</p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 justify-items-center">
+            <div className="grid gap-3 sm:grid-cols-3 justify-items-center">
               {coordinatorActions.map(({ icon: Icon, title, description, action, route }) => (
                 <div key={title} className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center text-center w-full max-w-xs">
                   <div className="h-11 w-11 rounded-2xl bg-[#008899]/10 flex items-center justify-center mb-3">

@@ -768,5 +768,6 @@ export async function sendAgentMessage(
 export function mapRol(rol: string): string {
   if (rol === 'alumno') return 'student';
   if (rol === 'profesor') return 'professor';
+  if (rol === 'developer') return 'developer';
   return 'admin';
 }

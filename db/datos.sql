@@ -73,7 +73,8 @@ INSERT INTO "profesores" ("id_profesor", "nombre", "apellido", "correo", "contra
 ('tocanto', 'Toni', 'Cantó', 'toni.canto@empresa.com', 'ToCa2026!', '', 'Profesor');
 
 INSERT INTO "coordinadores" ("id_coordinador", "nombre", "apellido", "correo", "contrasena", "url_foto", "rol") VALUES
-('m.herrera', 'Miguel', 'Herrera', 'm.herrera@edem.es', 'MiHe2026!', '', 'Coordinador');
+('m.herrera', 'Miguel', 'Herrera', 'mherrera@edem.es', 'MiHe2026!', '', 'Coordinador'),
+('dev.cloud', 'Developer', 'Cloud', 'developer@edem.es', 'DevCloud2026!', '', 'Desarrollador');
 
 INSERT INTO "perfil_detalles" (
     "id_usuario", "telefono", "ciudad", "idioma_preferido", "correo_personal",
